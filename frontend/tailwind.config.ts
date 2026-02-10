@@ -1,8 +1,7 @@
 
-import type { Config } from "tailwindcss";
 import colors from "tailwindcss/colors";
 
-const config: Config = {
+const config = {
     darkMode: "class",
     content: [
         "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
