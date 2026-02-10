@@ -50,12 +50,12 @@ async function getProjectStats() {
 
     return {
         totalProjects: totalRealProjects,
-        totalUnits: data.reduce((sum, p) => sum + (p.total_units || 0), 0),
+        totalUnits: data.reduce((sum: number, p: any) => sum + (p.total_units || 0), 0),
         avgPrice: data.length > 0
-            ? Math.round(data.reduce((sum, p) => sum + (p.avg_price_uf || 0), 0) / data.length)
+            ? Math.round(data.reduce((sum: number, p: any) => sum + (p.avg_price_uf || 0), 0) / data.length)
             : 0,
         avgVelocity: data.length > 0
-            ? (data.reduce((sum, p) => sum + (p.sales_speed_monthly || 0), 0) / data.length).toFixed(1)
+            ? (data.reduce((sum: number, p: any) => sum + (p.sales_speed_monthly || 0), 0) / data.length).toFixed(1)
             : '0.0'
     }
 }

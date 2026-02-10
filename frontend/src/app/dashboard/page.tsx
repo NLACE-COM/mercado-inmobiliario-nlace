@@ -6,6 +6,27 @@ import { TrendingUp, Users, Building2, Home } from "lucide-react"
 
 export const dynamic = 'force-dynamic'
 
+interface DashboardProject {
+    id: string;
+    name: string;
+    developer: string | null;
+    commune: string | null;
+    region: string | null;
+    address: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    avg_price_uf: number | null;
+    avg_price_m2_uf: number | null;
+    min_price_uf: number | null;
+    max_price_uf: number | null;
+    total_units: number | null;
+    sold_units: number | null;
+    available_units: number | null;
+    sales_speed_monthly: number | null;
+    project_status: string | null;
+    property_type: string | null;
+}
+
 async function getDashboardData() {
     const supabase = await createClient()
 
@@ -39,22 +60,22 @@ async function getDashboardData() {
         }
     }
 
-    const validProjects = projects || []
+    const validProjects = (projects || []) as DashboardProject[]
 
     // Use the real count from DB, or fallback to array length
     const projectCount = countQuery.count || validProjects.length
 
     // Calculate stats based on the fetched chunk (up to 10k)
-    const totalStock = validProjects.reduce((acc, p) => acc + (p.available_units || 0), 0)
-    const totalSold = validProjects.reduce((acc, p) => acc + (p.sold_units || 0), 0)
+    const totalStock = validProjects.reduce((acc: number, p: DashboardProject) => acc + (p.available_units || 0), 0)
+    const totalSold = validProjects.reduce((acc: number, p: DashboardProject) => acc + (p.sold_units || 0), 0)
 
     const avgSalesSpeed = validProjects.length > 0
-        ? (validProjects.reduce((acc, p) => acc + (p.sales_speed_monthly || 0), 0) / validProjects.length).toFixed(1)
+        ? (validProjects.reduce((acc: number, p: DashboardProject) => acc + (p.sales_speed_monthly || 0), 0) / validProjects.length).toFixed(1)
         : '0.0'
 
     // Process data for charts
-    const regionMap = new Map()
-    validProjects.forEach(p => {
+    const regionMap = new Map<string, any>()
+    validProjects.forEach((p: DashboardProject) => {
         const region = p.region || 'N/A'
         if (!regionMap.has(region)) {
             regionMap.set(region, {
@@ -161,7 +182,7 @@ export default async function DashboardPage() {
                         <CardTitle>Mapa de Actividad</CardTitle>
                     </CardHeader>
                     <CardContent className="flex-1 p-0 relative min-h-0 rounded-b-lg overflow-hidden">
-                        <MapboxMap projects={projects} />
+                        <MapboxMap projects={projects as any[]} />
                     </CardContent>
                 </Card>
                 <div className="lg:col-span-1 xl:col-span-1 flex flex-col gap-4">
