@@ -68,10 +68,15 @@ export async function POST(request: NextRequest) {
         }
 
         if (!projects || projects.length === 0) {
+            console.log(`[Report Generate] No projects found for commune: "${commune}"`)
             await updateReportStatus(supabase, initialReport.id, 'completed', null, {
                 title,
                 sections: [
-                    { type: 'text', content: `No se encontraron proyectos para la comuna de ${commune}.` }
+                    {
+                        type: 'analysis_text',
+                        title: 'Sin Resultados',
+                        content: `No se encontraron proyectos para la comuna de **${commune}**.\n\nVerifique que el nombre de la comuna esté escrito correctamente (ej: "Ñuñoa" en lugar de "Nunoa") y que existan proyectos activos en nuestra base de datos para esta ubicación.`
+                    }
                 ]
             })
             return NextResponse.json(initialReport) // Return early
