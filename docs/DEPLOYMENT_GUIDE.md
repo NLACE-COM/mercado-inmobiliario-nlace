@@ -4,19 +4,22 @@ Este proyecto consta de dos partes principales: un Frontend (Next.js) y un Backe
 
 ---
 
-## 1. Backend (FastAPI) en Railway o Render
-*Recomendado por su soporte nativo para Docker y Python.*
+## 1. Backend (FastAPI) en Vercel
+*Recomendado ya que posees cuenta **Vercel Pro**, lo que permite tiempos de ejecución largos para la IA.*
 
 ### Pasos:
-1. Sube los cambios con el archivo `backend/requirements.txt` recientemente generado.
-2. Crea una cuenta en [Railway.app](https://railway.app) o [Render.com](https://render.com).
-3. Conecta tu repositorio de GitHub.
-4. Selecciona la carpeta `backend` como el directorio base.
-5. Configura las variables de entorno:
+1. Sube los cambios con el archivo `backend/vercel.json` y `backend/requirements.txt`.
+2. En Vercel, crea un **Nuevo Proyecto**.
+3. Selecciona el mismo repositorio.
+4. **Configuración de Proyecto (Backend):**
+   - **Nombe**: `mercado-inmobiliario-backend`
+   - **Root Directory**: `backend`
+   - **Framework Preset**: Other
+5. Configura las variables de entorno en Vercel:
    - `OPENAI_API_KEY`: Tu llave de OpenAI.
    - `SUPABASE_URL`: Tu URL de Supabase.
    - `SUPABASE_KEY`: Tu Service Role Key.
-6. El sistema detectará automáticamente el `Dockerfile` y desplegará la API.
+6. Vercel desplegará tu API de Python automáticamente.
 
 ---
 
