@@ -18,6 +18,8 @@ PROMPTS_FILE = Path("system_prompts.json")
 def check_table_exists(table_name: str):
     try:
         supabase = get_supabase_client()
+        if not supabase:
+            return False
         supabase.table(table_name).select("id").limit(1).execute()
         return True
     except:

@@ -42,14 +42,10 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": str(exc), "traceback": traceback.format_exc().split("\n")[-3:]}
     )
 
-app.include_router(brain_router, prefix="/api")
-app.include_router(admin_router, prefix="/api")
-app.include_router(reports_router, prefix="/api")
-
-@app.get("/health")
 @app.get("/api/health")
+@app.get("/api/ping")
 async def health_check():
-    return {"status": "ok", "service": "nlace-backend"}
+    return {"status": "ok", "service": "nlace-backend", "env": "production"}
 
 @app.get("/api/debug")
 async def debug_env():
@@ -58,12 +54,12 @@ async def debug_env():
         "supabase_url_set": bool(os.environ.get("SUPABASE_URL")),
         "supabase_key_set": bool(os.environ.get("SUPABASE_KEY")),
         "openai_key_set": bool(os.environ.get("OPENAI_API_KEY")),
-        "env_keys": list(os.environ.keys())[:10] # First 10 keys for sanity check
+        "python_version": sys.version
     }
 
-@app.get("/api/ping")
-async def ping():
-    return {"message": "pong", "env": "production"}
+app.include_router(brain_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
+app.include_router(reports_router, prefix="/api")
 
 @app.get("/")
 async def root():
