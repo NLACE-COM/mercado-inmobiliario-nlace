@@ -26,11 +26,11 @@ def check_table_exists(table_name: str):
 # --- System Prompts ---
 
 class SystemPrompt(BaseModel):
-    id: Optional[str] = None
+    id: Optional[Any] = None
     content: str
     is_active: bool = False
-    label: str
-    created_at: Optional[str] = None
+    label: Optional[str] = "Version"
+    created_at: Optional[Any] = None
 
 @router.get("/prompts", response_model=List[SystemPrompt])
 def get_prompts():
@@ -134,9 +134,9 @@ def activate_prompt(prompt_id: str):
 # --- Knowledge Base ---
 
 class KnowledgeItem(BaseModel):
-    id: Optional[str] = None
+    id: Optional[Any] = None
     content: str
-    metadata: Dict[str, Any]
+    metadata: Optional[Dict[str, Any]] = {}
 
 @router.get("/knowledge", response_model=List[KnowledgeItem])
 def get_knowledge():
