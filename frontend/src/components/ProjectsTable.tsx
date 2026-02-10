@@ -39,7 +39,7 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
     const [regionFilter, setRegionFilter] = useState<string>('all')
 
     // Get unique regions
-    const regions = Array.from(new Set(projects.map(p => p.region).filter(Boolean)))
+    const regions = Array.from(new Set(projects.map(p => p.region).filter((r): r is string => !!r)))
 
     // Filter projects
     const filteredProjects = projects.filter(project => {
