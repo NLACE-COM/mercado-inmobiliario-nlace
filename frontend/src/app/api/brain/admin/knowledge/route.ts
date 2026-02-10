@@ -10,7 +10,9 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET() {
     try {
+        console.log('[Knowledge GET] Starting...')
         const supabase = getSupabaseAdmin()
+        console.log('[Knowledge GET] Supabase client created')
 
         const { data: items, error } = await supabase
             .from('knowledge_docs')
@@ -18,14 +20,21 @@ export async function GET() {
             .order('created_at', { ascending: false })
             .limit(100)
 
+        console.log('[Knowledge GET] Query result:', {
+            itemsCount: items?.length,
+            hasError: !!error,
+            errorMessage: error?.message
+        })
+
         if (error) {
-            console.error('Error fetching knowledge:', error)
+            console.error('[Knowledge GET] Error fetching knowledge:', error)
             return NextResponse.json([])
         }
 
+        console.log('[Knowledge GET] Returning items:', items?.length)
         return NextResponse.json(items || [])
-    } catch (error) {
-        console.error('Error in GET /api/brain/admin/knowledge:', error)
+    } catch (error: any) {
+        console.error('[Knowledge GET] Exception:', error.message)
         return NextResponse.json([])
     }
 }
