@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import Map, { NavigationControl } from 'react-map-gl/mapbox';
 import DrawControl from './DrawControl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -9,11 +9,6 @@ interface MapAreaSelectorProps {
 }
 
 export default function MapAreaSelector({ onPolygonChange }: MapAreaSelectorProps) {
-    const [viewState, setViewState] = useState({
-        longitude: -70.6483,
-        latitude: -33.4489,
-        zoom: 12
-    });
 
     const onUpdate = useCallback((e: any) => {
         const features = e.features;
@@ -22,8 +17,7 @@ export default function MapAreaSelector({ onPolygonChange }: MapAreaSelectorProp
             if (polygon.geometry.type === 'Polygon') {
                 const coords = polygon.geometry.coordinates[0];
                 // Convert to WKT: POLYGON((lng lat, lng lat, ...))
-                // Note: WKT expects longitude latitude. Also polygon must be closed (handled by Draw)
-                const wkt = `POLYGON((${coords.map((c: any) => `${c[0]} ${c[1]}`).join(', ')}))`;
+                const wkt = `POLYGON((${coords.map((c: any) => `${c[0]} ${c[1]}`).join(', ')}))`
                 onPolygonChange(wkt);
             }
         } else {
@@ -38,11 +32,15 @@ export default function MapAreaSelector({ onPolygonChange }: MapAreaSelectorProp
     return (
         <div className="h-[400px] w-full rounded-md border border-slate-200 overflow-hidden relative shadow-inner bg-slate-50">
             <Map
-                {...viewState}
-                onMove={evt => setViewState(evt.viewState)}
+                initialViewState={{
+                    longitude: -70.6483,
+                    latitude: -33.4489,
+                    zoom: 12
+                }}
                 mapStyle="mapbox://styles/mapbox/streets-v12"
                 mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
                 style={{ width: '100%', height: '100%' }}
+                reuseMaps
             >
                 <DrawControl
                     position="top-left"
