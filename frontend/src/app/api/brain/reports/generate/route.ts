@@ -47,37 +47,68 @@ export async function POST(request: NextRequest) {
         }
 
         // 2. Fetch Real Data from Supabase (Projects Table)
+        const polygonWkt = parameters.polygon_wkt
         const commune = parameters.commune?.trim() || ''
-        console.log(`[Report Generate] Searching projects for commune: "${commune}"`)
 
-        let projectsQuery = supabase
-            .from('projects')
-            .select('id, name, developer, commune, avg_price_uf, avg_price_m2_uf, total_units, available_units, sales_speed_monthly, project_status, property_type')
+        let projects: any[] = []
+        let searchLocationName = commune
 
-        if (commune) {
-            // Use ilike for case-insensitive matching
-            projectsQuery = projectsQuery.ilike('commune', commune)
-        }
+        if (polygonWkt) {
+            console.log(`[Report Generate] Searching via Polygon WKT area...`)
+            searchLocationName = "Área Seleccionada" // Default name
 
-        // Limit to prevent huge payloads, but enough for stats
-        const { data: projects, error: fetchError } = await projectsQuery.limit(500)
+            // Use RPC for spatial search
+            const { data: polygonProjects, error: polygonError } = await supabase.rpc('get_projects_in_polygon', {
+                polygon_wkt: polygonWkt
+            });
 
-        if (fetchError) {
-            console.error('Error fetching project data:', fetchError)
-            // Function continues but report will be failed
-            await updateReportStatus(supabase, initialReport.id, 'failed', fetchError.message)
-            return NextResponse.json({ error: 'Failed to fetch market data' }, { status: 500 })
+            if (polygonError) {
+                console.error('Error in geospatial search:', polygonError)
+                await updateReportStatus(supabase, initialReport.id, 'failed', `Error en búsqueda geoespacial: ${polygonError.message}`)
+                return NextResponse.json({ error: 'Failed geospatial search' }, { status: 500 })
+            }
+            projects = polygonProjects || []
+
+            // Try to infer commune name from first project if available
+            if (projects.length > 0 && projects[0].commune) {
+                searchLocationName = projects[0].commune
+            }
+        } else {
+            console.log(`[Report Generate] Searching projects for commune: "${commune}"`)
+
+            let projectsQuery = supabase
+                .from('projects')
+                .select('id, name, developer, commune, avg_price_uf, avg_price_m2_uf, total_units, available_units, sales_speed_monthly, project_status, property_type')
+
+            if (commune) {
+                // Use ilike for case-insensitive matching
+                projectsQuery = projectsQuery.ilike('commune', commune)
+            }
+
+            // Limit to prevent huge payloads, but enough for stats
+            const { data: communeProjects, error: fetchError } = await projectsQuery.limit(500)
+
+            if (fetchError) {
+                console.error('Error fetching project data:', fetchError)
+                await updateReportStatus(supabase, initialReport.id, 'failed', fetchError.message)
+                return NextResponse.json({ error: 'Failed to fetch market data' }, { status: 500 })
+            }
+            projects = communeProjects || []
         }
 
         if (!projects || projects.length === 0) {
-            console.log(`[Report Generate] No projects found for commune: "${commune}"`)
+            console.log(`[Report Generate] No projects found for location: "${searchLocationName}"`)
+            const notFoundMsg = polygonWkt
+                ? `No se encontraron proyectos dentro del área seleccionada en el mapa.\n\nIntente dibujar un polígono más grande o sobre una zona con mayor densidad inmobiliaria.`
+                : `No se encontraron proyectos para la comuna de **${searchLocationName}**.\n\nVerifique que el nombre de la comuna esté escrito correctamente (ej: "Ñuñoa" en lugar de "Nunoa") y que existan proyectos activos para esta ubicación.`
+
             await updateReportStatus(supabase, initialReport.id, 'completed', null, {
                 title,
                 sections: [
                     {
                         type: 'analysis_text',
                         title: 'Sin Resultados',
-                        content: `No se encontraron proyectos para la comuna de **${commune}**.\n\nVerifique que el nombre de la comuna esté escrito correctamente (ej: "Ñuñoa" en lugar de "Nunoa") y que existan proyectos activos en nuestra base de datos para esta ubicación.`
+                        content: notFoundMsg
                     }
                 ]
             })
@@ -88,7 +119,7 @@ export async function POST(request: NextRequest) {
         const stats = calculateStats(projects)
 
         // 4. Generate Analysis with OpenAI
-        const analysisText = await generateAIAnalysis(commune, stats)
+        const analysisText = await generateAIAnalysis(searchLocationName, stats)
 
         // 5. Structure Final Content matching ReportView component
         const reportContent = {
