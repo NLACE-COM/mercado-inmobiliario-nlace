@@ -28,6 +28,8 @@ export default function KnowledgeBaseManager() {
         queryFn: async () => {
             try {
                 const res = await axios.get(endpoints.brain.admin.knowledge)
+                console.log('Knowledge items fetched:', res.data)
+                console.log('Items count:', res.data?.length)
                 return res.data
             } catch (err: any) {
                 console.error('FETCH ERROR:', err);
@@ -36,6 +38,10 @@ export default function KnowledgeBaseManager() {
         },
         retry: 1
     })
+
+    console.log('Current items state:', items)
+    console.log('Is loading:', isLoading)
+    console.log('Is error:', isError)
 
     const mutation = useMutation({
         mutationFn: async (item: any) => {
