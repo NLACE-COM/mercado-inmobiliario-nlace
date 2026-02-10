@@ -5,12 +5,15 @@ import { Button } from '@/components/ui/button'
 import { Building2, TrendingUp, DollarSign, Clock, Plus } from 'lucide-react'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic' // Desactiva caché estática para ver cambios al instante
+
 async function getProjects() {
     const supabase = await createClient()
     const { data, error } = await supabase
         .from('projects')
         .select('*')
         .order('name', { ascending: true })
+        .limit(10000)
 
     if (error) {
         console.error('Error fetching projects:', error)
@@ -22,9 +25,17 @@ async function getProjects() {
 
 async function getProjectStats() {
     const supabase = await createClient()
+
+    // 1. Obtener conteo total real
+    const countQuery = await supabase
+        .from('projects')
+        .select('*', { count: 'exact', head: true }) // Solo cuenta, no baja datos
+
+    // 2. Obtener datos para promedios (con límite ampliado)
     const { data, error } = await supabase
         .from('projects')
         .select('total_units, sold_units, available_units, avg_price_uf, sales_speed_monthly')
+        .limit(10000)
 
     if (error || !data) {
         return {
@@ -35,8 +46,10 @@ async function getProjectStats() {
         }
     }
 
+    const totalRealProjects = countQuery.count || data.length
+
     return {
-        totalProjects: data.length,
+        totalProjects: totalRealProjects,
         totalUnits: data.reduce((sum, p) => sum + (p.total_units || 0), 0),
         avgPrice: data.length > 0
             ? Math.round(data.reduce((sum, p) => sum + (p.avg_price_uf || 0), 0) / data.length)

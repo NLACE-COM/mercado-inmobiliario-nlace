@@ -21,12 +21,21 @@ if not openai_api_key:
 
 supabase: Client = create_client(supabase_url, supabase_key)
 
-embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
+# Lazy instantiation of embeddings to avoid startup crash if key is missing
+embeddings = None
+
+def get_embeddings():
+    global embeddings
+    if embeddings is None:
+        if not openai_api_key:
+            raise ValueError("OPENAI_API_KEY not found. Cannot initialize embeddings.")
+        embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
+    return embeddings
 
 def get_vector_store():
     return SupabaseVectorStore(
         client=supabase,
-        embedding=embeddings,
+        embedding=get_embeddings(),
         table_name="knowledge_docs",
         query_name="match_documents",
     )
@@ -35,9 +44,13 @@ def ingest_text(text: str, metadata: dict):
     """
     Ingests a text chunk into the Knowledge Base.
     """
-    vector_store = get_vector_store()
-    vector_store.add_texts([text], metadatas=[metadata])
-    print(f"Ingested: {text[:50]}...")
+    try:
+        vector_store = get_vector_store()
+        vector_store.add_texts([text], metadatas=[metadata])
+        print(f"Ingested: {text[:50]}...")
+    except Exception as e:
+        print(f"Error ingesting text: {e}")
+        raise e
 
 if __name__ == "__main__":
     # Example ingestion of historical context

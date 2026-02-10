@@ -7,10 +7,16 @@ async function getProjects() {
     const supabase = await createClient()
     const { data, error } = await supabase
         .from('projects')
-        .select('id, name, commune, latitude, longitude, avg_price_uf, available_units, total_units')
+        .select(`
+            id, name, developer, commune, region, address,
+            latitude, longitude, 
+            avg_price_uf, avg_price_m2_uf, min_price_uf, max_price_uf,
+            total_units, sold_units, available_units,
+            sales_speed_monthly, project_status, property_type
+        `)
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
-        .limit(100)
+        .order('name', { ascending: true })
 
     if (error) {
         console.error('Error fetching projects:', error)
@@ -20,8 +26,15 @@ async function getProjects() {
     return data || []
 }
 
-export default async function MapPage() {
+type Props = {
+    searchParams: Promise<{ project?: string }>
+}
+
+export default async function MapPage({
+    searchParams
+}: Props) {
     const projects = await getProjects()
+    const { project: projectId } = await searchParams
 
     const stats = {
         totalProjects: projects.length,
@@ -77,7 +90,7 @@ export default async function MapPage() {
 
             <Card className="flex-1 min-h-[600px]">
                 <CardContent className="p-0 h-full">
-                    <MapboxMap projects={projects} />
+                    <MapboxMap projects={projects} highlightedProjectId={projectId} />
                 </CardContent>
             </Card>
         </div>

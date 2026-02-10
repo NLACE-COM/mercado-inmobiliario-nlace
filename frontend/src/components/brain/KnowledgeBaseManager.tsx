@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Trash2, Upload, Plus } from 'lucide-react'
 import axios from 'axios'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { endpoints } from '@/config'
 
 interface KnowledgeItem {
     id: string
@@ -25,14 +26,14 @@ export default function KnowledgeBaseManager() {
     const { data: items, isLoading } = useQuery({
         queryKey: ['knowledge'],
         queryFn: async () => {
-            const res = await axios.get('http://localhost:8000/brain/admin/knowledge')
+            const res = await axios.get(endpoints.brain.admin.knowledge)
             return res.data
         }
     })
 
     const mutation = useMutation({
         mutationFn: async (item: any) => {
-            return axios.post('http://localhost:8000/brain/admin/knowledge', item)
+            return axios.post(endpoints.brain.admin.knowledge, item)
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['knowledge'] })
@@ -43,23 +44,59 @@ export default function KnowledgeBaseManager() {
 
     const deleteMutation = useMutation({
         mutationFn: async (id: string) => {
-            return axios.delete(`http://localhost:8000/brain/admin/knowledge/${id}`)
+            return axios.delete(`${endpoints.brain.admin.knowledge}/${id}`)
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['knowledge'] })
         }
     })
 
+    const [selectedFile, setSelectedFile] = useState<File | null>(null)
+
+    const mutationUpload = useMutation({
+        mutationFn: async (data: { file: File, metadata: any }) => {
+            const formData = new FormData()
+            formData.append('file', data.file)
+            formData.append('metadata', JSON.stringify(data.metadata))
+            return axios.post(endpoints.brain.admin.knowledgeUpload, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            })
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['knowledge'] })
+            setOpenAdd(false)
+            setNewItem({ content: '', topic: '', year: '2024', event: '' })
+            setSelectedFile(null)
+            alert('Archivo procesado exitosamente')
+        },
+        onError: (error: any) => {
+            console.error('Error uploading file:', error)
+            alert(`Error al subir archivo: ${error.response?.data?.detail || error.message}`)
+        }
+    })
+
     const handleAddItem = (e: React.FormEvent) => {
         e.preventDefault()
-        mutation.mutate({
-            content: newItem.content,
-            metadata: {
-                topic: newItem.topic,
-                year: newItem.year,
-                event: newItem.event
-            }
-        })
+
+        if (selectedFile) {
+            mutationUpload.mutate({
+                file: selectedFile,
+                metadata: {
+                    topic: newItem.topic,
+                    year: newItem.year,
+                    event: newItem.event
+                }
+            })
+        } else {
+            mutation.mutate({
+                content: newItem.content,
+                metadata: {
+                    topic: newItem.topic,
+                    year: newItem.year,
+                    event: newItem.event
+                }
+            })
+        }
     }
 
     return (
@@ -80,11 +117,63 @@ export default function KnowledgeBaseManager() {
                                 <Input placeholder="Año (Ej: 2023)" value={newItem.year} onChange={e => setNewItem({ ...newItem, year: e.target.value })} />
                                 <Input placeholder="Evento (Ej: Nueva Ley)" value={newItem.event} onChange={e => setNewItem({ ...newItem, event: e.target.value })} />
                             </div>
-                            <Textarea placeholder="Contenido del documento o extracto relevante..." rows={4} value={newItem.content} onChange={e => setNewItem({ ...newItem, content: e.target.value })} />
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <label className="text-sm font-medium">Contenido</label>
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            id="file-upload"
+                                            type="file"
+                                            accept=".txt,.md,.json,.csv,.xlsx,.xls,.doc,.docx"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0]
+                                                if (!file) return
+
+                                                setSelectedFile(file)
+
+                                                // Only read as text for text files
+                                                if (file.name.match(/\.(txt|md|json)$/i)) {
+                                                    const reader = new FileReader()
+                                                    reader.onload = (e) => {
+                                                        const text = e.target?.result
+                                                        if (typeof text === 'string') {
+                                                            setNewItem(prev => ({ ...prev, content: text }))
+                                                        }
+                                                    }
+                                                    reader.readAsText(file)
+                                                } else {
+                                                    setNewItem(prev => ({ ...prev, content: `[Archivo binario seleccionado: ${file.name}]` }))
+                                                }
+                                            }}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => document.getElementById('file-upload')?.click()}
+                                        >
+                                            <Upload className="h-4 w-4 mr-2" />
+                                            Cargar Archivo (Excel, Word, CSV)
+                                        </Button>
+                                    </div>
+                                </div>
+                                <Textarea
+                                    placeholder="Contenido del documento..."
+                                    rows={10}
+                                    value={newItem.content}
+                                    onChange={e => setNewItem({ ...newItem, content: e.target.value })}
+                                    disabled={!!selectedFile && !selectedFile.name.match(/\.(txt|md|json)$/i)}
+                                />
+                            </div>
                             <div className="flex justify-end gap-2">
-                                <Button type="button" variant="outline" onClick={() => setOpenAdd(false)}>Cancelar</Button>
-                                <Button type="submit" disabled={mutation.isPending}>
-                                    {mutation.isPending ? 'Agregando...' : 'Agregar a Vector Store'}
+                                <Button type="button" variant="outline" onClick={() => {
+                                    setOpenAdd(false)
+                                    setSelectedFile(null)
+                                    setNewItem({ ...newItem, content: '' })
+                                }}>Cancelar</Button>
+                                <Button type="submit" disabled={mutation.isPending || mutationUpload.isPending}>
+                                    {mutation.isPending || mutationUpload.isPending ? 'Procesando...' : 'Agregar a Vector Store'}
                                 </Button>
                             </div>
                         </form>
@@ -94,8 +183,21 @@ export default function KnowledgeBaseManager() {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {isLoading ? (
-                    <p>Cargando documentos...</p>
-                ) : items?.map((item: KnowledgeItem) => (
+                    <p className="text-muted-foreground">Cargando documentos...</p>
+                ) : items === undefined ? (
+                    <Card className="col-span-full border-dashed p-8 text-center text-muted-foreground">
+                        <p>Error al conectar con la base de conocimientos.</p>
+                        <p className="text-sm mt-2">Verifica que el backend esté activo y la tabla 'knowledge_docs' exista.</p>
+                        <Button variant="outline" size="sm" className="mt-4" onClick={() => window.location.reload()}>
+                            Reintentar
+                        </Button>
+                    </Card>
+                ) : items.length === 0 ? (
+                    <Card className="col-span-full border-dashed p-8 text-center text-muted-foreground">
+                        <p>No hay documentos en la base de conocimientos.</p>
+                        <p className="text-sm">Agrega documentos relevantes para mejorar las respuestas de la IA.</p>
+                    </Card>
+                ) : items.map((item: KnowledgeItem) => (
                     <Card key={item.id} className="relative group hover:shadow-md transition-shadow">
                         <CardHeader className="pb-2">
                             <div className="flex justify-between items-start">

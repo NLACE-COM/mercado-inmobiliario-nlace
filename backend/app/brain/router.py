@@ -1,103 +1,99 @@
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Dict, Any, List
-from langchain_openai import ChatOpenAI
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
-from app.db import get_supabase_client
-from app.brain.knowledge_base import get_vector_store
-import os
-from pathlib import Path
-import json
+from typing import Dict, Any, List, Optional
+from app.brain.agent import query_brain_with_rag
+import traceback
 
 router = APIRouter(prefix="/brain", tags=["brain"])
 
+
 class AskRequest(BaseModel):
     question: str
+    use_rag: bool = True
     filters: Dict[str, Any] = {}
+
+
+class ToolExecution(BaseModel):
+    tool: str
+    input: Dict[str, Any]
+    output: str
+
 
 class AskResponse(BaseModel):
     answer: str
-    context_used: List[Dict[str, Any]]
-    data_points: List[Dict[str, Any]]
+    context_used: List[Dict[str, Any]] = []
+    tools_used: List[ToolExecution] = []
+    success: bool = True
+    error: Optional[str] = None
 
-def get_default_template():
-    return """
-    Eres el "Cerebro Inmobiliario", un experto analista de mercado con acceso a datos históricos y actuales.
-    
-    CONTEXTO HISTÓRICO Y NORMATIVO RELEVANTE (RAG):
-    {context_text}
-    
-    DATOS ACTUALES DEL MERCADO (MUESTRA SQL):
-    {data_text}
-    
-    PREGUNTA DEL USUARIO:
-    {question}
-    
-    Responde de manera ejecutiva y analítica. Cita el contexto histórico si explica la situación actual. 
-    Si los datos muestran tendencias claras, menciónalas.
-    """
 
 @router.post("/ask", response_model=AskResponse)
 async def ask_brain(request: AskRequest):
+    """
+    Endpoint principal del Analista IA.
+    
+    Usa un agente LangChain con herramientas (tools) para consultar
+    datos reales del mercado inmobiliario y proporcionar análisis inteligentes.
+    
+    El agente puede:
+    - Buscar proyectos específicos
+    - Calcular estadísticas del mercado
+    - Comparar regiones
+    - Identificar tendencias
+    - Proporcionar insights basados en datos reales
+    """
     try:
-        # 1. Retrieve Context from Knowledge Base (RAG)
-        vector_store = get_vector_store()
-        docs = vector_store.similarity_search(request.question, k=3)
-        context_text = "\n".join([f"- {d.page_content} (Fuente: {d.metadata.get('topic', 'N/A')})" for d in docs])
-        context_meta = [d.metadata for d in docs]
-
-        # 2. Retrieve Hard Data from SQL (Simplified for MVP: global overview or filtered)
-        # TODO: Dynamically build SQL based on question intent (Text-to-SQL)
-        supabase = get_supabase_client()
+        # Query agent with RAG
+        result = await query_brain_with_rag(
+            question=request.question,
+            use_rag=request.use_rag
+        )
         
-        # Use simple select for MVP
-        res = supabase.table("projects").select("name, total_units, sold_units, avg_price_uf").limit(5).execute()
-        projects_data = res.data if res.data else []
-        
-        data_text = str(projects_data) 
-        
-        # 3. Construct Prompt with Context + Data
-        llm = ChatOpenAI(temperature=0, model="gpt-4-turbo-preview", openai_api_key=os.environ.get("OPENAI_API_KEY"))
-        
-        # 3. Get System Prompt from DB or File
-        try:
-            prompt_res = supabase.table("system_prompts").select("content").eq("is_active", True).limit(1).execute()
-            if prompt_res.data and len(prompt_res.data) > 0:
-                template = prompt_res.data[0]['content']
-            else:
-                # Try file fallback
-                prompts_file = Path("system_prompts.json")
-                if prompts_file.exists():
-                    with open(prompts_file, "r") as f:
-                        prompts = json.load(f)
-                    active_prompt = next((p for p in prompts if p.get('is_active')), None)
-                    if active_prompt:
-                        template = active_prompt['content']
-                    else:
-                        template = get_default_template()
-                else:
-                    template = get_default_template()
-        except Exception as e:
-            print(f"Error fetching prompt: {e}, using default.")
-            template = get_default_template()
-        
-        prompt = PromptTemplate(template=template, input_variables=["context_text", "data_text", "question"])
-        chain = prompt | llm 
-        
-        response = await chain.ainvoke({
-            "context_text": context_text,
-            "data_text": data_text,
-            "question": request.question
-        })
+        # Extract tool executions from intermediate steps
+        tools_used = []
+        for step in result.get("intermediate_steps", []):
+            if len(step) >= 2:
+                action, output = step[0], step[1]
+                tools_used.append(ToolExecution(
+                    tool=action.tool,
+                    input=action.tool_input,
+                    output=str(output)[:500]  # Limit output length
+                ))
         
         return AskResponse(
-            answer=response.content,
-            context_used=context_meta,
-            data_points=projects_data
+            answer=result.get("answer", "No pude generar una respuesta."),
+            context_used=result.get("context_used", []),
+            tools_used=tools_used,
+            success=result.get("success", True),
+            error=result.get("error")
+        )
+        
+    except Exception as e:
+        print(f"Error in Brain API: {e}")
+        traceback.print_exc()
+        
+        return AskResponse(
+            answer=f"Lo siento, ocurrió un error al procesar tu pregunta. Por favor, intenta reformularla o contacta al administrador.",
+            context_used=[],
+            tools_used=[],
+            success=False,
+            error=str(e)
         )
 
+
+@router.get("/health")
+async def health_check():
+    """
+    Verifica que el servicio del cerebro AI esté funcionando.
+    """
+    try:
+        from app.brain.tools import ALL_TOOLS
+        
+        return {
+            "status": "healthy",
+            "tools_available": len(ALL_TOOLS),
+            "tool_names": [tool.name for tool in ALL_TOOLS]
+        }
     except Exception as e:
-        print(f"Error in Brain: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Brain service unhealthy: {str(e)}")

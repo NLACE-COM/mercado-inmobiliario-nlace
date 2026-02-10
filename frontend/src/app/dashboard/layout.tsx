@@ -8,6 +8,8 @@ import {
     Map,
     Settings,
     Bot,
+    BarChart3,
+    FileText,
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -21,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
+import { signOut } from "@/app/actions/auth"
 
 export default async function DashboardLayout({
     children,
@@ -79,6 +82,20 @@ export default async function DashboardLayout({
                                 <Bot className="h-4 w-4" />
                                 Analista IA
                             </Link>
+                            <Link
+                                className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-500 transition-all hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50"
+                                href="/dashboard/analytics"
+                            >
+                                <BarChart3 className="h-4 w-4" />
+                                Analytics
+                            </Link>
+                            <Link
+                                className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-500 transition-all hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50"
+                                href="/dashboard/reports"
+                            >
+                                <FileText className="h-4 w-4" />
+                                Reportes
+                            </Link>
                         </nav>
                     </div>
                 </div>
@@ -112,11 +129,13 @@ export default async function DashboardLayout({
                             <DropdownMenuItem>Configuración</DropdownMenuItem>
                             <DropdownMenuItem>Soporte</DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <form action="/auth/signout" method="post">
-                                <DropdownMenuItem>
-                                    <LogOut className="mr-2 h-4 w-4" />
-                                    <span>Cerrar Sesión</span>
-                                </DropdownMenuItem>
+                            <form action={signOut}>
+                                <button type="submit" className="w-full">
+                                    <DropdownMenuItem>
+                                        <LogOut className="mr-2 h-4 w-4" />
+                                        <span>Cerrar Sesión</span>
+                                    </DropdownMenuItem>
+                                </button>
                             </form>
                         </DropdownMenuContent>
                     </DropdownMenu>

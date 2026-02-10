@@ -33,7 +33,7 @@ class SystemPrompt(BaseModel):
     created_at: Optional[str] = None
 
 @router.get("/prompts", response_model=List[SystemPrompt])
-async def get_prompts():
+def get_prompts():
     if check_table_exists("system_prompts"):
         supabase = get_supabase_client()
         res = supabase.table("system_prompts").select("*").order("created_at", desc=True).execute()
@@ -50,7 +50,7 @@ async def get_prompts():
             return []
 
 @router.post("/prompts", response_model=SystemPrompt)
-async def create_prompt(prompt: SystemPrompt):
+def create_prompt(prompt: SystemPrompt):
     import datetime
     
     if check_table_exists("system_prompts"):
@@ -102,7 +102,7 @@ async def create_prompt(prompt: SystemPrompt):
 
 
 @router.put("/prompts/{prompt_id}/activate")
-async def activate_prompt(prompt_id: str):
+def activate_prompt(prompt_id: str):
     if check_table_exists("system_prompts"):
         supabase = get_supabase_client()
         
@@ -139,14 +139,19 @@ class KnowledgeItem(BaseModel):
     metadata: Dict[str, Any]
 
 @router.get("/knowledge", response_model=List[KnowledgeItem])
-async def get_knowledge():
-    supabase = get_supabase_client()
-    # Assuming 'knowledge_docs' table exists from vector store
-    res = supabase.table("knowledge_docs").select("id, content, metadata").limit(100).execute() 
-    return res.data
+def get_knowledge():
+    try:
+        supabase = get_supabase_client()
+        # Assuming 'knowledge_docs' table exists from vector store
+        res = supabase.table("knowledge_docs").select("id, content, metadata").limit(100).execute() 
+        return res.data
+    except Exception as e:
+        print(f"Error fetching knowledge: {e}")
+        # If table doesn't exist, return empty list to avoid UI freeze
+        return []
 
 @router.post("/knowledge")
-async def add_knowledge(item: KnowledgeItem):
+def add_knowledge(item: KnowledgeItem):
     # We use the vector store logic to add, to ensure embeddings are generated
     from app.brain.knowledge_base import ingest_text
     
@@ -157,7 +162,71 @@ async def add_knowledge(item: KnowledgeItem):
          raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/knowledge/{item_id}")
-async def delete_knowledge(item_id: str):
+def delete_knowledge(item_id: str):
     supabase = get_supabase_client()
     res = supabase.table("knowledge_docs").delete().eq("id", item_id).execute()
     return res.data
+
+# --- File Processing ---
+
+from fastapi import UploadFile, File
+import pandas as pd
+from io import BytesIO
+
+@router.post("/knowledge/upload")
+async def upload_knowledge_file(file: UploadFile = File(...), metadata: str = None):
+    """
+    Sube y procesa archivos (Excel, CSV, DOCX, TXT) para la base de conocimientos.
+    """
+    from app.brain.knowledge_base import ingest_text
+    import json
+    
+    try:
+        content = ""
+        filename = file.filename.lower()
+        meta = json.loads(metadata) if metadata else {}
+        meta["source_file"] = file.filename
+        
+        # Read file content
+        file_content = await file.read()
+        
+        # Process based on file type
+        if filename.endswith('.csv'):
+            df = pd.read_csv(BytesIO(file_content))
+            content = df.to_markdown(index=False)
+            meta["file_type"] = "csv"
+            
+        elif filename.endswith(('.xls', '.xlsx')):
+            # Read all sheets
+            xls = pd.ExcelFile(BytesIO(file_content))
+            parts = []
+            for sheet_name in xls.sheet_names:
+                df = pd.read_excel(xls, sheet_name=sheet_name)
+                parts.append(f"## Sheet: {sheet_name}\n" + df.to_markdown(index=False))
+            content = "\n\n".join(parts)
+            meta["file_type"] = "excel"
+            
+        elif filename.endswith('.docx'):
+            from docx import Document
+            doc = Document(BytesIO(file_content))
+            content = "\n".join([para.text for para in doc.paragraphs])
+            meta["file_type"] = "docx"
+            
+        elif filename.endswith('.txt') or filename.endswith('.md'):
+            content = file_content.decode('utf-8')
+            meta["file_type"] = "text"
+            
+        else:
+            raise HTTPException(status_code=400, detail="Formato de archivo no soportado. Use CSV, Excel, Word o Texto.")
+            
+        if not content.strip():
+            raise HTTPException(status_code=400, detail="El archivo está vacío o no se pudo extraer texto.")
+
+        # Ingest content
+        ingest_text(content, meta)
+        
+        return {"status": "success", "message": f"Archivo {file.filename} procesado e indexado correctamente.", "chars_extracted": len(content)}
+        
+    except Exception as e:
+        print(f"Error processing file upload: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

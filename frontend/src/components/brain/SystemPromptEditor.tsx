@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import axios from 'axios'
+import { endpoints } from '@/config'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -9,7 +11,6 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { AlertCircle, CheckCircle2 } from 'lucide-react'
-import axios from 'axios'
 
 interface Prompt {
     id: string
@@ -33,7 +34,7 @@ export default function SystemPromptEditor() {
 
     const fetchPrompts = async () => {
         try {
-            const res = await axios.get('http://localhost:8000/brain/admin/prompts')
+            const res = await axios.get(endpoints.brain.admin.prompts)
             setPrompts(res.data)
 
             // Set active prompt as default selected
@@ -55,7 +56,7 @@ export default function SystemPromptEditor() {
         setLoading(true)
         setMessage(null)
         try {
-            await axios.post('http://localhost:8000/brain/admin/prompts', {
+            await axios.post(endpoints.brain.admin.prompts, {
                 content,
                 label: label || 'New Version',
                 is_active: true // Auto activate for now or make it optional

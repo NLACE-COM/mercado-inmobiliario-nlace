@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Bot, Send, User } from 'lucide-react'
 import axios from 'axios'
+import { endpoints } from '@/config'
 
 interface Message {
     id: string
@@ -42,7 +43,7 @@ export default function BrainChat() {
 
         try {
             // Call Backend Brain API
-            const response = await axios.post('http://localhost:8000/brain/ask', {
+            const response = await axios.post(endpoints.brain.ask, {
                 question: userMsg.content,
                 filters: {}
             })
@@ -94,8 +95,8 @@ export default function BrainChat() {
                                 )}
                                 <div
                                     className={`rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-sm ${msg.role === 'user'
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'bg-white border text-slate-800 dark:bg-slate-800 dark:text-slate-100'
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'bg-white border text-slate-800 dark:bg-slate-800 dark:text-slate-100'
                                         }`}
                                 >
                                     <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
