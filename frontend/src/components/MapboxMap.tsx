@@ -42,7 +42,7 @@ export default function MapboxMap({ projects, highlightedProjectId }: MapboxMapP
     React.useEffect(() => {
         if (projects.length > 0 && mapRef.current) {
             // Use reduce to avoid stack overflow with large arrays
-            const bounds = projects.reduce((acc, p) => ({
+            const bounds = projects.reduce((acc: { minLng: number, maxLng: number, minLat: number, maxLat: number }, p: Project) => ({
                 minLng: Math.min(acc.minLng, p.longitude),
                 maxLng: Math.max(acc.maxLng, p.longitude),
                 minLat: Math.min(acc.minLat, p.latitude),

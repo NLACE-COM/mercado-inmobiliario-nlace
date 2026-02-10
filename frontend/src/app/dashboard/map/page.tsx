@@ -33,14 +33,14 @@ type Props = {
 export default async function MapPage({
     searchParams
 }: Props) {
-    const projects = await getProjects()
+    const projects = await getProjects() as any[]
     const { project: projectId } = await searchParams
 
     const stats = {
         totalProjects: projects.length,
-        totalUnits: projects.reduce((sum, p) => sum + (p.total_units || 0), 0),
+        totalUnits: projects.reduce((sum: number, p) => sum + (p.total_units || 0), 0),
         avgPrice: projects.length > 0
-            ? Math.round(projects.reduce((sum, p) => sum + (p.avg_price_uf || 0), 0) / projects.length)
+            ? Math.round(projects.reduce((sum: number, p) => sum + (p.avg_price_uf || 0), 0) / projects.length)
             : 0
     }
 
