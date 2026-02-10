@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
         let projectsQuery = supabase
             .from('projects')
-            .select('id, name, commune, avg_price_uf, avg_price_m2_uf, total_units, available_units, sales_speed_monthly, project_status, property_type')
+            .select('id, name, developer, commune, avg_price_uf, avg_price_m2_uf, total_units, available_units, sales_speed_monthly, project_status, property_type')
 
         if (commune) {
             projectsQuery = projectsQuery.eq('commune', commune)
@@ -83,38 +83,49 @@ export async function POST(request: NextRequest) {
         // 4. Generate Analysis with OpenAI
         const analysisText = await generateAIAnalysis(commune, stats)
 
-        // 5. Structure Final Content
+        // 5. Structure Final Content matching ReportView component
         const reportContent = {
             title,
             sections: [
                 {
-                    type: 'stats_summary',
-                    data: [
-                        { label: 'Proyectos Analizados', value: projects.length },
-                        { label: 'Precio Promedio (UF)', value: Math.round(stats.avgPrice) },
-                        { label: 'Valor UF/m²', value: Math.round(stats.avgPriceM2) },
-                        { label: 'Stock Disponible', value: stats.totalStock }
-                    ]
+                    type: 'kpi_grid',
+                    data: {
+                        total_projects: projects.length,
+                        avg_price: Math.round(stats.avgPrice),
+                        avg_price_m2: Math.round(stats.avgPriceM2),
+                        total_stock: stats.totalStock,
+                        avg_sales_speed: stats.avgSalesSpeed.toFixed(1),
+                        avg_mao: stats.monthsToSellOut.toFixed(1)
+                    }
                 },
                 {
-                    type: 'text',
-                    title: 'Análisis de Mercado',
+                    type: 'analysis_text',
+                    title: 'Análisis de Mercado con IA',
                     content: analysisText
                 },
                 {
-                    type: 'chart',
-                    title: 'Distribución por Estado de Obra',
-                    chartType: 'pie',
-                    data: stats.statusDistribution // Format: [{ name: 'En Verde', value: 10 }, ...]
+                    type: 'chart_bar', // Reusing bar chart for status distribution for now
+                    title: 'Distribución de Stock por Estado de Obra',
+                    data: stats.statusDistribution.map(s => ({
+                        developer: s.name, // Mapping 'name' to 'developer' as expected by the bar chart component which uses 'developer' for YAxis
+                        stock: s.value
+                    }))
                 },
                 {
-                    type: 'chart',
-                    title: 'Velocidad de Venta vs Stock',
-                    chartType: 'bar', // Simple representation
-                    data: [
-                        { name: 'Velocidad Venta (u/mes)', value: stats.avgSalesSpeed },
-                        { name: 'Meses para Agotar (MAO)', value: stats.monthsToSellOut }
-                    ]
+                    type: 'project_table',
+                    title: 'Top Proyectos por Stock',
+                    data: projects
+                        .sort((a: any, b: any) => (b.available_units || 0) - (a.available_units || 0))
+                        .slice(0, 20)
+                        .map((p: any) => ({
+                            id: p.id,
+                            name: p.name,
+                            developer: p.developer || 'S/I',
+                            stock: p.available_units,
+                            avg_price_uf: p.avg_price_uf,
+                            sales_speed: p.sales_speed_monthly,
+                            mao: p.sales_speed_monthly > 0 ? (p.available_units / p.sales_speed_monthly).toFixed(1) : '-'
+                        }))
                 }
             ]
         }
