@@ -10,6 +10,9 @@
   },
   "dependencies": {
     "@headlessui/tailwindcss": "^0.2.2",
+    "@langchain/community": "^1.1.13",
+    "@langchain/core": "^1.1.20",
+    "@langchain/openai": "^1.2.6",
     "@mapbox/mapbox-gl-draw": "^1.5.1",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -26,18 +29,22 @@
     "@tailwindcss/forms": "^0.5.11",
     "@tanstack/react-query": "^5.90.20",
     "@types/mapbox__mapbox-gl-draw": "^1.4.9",
+    "ai": "^6.0.78",
     "axios": "^1.13.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "langchain": "^1.2.19",
     "lucide-react": "^0.563.0",
     "mapbox-gl": "^3.18.1",
     "next": "16.1.6",
+    "openai": "^6.21.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-map-gl": "^8.1.0",
     "recharts": "^3.7.0",
     "tailwind-merge": "^3.4.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

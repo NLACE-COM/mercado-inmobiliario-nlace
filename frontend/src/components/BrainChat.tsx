@@ -42,17 +42,20 @@ export default function BrainChat() {
         setLoading(true)
 
         try {
-            // Call Backend Brain API
-            const response = await axios.post(endpoints.brain.ask, {
+            // Call Next.js API Route
+            const response = await axios.post(endpoints.brain.chat, {
                 question: userMsg.content,
-                filters: {}
+                conversation_history: messages.map(m => ({
+                    role: m.role,
+                    content: m.content
+                }))
             })
 
             const assistantMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
                 content: response.data.answer,
-                sources: response.data.context_used
+                sources: response.data.sources || []
             }
 
             setMessages(prev => [...prev, assistantMsg])
@@ -61,7 +64,7 @@ export default function BrainChat() {
             const errorMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: 'Lo siento, tuve un problema conectando con el cerebro. Por favor intenta de nuevo.'
+                content: 'Lo siento, tuve un problema procesando tu pregunta. Por favor intenta de nuevo.'
             }
             setMessages(prev => [...prev, errorMsg])
         } finally {
