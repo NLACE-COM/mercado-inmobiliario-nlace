@@ -1,5 +1,5 @@
-import React, { useCallback } from 'react';
-import Map, { NavigationControl } from 'react-map-gl/mapbox';
+import React, { useCallback, useRef, useEffect } from 'react';
+import Map, { NavigationControl, MapRef } from 'react-map-gl/mapbox';
 import DrawControl from './DrawControl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
@@ -9,6 +9,18 @@ interface MapAreaSelectorProps {
 }
 
 export default function MapAreaSelector({ onPolygonChange }: MapAreaSelectorProps) {
+    const mapRef = useRef<MapRef>(null);
+
+    // Force resize to fix "cut map" issue in Modals
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            if (mapRef.current) {
+                mapRef.current.resize();
+            }
+        }, 200); // 200ms delay to ensure modal animation is done
+
+        return () => clearTimeout(timeout);
+    }, []);
 
     const onUpdate = useCallback((e: any) => {
         const features = e.features;
@@ -16,7 +28,6 @@ export default function MapAreaSelector({ onPolygonChange }: MapAreaSelectorProp
             const polygon = features[0];
             if (polygon.geometry.type === 'Polygon') {
                 const coords = polygon.geometry.coordinates[0];
-                // Convert to WKT: POLYGON((lng lat, lng lat, ...))
                 const wkt = `POLYGON((${coords.map((c: any) => `${c[0]} ${c[1]}`).join(', ')}))`
                 onPolygonChange(wkt);
             }
@@ -32,6 +43,7 @@ export default function MapAreaSelector({ onPolygonChange }: MapAreaSelectorProp
     return (
         <div className="h-[400px] w-full rounded-md border border-slate-200 overflow-hidden relative shadow-inner bg-slate-50">
             <Map
+                ref={mapRef}
                 initialViewState={{
                     longitude: -70.6483,
                     latitude: -33.4489,
