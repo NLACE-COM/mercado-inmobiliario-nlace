@@ -64,7 +64,7 @@ export default function KnowledgeBaseManager() {
             const formData = new FormData()
             formData.append('file', data.file)
             formData.append('metadata', JSON.stringify(data.metadata))
-            return axios.post(endpoints.brain.admin.knowledgeUpload, formData, {
+            return axios.post(endpoints.brain.admin.knowledge, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             })
         },

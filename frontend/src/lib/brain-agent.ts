@@ -1,4 +1,3 @@
-import { ChatOpenAI } from 'openai'
 import { getSupabaseAdmin } from './supabase-server'
 
 /**
