@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import AIChatWidget from "@/components/AIChatWidget"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -77,10 +78,10 @@ export default async function DashboardLayout({
                             </Link>
                             <Link
                                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-500 transition-all hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50"
-                                href="/dashboard/brain"
+                                href="/dashboard/brain/settings"
                             >
-                                <Bot className="h-4 w-4" />
-                                Analista IA
+                                <Settings className="h-4 w-4" />
+                                Cerebro IA
                             </Link>
                             <Link
                                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-500 transition-all hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50"
@@ -141,10 +142,12 @@ export default async function DashboardLayout({
                     </DropdownMenu>
                 </header>
 
-                <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 bg-slate-50 dark:bg-slate-950">
+                <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 bg-slate-50 dark:bg-slate-950 relative">
                     {children}
                 </main>
             </div>
+            {/* Floating AI Chat Widget */}
+            <AIChatWidget />
         </div>
     )
 }
