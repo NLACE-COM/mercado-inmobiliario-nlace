@@ -5,7 +5,12 @@ export const dynamic = 'force-dynamic'
 
 async function getReport(id: string) {
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/brain/reports/${id}`, {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+        const fetchUrl = (apiUrl.includes('127.0.0.1') || apiUrl.includes('localhost'))
+            ? `${apiUrl}/brain/reports/${id}`
+            : `/api/brain/reports/${id}`;
+
+        const res = await fetch(fetchUrl, {
             cache: 'no-store'
         })
         if (res.status === 404) return null

@@ -50,7 +50,12 @@ export default function CreateReportDialog() {
                 ? { polygon_wkt: polygonWkt }
                 : { commune };
 
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/brain/reports/generate`, {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+            const fetchUrl = (apiUrl.includes('127.0.0.1') || apiUrl.includes('localhost'))
+                ? `${apiUrl}/brain/reports/generate`
+                : `/api/brain/reports/generate`;
+
+            const res = await fetch(fetchUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

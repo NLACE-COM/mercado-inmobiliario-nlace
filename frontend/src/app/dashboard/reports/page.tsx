@@ -16,7 +16,12 @@ export const dynamic = 'force-dynamic'
 
 async function getReports() {
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/brain/reports`, {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+        const fetchUrl = (apiUrl.includes('127.0.0.1') || apiUrl.includes('localhost'))
+            ? `${apiUrl}/brain/reports`
+            : `/api/brain/reports`;
+
+        const res = await fetch(fetchUrl, {
             cache: 'no-store'
         })
         if (!res.ok) return []

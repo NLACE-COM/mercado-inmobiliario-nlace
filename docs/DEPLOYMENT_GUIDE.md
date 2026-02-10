@@ -1,47 +1,45 @@
-# Guía de Despliegue - Mercado Inmobiliario
+# Guía de Despliegue Unificado en Vercel Pro
 
-Este proyecto consta de dos partes principales: un Frontend (Next.js) y un Backend (FastAPI). A continuación, los pasos para desplegar ambos.
-
----
-
-## 1. Backend (FastAPI) en Vercel
-*Recomendado ya que posees cuenta **Vercel Pro**, lo que permite tiempos de ejecución largos para la IA.*
-
-### Pasos:
-1. Sube los cambios con el archivo `backend/vercel.json` y `backend/requirements.txt`.
-2. En Vercel, crea un **Nuevo Proyecto**.
-3. Selecciona el mismo repositorio.
-4. **Configuración de Proyecto (Backend):**
-   - **Nombe**: `mercado-inmobiliario-backend`
-   - **Root Directory**: `backend`
-   - **Framework Preset**: Other
-5. Configura las variables de entorno en Vercel:
-   - `OPENAI_API_KEY`: Tu llave de OpenAI.
-   - `SUPABASE_URL`: Tu URL de Supabase.
-   - `SUPABASE_KEY`: Tu Service Role Key.
-6. Vercel desplegará tu API de Python automáticamente.
+Este proyecto está configurado para desplegarse como una sola unidad en Vercel, aprovechando los beneficios de tu cuenta **Vercel Pro**.
 
 ---
 
-## 2. Frontend (Next.js) en Vercel
+## 🚀 Pasos para el Despliegue (Un solo Proyecto)
 
-### Pasos:
-1. Ve a [Vercel.com](https://vercel.com) e inicia sesión con GitHub.
-2. Selecciona tu repositorio `mercado-inmobiliario-nlace`.
-3. **Configuración de Proyecto (Importante):**
-   - **Root Directory**: Cambia esto a `frontend`.
-   - **Framework Preset**: Next.js.
-4. **Variables de Entorno**:
+1. **Importar Repositorio**:
+   - Ve a [Vercel.com](https://vercel.com) e importa tu repositorio `mercado-inmobiliario-nlace`.
+
+2. **Configuración del Proyecto**:
+   - **Root Directory**: Deja este campo **vacío** (estamos usando el `vercel.json` de la raíz para coordinar todo).
+   - **Framework Preset**: Selecciona **"Other"** (Vercel detectará Next.js y Python automáticamente a través de la configuración).
+
+3. **Variables de Entorno**:
+   Agrega todas las variables necesarias en el mismo proyecto:
+   
+   **Frontend:**
    - `NEXT_PUBLIC_MAPBOX_TOKEN`: Tu token de Mapbox.
-   - `NEXT_PUBLIC_API_URL`: Aquí debes poner la **URL de tu backend desplegado** (ej: `https://mi-api.railway.app`).
-5. Haz clic en **Deploy**.
+   - `NEXT_PUBLIC_API_URL`: Deja este valor **vacío** o pon `/api` (el sistema ahora es inteligente y sabe redireccionar internamente).
+   - `NEXT_PUBLIC_SUPABASE_URL`: URL de tu proyecto Supabase.
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Anon Key de Supabase.
+
+   **Backend:**
+   - `OPENAI_API_KEY`: Tu llave de OpenAI.
+   - `SUPABASE_URL`: La misma URL de Supabase.
+   - `SUPABASE_KEY`: Tu **Service Role Key** (Secreta).
+
+4. **Botón de Deploy**:
+   - Haz clic en **Deploy**. 
+   - Vercel construirá el Frontend y el Backend simultáneamente.
 
 ---
 
-## 3. Consideraciones Post-Despliegue
+## 🛠 Ventajas de este método
+- **Una sola URL**: Tu aplicación estará en `proyecto.vercel.app` y tu API en `proyecto.vercel.app/api`.
+- **Sin problemas de CORS**: Al estar en el mismo dominio, el navegador no bloqueará las peticiones.
+- **Tiempos Pro**: Al usar Vercel Pro, tus reportes de IA podrán tardar hasta 5 minutos sin cortarse.
 
-### CORS:
-Asegúrate de que en `backend/app/main.py` la lista de `allow_origins` incluya el dominio que te asigne Vercel (ej: `https://mercado-inmobiliario.vercel.app`).
+---
 
-### Supabase RLS:
-Asegúrate de que tus políticas de seguridad en Supabase permitan que la API lea y escriba en las tablas correspondientes.
+## 🔍 Notas adicionales
+- El archivo `vercel.json` en la raíz se encarga de que las peticiones a `/api/*` lleguen al motor de Python en la carpeta `/backend`.
+- El resto de las rutas son manejadas por Next.js en la carpeta `/frontend`.
