@@ -47,14 +47,16 @@ export async function POST(request: NextRequest) {
         }
 
         // 2. Fetch Real Data from Supabase (Projects Table)
-        const commune = parameters.commune?.toUpperCase() || ''
+        const commune = parameters.commune?.trim() || ''
+        console.log(`[Report Generate] Searching projects for commune: "${commune}"`)
 
         let projectsQuery = supabase
             .from('projects')
             .select('id, name, developer, commune, avg_price_uf, avg_price_m2_uf, total_units, available_units, sales_speed_monthly, project_status, property_type')
 
         if (commune) {
-            projectsQuery = projectsQuery.eq('commune', commune)
+            // Use ilike for case-insensitive matching
+            projectsQuery = projectsQuery.ilike('commune', commune)
         }
 
         // Limit to prevent huge payloads, but enough for stats
