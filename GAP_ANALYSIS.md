@@ -1,24 +1,66 @@
 # Gap Analysis: Proyecto Actual vs Documento Maestro
 
-**Fecha:** 2026-02-10
+**Fecha:** 2026-02-10 (Actualizado - v2)
 **Comparacion:** Codigo actual vs "WebApp Inmobiliaria NLACE - Documento Maestro"
 
 ---
 
 ## Resumen Ejecutivo
 
-El proyecto actual implementa un **esqueleto funcional** (~20% del MVP definido en el documento). Tiene la estructura correcta (monorepo Next.js + FastAPI + Supabase) pero la mayoria de las funcionalidades estan como placeholders o con implementacion minima. Ningun flujo end-to-end esta completo para produccion.
+El proyecto ha avanzado significativamente respecto a la version anterior. Pasa de ser un esqueleto (~15%) a tener una **estructura funcional con paginas reales** (~30% del MVP). Se agregaron paginas de proyectos, mapa dedicado, cerebro IA con admin, ETL para BigQuery/CSV, TanStack Query, y documentacion de migracion. Sin embargo, los flujos core (ETL real, agente IA con tools, reporteria) siguen sin estar completos.
 
 **Estado general por seccion del documento:**
 
-| Seccion | Estado | Completitud |
-|---------|--------|-------------|
-| 2. Arquitectura de Datos | Parcial | ~15% |
-| 3. Cerebro IA | Esqueleto | ~10% |
-| 4. Outputs y Reporteria | Placeholder | ~5% |
-| 5. Navegacion y Segmentacion | Basica | ~15% |
-| 7. Arquitectura Tecnica | Estructura OK | ~25% |
-| 8. Roadmap Fase 1 MVP | Incompleto | ~15% |
+| Seccion | Estado anterior | Estado actual | Completitud |
+|---------|----------------|---------------|-------------|
+| 2. Arquitectura de Datos | Parcial ~15% | Mejorado | **~25%** |
+| 3. Cerebro IA | Esqueleto ~10% | Admin + prompts configurables | **~20%** |
+| 4. Outputs y Reporteria | Placeholder ~5% | Tabla de proyectos | **~10%** |
+| 5. Navegacion y Segmentacion | Basica ~15% | Paginas creadas + filtros basicos | **~25%** |
+| 7. Arquitectura Tecnica | Estructura ~25% | TanStack Query + BigQuery prep | **~35%** |
+| 8. Roadmap Fase 1 MVP | Incompleto ~15% | Avance parcial | **~25%** |
+
+---
+
+## Que cambio desde la version anterior
+
+### Nuevos archivos (+19 archivos, +3100 lineas)
+
+**Frontend (10 nuevos):**
+- `dashboard/projects/page.tsx` - Pagina de proyectos con KPIs y tabla
+- `dashboard/map/page.tsx` - Pagina dedicada de mapa con stats
+- `dashboard/brain/page.tsx` - Pagina dedicada del Cerebro IA
+- `dashboard/brain/settings/page.tsx` - Admin del cerebro (prompts + knowledge)
+- `components/ProjectsTable.tsx` - Tabla de proyectos con busqueda, filtro comuna, ordenamiento
+- `components/brain/SystemPromptEditor.tsx` - Editor de system prompts versionados
+- `components/brain/KnowledgeBaseManager.tsx` - CRUD de knowledge base con TanStack Query
+- `components/ui/select.tsx`, `tabs.tsx`, `textarea.tsx` - Nuevos UI components
+- `providers/QueryProvider.tsx` - TanStack Query provider
+
+**Backend (6 nuevos):**
+- `brain/admin_router.py` - API CRUD para system prompts y knowledge base
+- `etl/bigquery_to_supabase.py` - Pipeline BigQuery -> Supabase con dry-run
+- `etl/csv_to_supabase.py` - Pipeline CSV (export BigQuery) -> Supabase
+- `etl/confirm_emails.py` - Utilidad admin para confirmar emails
+- `check_db.py`, `check_knowledge.py` - Scripts de verificacion
+- `init_prompts.py` - Seed de prompts iniciales
+
+**Docs y Config (3 nuevos):**
+- `docs/MIGRATION_GUIDE.md` - Guia completa de migracion BigQuery -> Supabase
+- `docs/EXPORT_FROM_BIGQUERY.md` - Guia de exportacion desde BigQuery UI
+- `supabase/migrations/20260209000002_admin_brain.sql` - Tabla `system_prompts`
+- `backend/credentials/README.md` - Instrucciones para credenciales GCP
+
+### Mejoras en archivos existentes
+
+- **`dashboard/page.tsx`** - Corregidos imports duplicados de iconos SVG (ahora usa lucide-react directamente), fix `createClient()` con `await`
+- **`dashboard/layout.tsx`** - Nuevo link "Analista IA" con icono Bot, fix `createClient()` con `await`
+- **`BrainChat.tsx`** - Reescrito: mejor estructura de mensajes, muestra fuentes RAG detalladas, mejor UX
+- **`brain/router.py`** - Ahora carga system prompt desde BD (`system_prompts` table) o file fallback, con default template
+- **`db.py`** - Agregado `load_dotenv` para cargar `.env` automaticamente
+- **`main.py`** - Registra `admin_router`
+- **`package.json`** - Nuevas deps: `@tanstack/react-query`, `@radix-ui/react-select`, `@radix-ui/react-tabs`, `mapbox-gl`, `react-map-gl`
+- **`layout.tsx` (root)** - Envuelve app con `QueryProvider`
 
 ---
 
@@ -28,60 +70,49 @@ El proyecto actual implementa un **esqueleto funcional** (~20% del MVP definido 
 
 | Fuente | Doc. Maestro | Estado Actual | Gap |
 |--------|-------------|---------------|-----|
-| **TINSA** (Prioridad 1) | 47 campos estructurados, Nacional | Schema simplificado (~25 campos), ETL skeleton | **CRITICO** - Falta mapeo completo de los 47 campos TINSA. `importer.py` solo mapea 3 campos (name, commune, region). No hay integracion real con archivos TINSA |
-| **CBR** (Prioridad 2) | Ventas reales inscritas SII | No existe | Fase 2 segun roadmap, OK por ahora |
-| **Roles Avaluo** (Prioridad 3) | Tasaciones fiscales SII | No existe | Fase 2, OK |
+| **TINSA** (Prioridad 1) | 47 campos, Nacional | ETL BigQuery + CSV creados, mapeo ~15 campos, requiere ajuste a campos reales | **EN PROGRESO** - Scripts listos, falta ejecutar con datos reales y completar mapeo 47 campos |
+| **CBR** (Prioridad 2) | Ventas reales SII | No existe | Fase 2, OK |
+| **Roles Avaluo** (Prioridad 3) | Tasaciones SII | No existe | Fase 2, OK |
 | **INE** (Prioridad 3) | Segmentacion socioeconomica | No existe | Fase 3, OK |
-| **Perfil Compradores** (Prioridad 4) | RUT, edad, tipo cliente | No existe | Fase 3, OK |
-| **Portales** (Prioridad 4) | Scraping Portal Inmobiliario, TocToc | No existe | Fase 3, OK |
+| **Perfil Compradores** (Prioridad 4) | RUT, tipo cliente | No existe | Fase 3, OK |
+| **Portales** (Prioridad 4) | Scraping | No existe | Fase 3, OK |
 
-**Gap critico para MVP:** El ETL de TINSA (`importer.py`) es un skeleton que no funciona realmente. Solo mapea 3 de 47 campos. No hay pipeline real de ingesta.
+**Mejora vs anterior:** Se crearon 2 pipelines ETL (`bigquery_to_supabase.py` y `csv_to_supabase.py`) con dry-run, preview, batch insert, y guias de migracion. Sin embargo, los scripts tienen mapeos con nombres de campo placeholder (`nombre_proyecto`, `comuna`, etc.) que necesitan ajustarse a los nombres reales de la tabla BigQuery.
 
 ### 1.2 Modelo de Base de Datos
 
 **Lo que existe:**
 - `projects` - Tabla maestra (~25 campos vs 47 requeridos)
-- `project_typologies` - Tipologias basicas
+- `project_typologies` - Tipologias
 - `project_metrics_history` - Series temporales
 - `market_insights` - Insights IA
 - `knowledge_docs` - Vector store RAG
 - `profiles` - Autenticacion
+- `system_prompts` - **NUEVO** - Prompts versionados para el Cerebro IA
 
-**Lo que falta (para MVP):**
-
-| Tabla/Campo Requerido | Estado |
-|----------------------|--------|
-| Campos TINSA completos (47) en `projects` | **FALTA** - Faltan ~22 campos: KEY, periodo, zona, tipologia detallada, estacionamientos, bodegas, subsidios, categoria, % descuento, velocidad proyectada vs actual, meses en venta |
-| `ventas_cbr` | No aplica para MVP (Fase 2) |
-| `avaluos_sii` | No aplica para MVP (Fase 2) |
-| `segmentacion_socioeconomica` | No aplica para MVP (Fase 3) |
-| `perfil_compradores` | No aplica para MVP (Fase 3) |
-| `oferta_portales` | No aplica para MVP (Fase 3) |
-
-**Campos faltantes criticos en `projects` (necesarios para MVP):**
-- `key` / `periodo` (identificacion TINSA)
-- `zona` (nivel geografico intermedio entre region y comuna)
-- `tipologia_detalle` (1D-1B, 2D-2B granulado)
+**Campos faltantes criticos en `projects` (para mapeo completo TINSA):**
+- `tinsa_key` / `periodo` (identificacion TINSA por periodo)
+- `zona` (nivel geografico intermedio)
 - `estacionamientos`, `bodegas`
-- `subsidio` (DS1, DS19, etc.)
+- `subsidio` (DS1, DS19)
 - `descuento_porcentaje`
 - `velocidad_proyectada` vs `velocidad_actual`
 - `meses_en_venta`
-- `estado_obra` granulado (faenas, obra gruesa, terminaciones, entregado)
+- Campos de estado obra granulado
 
 ### 1.3 Pipeline ETL
 
-| Requisito | Estado |
-|-----------|--------|
-| Extraccion Excel/CSV TINSA | Skeleton en `importer.py` (lee archivo pero mapea 3 campos) |
-| Limpieza y normalizacion Pandas | No implementado |
-| Georreferenciacion unificada | Solo en mock_data (random jitter) |
-| Validacion de consistencia | No existe |
-| Carga batch a Supabase | Basico (upsert sin validacion) |
-| Celery jobs para scheduling | **NO EXISTE** |
-| Pipeline automatizado | **NO EXISTE** |
-| Google Drive API (sheets TINSA) | **NO EXISTE** |
-| BigQuery API (historico masivo) | **NO EXISTE** |
+| Requisito | Estado anterior | Estado actual |
+|-----------|----------------|---------------|
+| Extraccion Excel/CSV TINSA | Skeleton 3 campos | **csv_to_supabase.py** con ~15 campos, dry-run, batch |
+| Extraccion BigQuery | No existia | **bigquery_to_supabase.py** listo (requiere credenciales GCP) |
+| Limpieza y normalizacion Pandas | No | **PARCIAL** - Manejo de NaN, encoding multiple |
+| Georreferenciacion unificada | Solo mock | **PARCIAL** - Lee lat/long si existen en fuente |
+| Validacion de consistencia | No | **BASICA** - Valida name + commune obligatorios |
+| Carga batch a Supabase | Basico | **MEJORADO** - Batches de 100 con error handling |
+| Celery jobs scheduling | No | **NO** |
+| Google Drive API | No | **NO** |
+| BigQuery API | No | **SI** - Script listo (requiere `requirements-bigquery.txt`) |
 
 ---
 
@@ -89,52 +120,40 @@ El proyecto actual implementa un **esqueleto funcional** (~20% del MVP definido 
 
 ### 2.1 Arquitectura Multi-Agente
 
-| Requisito | Estado | Gap |
-|-----------|--------|-----|
-| Agente Analista con tools | **NO** - Endpoint simple sin agente | Necesita LangChain Agent con tool calling |
-| `tool_consultar_sql` (Text-to-SQL dinamico) | **NO** - Query hardcodeada (SELECT top 5 projects) | Necesita SQL generation basada en pregunta |
-| `tool_consultar_historia` (RAG pgvector) | **PARCIAL** - `similarity_search` basico funciona | Falta threshold, metadata filtering, scores |
-| `tool_calcular_estadisticas` (Pandas) | **NO EXISTE** | Necesita calculo de absorcion, MAO, tendencia, percentiles |
-| System Prompt dinamico con context injection | **BASICO** - Prompt estatico con slots | Necesita auto-deteccion de intent y query dinamica |
-| Multi-LLM (OpenAI + Claude + Google) | **NO** - Solo GPT-4-turbo | Doc sugiere Vercel AI SDK para orquestacion |
-| Streaming responses | **NO** - Respuesta completa sincrona | Necesita streaming para UX |
-| Function calling LLM | **NO** | Core de la arquitectura multi-agente |
+| Requisito | Estado anterior | Estado actual |
+|-----------|----------------|---------------|
+| Agente Analista con tools | No | **NO** - Sigue siendo endpoint simple |
+| `tool_consultar_sql` (Text-to-SQL) | No | **NO** - Query sigue hardcodeada (top 5 projects) |
+| `tool_consultar_historia` (RAG) | Parcial | **IGUAL** - similarity_search basico |
+| `tool_calcular_estadisticas` | No | **NO** |
+| System Prompt dinamico | Basico | **MEJORADO** - Prompts versionados en BD con CRUD admin |
+| Multi-LLM | No | **NO** |
+| Streaming responses | No | **NO** |
+| Function calling LLM | No | **NO** |
 
-### 2.2 Knowledge Base (RAG)
+**Mejora clave:** El system prompt ahora es **configurable desde UI** (admin panel). Se puede crear, versionar, y activar prompts diferentes sin tocar codigo. Esto es un buen avance para iteracion rapida, pero el core del agente (tools, Text-to-SQL, estadisticas) sigue sin implementar.
+
+### 2.2 Admin del Cerebro (NUEVO)
+
+| Feature | Estado |
+|---------|--------|
+| CRUD System Prompts (API + UI) | **SI** - Crear, listar, activar versiones |
+| CRUD Knowledge Base (API + UI) | **SI** - Agregar, listar, eliminar documentos |
+| Versionamiento de prompts | **SI** - Multiples versiones, activar una |
+| File fallback (sin BD) | **SI** - `system_prompts.json` como fallback |
+| UI de admin con Tabs | **SI** - `brain/settings` con SystemPromptEditor + KnowledgeBaseManager |
+
+### 2.3 Knowledge Base (RAG)
 
 | Contenido Requerido | Estado |
 |---------------------|--------|
-| Marco regulatorio (Ley 21.442, 21.210, 20.780, SII) | **NO** - Solo 4 chunks genericos |
-| Hitos historicos estructurados (JSON con metricas) | **NO** - Texto plano sin estructura |
-| Base macroeconomica (UF, TPM, PIB, tasas, IPV) | **NO EXISTE** |
-| Informes previos y insights validados | **NO EXISTE** |
-| Papers y estudios (CChC, universidades) | **NO EXISTE** |
-| Formato vectorizacion: chunks 500-1000 tokens | **PARCIAL** - Sin control de chunk size |
-| Embeddings `text-embedding-3-small` | **NO** - Usa default OpenAI embeddings (no especifica modelo) |
-| Metadata: fecha, fuente, tipo_documento, relevancia_geografica | **MINIMO** - Solo topic, year, event |
+| Marco regulatorio (leyes) | **NO** - Solo 4 chunks genericos de seed |
+| Hitos historicos estructurados | **NO** |
+| Base macroeconomica (UF, TPM, PIB) | **NO** |
+| Informes previos | **NO** |
+| Papers y estudios | **NO** |
 
-**Estado actual de la Knowledge Base:** 4 textos cortos hardcodeados como seed data. El documento maestro requiere una base de conocimientos extensa con regulaciones, datos macro, papers, e informes previos.
-
-### 2.3 System Prompt
-
-| Requisito | Estado |
-|-----------|--------|
-| Prompt dinamico construido por funcion | **NO** - Template estatico en `router.py` |
-| Auto-deteccion de queries SQL necesarias | **NO** - Query fija (top 5 projects) |
-| Correlacion automatica eventos + datos | **NO** - El LLM lo intenta pero sin datos suficientes |
-| Cita fuentes especificas (Leyes, BCCh) | **NO** - Sin fuentes en knowledge base |
-| Formato de respuesta estructurado (4 secciones) | **NO** - Texto libre |
-| Predicciones contextuales | **NO** |
-| Alertas proactivas | **NO** |
-
-### 2.4 Mejora Continua
-
-| Requisito | Estado |
-|-----------|--------|
-| Guardar predicciones con timestamp | **NO** |
-| Comparar con datos reales 6-12 meses | **NO** |
-| Re-entrenar embeddings | **NO** |
-| Metricas de calidad (accuracy, recall, NPS) | **NO** |
+**Nota:** Ahora existe la UI para agregar documentos al knowledge base manualmente. La infraestructura esta lista, falta poblar con contenido real.
 
 ---
 
@@ -142,84 +161,63 @@ El proyecto actual implementa un **esqueleto funcional** (~20% del MVP definido 
 
 ### 3.1 Tipos de Informes
 
-| Informe | Estado | Gap |
-|---------|--------|-----|
-| Contexto de Mercado | **NO EXISTE** | MVP critico |
-| Proyecto Especifico | **NO EXISTE** | |
-| Oportunidad de Terreno | **NO EXISTE** | |
-| Dashboard Ejecutivo | **BASICO** - 4 KPIs + mapa | Falta alertas, comparacion portfolio |
+| Informe | Estado |
+|---------|--------|
+| Contexto de Mercado | **NO EXISTE** |
+| Proyecto Especifico | **NO EXISTE** |
+| Oportunidad de Terreno | **NO EXISTE** |
+| Dashboard Ejecutivo | **MEJORADO** - KPIs en dashboard, projects, y map pages |
 
-### 3.2 Estructura de Informe
+### 3.2 Elementos Visuales
 
-El documento maestro define 5 secciones detalladas para cada informe (Contexto, Segmento, Competencia, Analisis Detallado, Conclusiones IA). **Nada de esto existe.** No hay generador de informes.
+| Elemento Visual | Estado anterior | Estado actual |
+|----------------|----------------|---------------|
+| Graficos barras/linea/torta | Placeholder gris | **Sigue placeholder** - Tremor no instalado |
+| Mapas georreferenciados | SI | **SI** - Ahora con pagina dedicada `/dashboard/map` |
+| Tablas comparativas | No | **SI** - `ProjectsTable` con busqueda, filtro, sort |
+| Indicadores KPI | 4 basicos | **MEJORADO** - KPIs en 3 paginas (dashboard, projects, map) |
+| Mapa de calor precios | No | **NO** |
+| Boton Download | No | **UI EXISTE** pero sin funcionalidad |
 
-### 3.3 Elementos Visuales
-
-| Elemento Visual | Estado |
-|----------------|--------|
-| Graficos de barras apiladas | **NO** - Placeholder "Chart Component" |
-| Graficos de linea (evolucion) | **NO** |
-| Mapas georreferenciados | **SI** - MapboxMap funcional |
-| Tablas comparativas | **NO** |
-| Graficos torta (mix productos) | **NO** |
-| Indicadores KPI | **BASICO** - 4 KPIs simples |
-| Mapa de calor precios | **NO** |
-| Densidad de oferta | **NO** |
-
-### 3.4 Exportacion
+### 3.3 Exportacion
 
 | Formato | Estado |
 |---------|--------|
-| PDF (Puppeteer/Playwright) | **NO EXISTE** |
-| PPT | **NO EXISTE** |
-| Excel (.xlsx con ExcelJS) | **NO EXISTE** |
+| PDF | **NO** |
+| PPT | **NO** |
+| Excel (.xlsx) | **NO** (boton existe pero no funciona) |
 
 ---
 
 ## 4. NAVEGACION Y SEGMENTACION (Seccion 5)
 
-### 4.1 Jerarquia Geografica
+### 4.1 Vistas del Sistema
 
-| Nivel | Estado |
-|-------|--------|
-| Nacional | No implementado |
-| Region | No implementado como filtro |
-| Provincia | No existe |
-| Comuna | Existe como campo pero sin filtro UI |
-| Sector/Barrio | No existe |
-| Proyecto especifico | No existe vista detalle |
+| Vista | Estado anterior | Estado actual |
+|-------|----------------|---------------|
+| Dashboard | 4 KPIs + mapa | **IGUAL** - Chart sigue placeholder |
+| Mapa | 404 | **SI** - Pagina dedicada con KPIs + mapa full |
+| Proyectos | 404 | **SI** - Tabla con busqueda, filtro comuna, sort |
+| Analista IA | En analytics | **SI** - Pagina dedicada + admin settings |
+| Comparador | No | **NO** |
+| Generador Informes | No | **NO** |
 
 ### 4.2 Filtros y Segmentaciones
 
-| Filtro | Estado |
-|--------|--------|
-| Por Region | **NO** |
-| Por Comuna | **NO** (dato existe, filtro no) |
-| Radio desde punto (1km, 2km, 5km) | **NO** |
-| Poligono dibujado | **NO** |
-| Tipo propiedad | **NO** |
-| Rango precio UF | **NO** |
-| Tipologia (1D-1B, etc.) | **NO** |
-| Superficie m2 | **NO** |
-| Estado obra | **NO** |
-| Desarrollador | **NO** |
-| Periodo | **NO** |
-| Tasa absorcion | **NO** |
-| MAO | **NO** |
-| Velocidad venta | **NO** |
-| % vendido | **NO** |
+| Filtro | Estado anterior | Estado actual |
+|--------|----------------|---------------|
+| Busqueda texto (nombre/comuna) | No | **SI** - En ProjectsTable |
+| Filtro por Comuna | No | **SI** - Select en ProjectsTable |
+| Ordenar por campo | No | **SI** - nombre, precio, velocidad, disponibilidad |
+| Por Region | No | **NO** |
+| Radio desde punto | No | **NO** |
+| Poligono dibujado | No | **NO** |
+| Rango precio UF | No | **NO** |
+| Tipologia | No | **NO** |
+| Estado obra | No | **NO** |
+| Desarrollador | No | **NO** |
 
-**Resultado: 0 de 15 filtros implementados.**
-
-### 4.3 Vistas del Sistema
-
-| Vista | Estado | Gap |
-|-------|--------|-----|
-| Dashboard | **BASICA** - 4 KPIs + mapa + chart placeholder | Falta alertas automaticas, graficos resumen reales |
-| Mapa | **PARCIAL** - Markers con popup | Falta calor de precios, densidad oferta, filtros geograficos |
-| Comparador | **NO EXISTE** | Pagina no creada |
-| Generador de Informes | **NO EXISTE** | Feature completa faltante |
-| Vista Proyectos | **NO EXISTE** | Link en sidebar lleva a 404 |
+**Resultado: 3 de 15 filtros implementados** (busqueda, comuna, ordenamiento).
 
 ---
 
@@ -227,153 +225,141 @@ El documento maestro define 5 secciones detalladas para cada informe (Contexto, 
 
 ### 5.1 Stack Tecnologico
 
-| Tecnologia Requerida | Estado |
-|---------------------|--------|
-| **Supabase** (PostgreSQL + PostGIS + Auth + RLS) | **SI** - Configurado y con migraciones |
-| **Next.js** (App Router, Server Components) | **SI** - v16.1.6 (doc dice 14, pero 16 es mejor) |
-| **Shadcn/UI** | **SI** - Componentes basicos instalados |
-| **Tremor** (dashboards, charts, KPIs) | **NO INSTALADO** - Charts son placeholders |
-| **Mapbox GL JS** | **SI** - react-map-gl funcionando |
-| **TailwindCSS** | **SI** |
-| **TanStack Query (React Query)** | **NO INSTALADO** - Se usa fetch directo/axios |
-| **Vercel AI SDK** | **NO INSTALADO** - Para multi-LLM y streaming |
-| **FastAPI** (Python service) | **SI** |
-| **LangChain** | **PARCIAL** - Instalado pero usado minimamente |
-| **Celery** (job scheduling) | **NO INSTALADO** |
-| **ExcelJS** | **NO INSTALADO** |
-| **Puppeteer/Playwright** (PDF) | **NO INSTALADO** |
-| **BigQuery** client | **NO INSTALADO** |
-| **Faker** | SI (solo para mock data) |
+| Tecnologia | Estado anterior | Estado actual |
+|-----------|----------------|---------------|
+| Supabase (PostgreSQL + PostGIS + Auth) | SI | **SI** |
+| Next.js (App Router, Server Components) | SI | **SI** |
+| Shadcn/UI | SI basicos | **SI** - +3 components (select, tabs, textarea) |
+| Tremor (charts) | No instalado | **NO INSTALADO** |
+| Mapbox GL JS | SI | **SI** - Ahora en `package.json` explicitamente |
+| TailwindCSS | SI | **SI** |
+| TanStack Query | No instalado | **SI** - Instalado y usado en KnowledgeBaseManager |
+| Vercel AI SDK | No | **NO** |
+| FastAPI | SI | **SI** |
+| LangChain | Parcial | **IGUAL** |
+| BigQuery client | No | **PREPARADO** - `requirements-bigquery.txt` separado |
+| Celery | No | **NO** |
+| ExcelJS | No | **NO** |
+| Puppeteer/Playwright | No | **NO** |
 
-### 5.2 Dependencias Faltantes en `package.json`
+### 5.2 Seguridad y Permisos
 
-```
-Faltantes (frontend):
-- @tremor/react (o alternativa charts)
-- @tanstack/react-query
-- @ai-sdk/react (Vercel AI SDK)
-- exceljs
-- react-pdf o similar
-
-Faltantes (backend requirements.txt):
-- celery
-- redis (broker para celery)
-- google-cloud-bigquery
-- playwright o puppeteer-python
-- faker (esta en mock pero no en requirements)
-```
-
-### 5.3 Seguridad y Permisos
-
-| Requisito | Estado |
-|-----------|--------|
-| RLS por region/plan del usuario | **NO** - Solo lectura publica |
-| Roles (Admin, Regional, Viewer) | **PARCIAL** - `is_admin()` existe pero no se usa |
-| JWT automatico Next.js <-> Supabase | **SI** - Middleware funciona |
-| Rate limiting | **NO** |
-| Auth en endpoint Brain | **NO** - Endpoint publico |
-
-### 5.4 Infraestructura
-
-| Requisito | Estado |
-|-----------|--------|
-| Supabase Cloud | Config local, no cloud |
-| Vercel deployment | **NO** - Sin vercel.json |
-| Railway/Fly.io (Python) | **NO** - Solo Dockerfile |
-| docker-compose | **NO EXISTE** |
-| CI/CD | **NO EXISTE** |
-| Env vars documentadas | **NO** - Sin .env.example |
+| Requisito | Estado anterior | Estado actual |
+|-----------|----------------|---------------|
+| RLS por region/plan | No | **NO** |
+| Roles (Admin, Regional, Viewer) | is_admin() sin uso | **PARCIAL** - system_prompts tiene RLS autenticado |
+| JWT Next.js <-> Supabase | SI | **SI** |
+| Rate limiting | No | **NO** |
+| Auth en endpoint Brain | No | **NO** - Endpoints brain y admin siguen publicos |
 
 ---
 
-## 6. COMPLIANCE FASE 1 MVP (Roadmap Seccion 8)
+## 6. BUGS Y PROBLEMAS TECNICOS
 
-El documento define Fase 1 MVP (3-4 meses) con estos entregables:
+### Resueltos
+- ~~**Paginas 404**~~ - `/dashboard/projects` y `/dashboard/map` ahora existen
+- ~~**Imports duplicados**~~ - Dashboard ahora importa iconos de lucide-react correctamente
+- ~~**createClient sin await**~~ - Corregido en layout y server utils
+- ~~**Typo RELAVANTE**~~ - Corregido en `get_default_template()` de router.py
 
-| Entregable MVP | Estado | Completitud |
-|---------------|--------|-------------|
-| Integracion TINSA completa (ambas bases) | ETL skeleton, 3/47 campos | ~5% |
-| Dashboard basico con filtros geograficos | Dashboard sin filtros | ~20% |
-| Generador informe "Contexto de Mercado" | No existe | 0% |
-| IA basica (explicacion de tendencias) | Chat basico, sin tools reales | ~10% |
+### Persisten
+1. **Logout roto** - `/auth/signout` sigue sin route handler
+2. **Brain endpoint sin auth** - `/brain/ask` y `/brain/admin/*` publicos (costos OpenAI)
+3. **Backend URL hardcodeada** - `http://localhost:8000` en BrainChat, SystemPromptEditor, KnowledgeBaseManager (4+ lugares)
+4. **Error details expuestos** - `str(e)` en HTTP 500 (router.py:103, admin_router.py:157)
+5. **knowledge_docs sin RLS** - Vector store accesible sin restriccion
+6. **Chart placeholder** - "Ventas por Comuna" sigue siendo div gris
+7. **totalStock calculo** - Sigue usando `total_units - sold_units` en vez de `available_units`
+8. **Brain page KPIs hardcodeados** - "128 documentos" y "94% precision" son valores falsos (brain/page.tsx:37-48)
+9. **Metadata de layout** - `title: "Create Next App"` no actualizado (layout.tsx:16)
+10. **Bare except** - `admin_router.py:23` usa `except:` sin tipo de excepcion
 
----
-
-## 7. BUGS Y PROBLEMAS TECNICOS EXISTENTES
-
-### Criticos
-1. **Logout roto** - `/auth/signout` no tiene route handler
-2. **Brain endpoint sin auth** - Costos OpenAI expuestos
-3. **Backend URL hardcodeada** - `localhost:8000` en BrainChat
-4. **Error details expuestos** - `str(e)` en HTTP 500
-5. **knowledge_docs sin RLS**
-
-### Funcionales
-6. **Paginas 404** - `/dashboard/projects` y `/dashboard/map` linkeadas pero no existen
-7. **Chart placeholder** - "Ventas por Comuna" es solo un div gris
-8. **Imports duplicados** - TrendingUp, Users importados y redefinidos
-9. **totalStock calculo** - Usa `total_units - sold_units` en vez de `available_units`
-10. **Typo** - "RELAVANTE" en prompt del Brain
+### Nuevos problemas introducidos
+11. **`confirm_emails.py`** - Contiene emails personales hardcodeados (cristian@nlace.com, mjsuarez.h@gmail.com, matiasdonas@gmail.com). No deberia estar en el repo.
+12. **BigQuery project ID hardcodeado** - `my-project-wap-486916` en bigquery_to_supabase.py deberia ser env var
+13. **system_prompts.json como fallback** - El admin_router lee/escribe archivos JSON en el filesystem del backend, lo que no funciona en deploys serverless
+14. **ETL mapeo con nombres placeholder** - Ambos ETL scripts usan `nombre_proyecto`, `inmobiliaria`, etc. que probablemente no coinciden con los campos reales de BigQuery
 
 ---
 
-## 8. PRIORIZACION DE TRABAJO PENDIENTE
+## 7. COMPLIANCE FASE 1 MVP (Roadmap)
 
-### Para completar MVP (Fase 1):
+| Entregable MVP | Estado anterior | Estado actual | Completitud |
+|---------------|----------------|---------------|-------------|
+| Integracion TINSA completa | ETL skeleton | ETL BigQuery+CSV listos, falta mapeo real | **~30%** |
+| Dashboard basico con filtros | Sin filtros | Busqueda + filtro comuna + sort | **~35%** |
+| Generador informe "Contexto de Mercado" | No existe | No existe | **0%** |
+| IA basica (explicacion tendencias) | Chat basico | Chat + admin prompts + knowledge CRUD | **~25%** |
 
-**Sprint 1 - Fundacion (2 semanas):**
-- [ ] Completar schema BD con 47 campos TINSA
-- [ ] Implementar ETL real de TINSA (Excel -> BD con todos los campos)
-- [ ] Instalar dependencias faltantes (Tremor, TanStack Query)
-- [ ] Fix bugs criticos (logout, auth brain, env vars)
-- [ ] Crear .env.example
+---
 
-**Sprint 2 - Dashboard Real (2 semanas):**
-- [ ] Implementar filtros geograficos (region, comuna, tipo)
-- [ ] Implementar charts reales con Tremor (barras, lineas, torta)
-- [ ] Crear pagina `/dashboard/projects` con tabla de proyectos
-- [ ] Crear pagina `/dashboard/map` con filtros y layers
-- [ ] Implementar RLS por roles
+## 8. PRIORIZACION ACTUALIZADA
 
-**Sprint 3 - Cerebro IA (2 semanas):**
-- [ ] Implementar LangChain Agent con tool calling
-- [ ] Crear `tool_consultar_sql` (Text-to-SQL dinamico)
-- [ ] Mejorar `tool_consultar_historia` (threshold, metadata)
-- [ ] Crear `tool_calcular_estadisticas` (Pandas)
-- [ ] Expandir Knowledge Base (regulaciones, macro, hitos)
-- [ ] Implementar streaming responses
+### Bloqueantes para MVP:
 
-**Sprint 4 - Reporteria (2 semanas):**
-- [ ] Generador de informe "Contexto de Mercado"
-- [ ] Estructura 5 secciones (contexto, segmento, competencia, analisis, IA)
+**Sprint 1 - Data Real (alta prioridad):**
+- [ ] Ejecutar ETL con datos reales de BigQuery / obtener CSV real
+- [ ] Ajustar mapeo de campos en `csv_to_supabase.py` a nombres reales TINSA
+- [ ] Agregar campos faltantes al schema `projects` si TINSA tiene mas de 25
+- [ ] Fix backend URL hardcodeada (usar `NEXT_PUBLIC_API_URL` env var)
+- [ ] Fix logout (crear route handler `/auth/signout`)
+- [ ] Agregar auth a endpoints `/brain/*`
+
+**Sprint 2 - Charts y Visualizacion:**
+- [ ] Instalar Tremor (o Recharts) y reemplazar chart placeholders
+- [ ] Implementar grafico "Ventas por Comuna" real en dashboard
+- [ ] Agregar mapa de calor / clusters en pagina mapa
+- [ ] Mas filtros en ProjectsTable (rango precio, tipo, estado obra, desarrollador)
+- [ ] Vista detalle de proyecto individual
+
+**Sprint 3 - Cerebro IA Real:**
+- [ ] Implementar LangChain Agent con function calling (tool_consultar_sql)
+- [ ] Text-to-SQL dinamico basado en pregunta del usuario
+- [ ] tool_calcular_estadisticas con Pandas
+- [ ] Mejorar RAG: threshold, metadata, mas contenido
+- [ ] Streaming responses
+- [ ] Poblar knowledge base con contenido real (leyes, macro, hitos)
+
+**Sprint 4 - Reporteria:**
+- [ ] Generador de informe "Contexto de Mercado" (5 secciones)
 - [ ] Exportacion PDF
-- [ ] Exportacion Excel
+- [ ] Exportacion Excel (funcionalidad al boton Download existente)
 
-**Sprint 5 - Polish y Deploy (1 semana):**
-- [ ] docker-compose completo
-- [ ] Deploy Vercel (frontend) + Railway (backend)
-- [ ] Supabase Cloud migration
-- [ ] Testing E2E basico
-- [ ] CI/CD pipeline
+**Sprint 5 - Deploy y Polish:**
+- [ ] CORS configurable via env var
+- [ ] docker-compose
+- [ ] Deploy Vercel + Railway
+- [ ] Limpiar KPIs hardcodeados en brain page
+- [ ] Actualizar metadata del layout
+- [ ] .env.example
 
 ---
 
 ## 9. CONCLUSIONES
 
-El proyecto tiene **la arquitectura correcta** alineada con el documento maestro (Next.js + FastAPI + Supabase + LangChain + Mapbox). Sin embargo, la implementacion actual es un **proof-of-concept** con ~15% de lo necesario para el MVP.
+### Progreso desde la version anterior
 
-**Los 3 gaps mas criticos son:**
+El proyecto avanzo de ~15% a ~30% del MVP. Los avances principales son:
 
-1. **ETL de TINSA no funcional** - Sin datos reales, todo el sistema es inutil. El importer solo mapea 3 de 47 campos y no hay pipeline automatizado.
+1. **Paginas completas** - Projects, Map, Brain ahora existen con contenido real
+2. **Tabla de proyectos funcional** - Con busqueda, filtro por comuna, ordenamiento
+3. **Admin del Cerebro IA** - Editor de prompts versionados + gestor de knowledge base
+4. **ETL preparados** - Scripts para BigQuery y CSV con dry-run y documentacion
+5. **TanStack Query integrado** - Base para manejo de estado servidor
+6. **Documentacion de migracion** - Guias claras para ETL
 
-2. **Cerebro IA es un endpoint basico, no un agente** - El documento requiere un sistema multi-agente con tools (SQL dinamico, RAG avanzado, estadisticas). Actualmente es un prompt estatico con una query SQL hardcodeada.
+### Los 3 gaps mas criticos siguen siendo:
 
-3. **Zero reporteria** - El diferenciador del producto (generar informes de contexto de mercado automatizados) no existe. No hay generador de informes, no hay exportacion.
+1. **No hay datos reales** - Los ETL estan listos pero con mapeos placeholder. Sin datos TINSA reales cargados, todo el sistema sigue mostrando mock data o nada.
 
-**Lo que esta bien hecho:**
-- Estructura del monorepo limpia
-- Schema de BD bien diseñado (aunque incompleto)
-- Middleware de auth con Supabase SSR correcto
-- Mapa Mapbox funcional
-- Landing page y login funcionales
-- Migraciones SQL con PostGIS y pgvector
+2. **Cerebro IA sin herramientas reales** - Ahora tiene prompts configurables (buen avance), pero sigue haciendo la misma query SQL fija sin importar la pregunta. El core del valor (Text-to-SQL, estadisticas, correlaciones) no existe.
+
+3. **Zero reporteria y charts** - Tremor no esta instalado. No hay un solo grafico real. El generador de informes no existe.
+
+### Lo que esta bien hecho:
+- Estructura de paginas completa y navegable
+- Admin del Cerebro IA bien diseñado (versionamiento de prompts, CRUD knowledge)
+- ProjectsTable con UX profesional (busqueda, filtros, badges de velocidad)
+- ETL con patron dry-run y buena documentacion
+- TanStack Query correctamente integrado
+- Pagina de mapa dedicada con stats contextuales
