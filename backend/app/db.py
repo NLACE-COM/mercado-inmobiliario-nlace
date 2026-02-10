@@ -13,5 +13,10 @@ key: str = os.environ.get("SUPABASE_KEY", "")
 
 def get_supabase_client() -> Client:
     if not url or not key:
-        print("Warning: SUPABASE_URL or SUPABASE_KEY not set.")
-    return create_client(url, key)
+        print("CRITICAL Error: SUPABASE_URL or SUPABASE_KEY not found in environment.")
+        return None
+    try:
+        return create_client(url, key)
+    except Exception as e:
+        print(f"CRITICAL Error connecting to Supabase: {e}")
+        return None

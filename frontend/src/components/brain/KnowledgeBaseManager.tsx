@@ -23,12 +23,18 @@ export default function KnowledgeBaseManager() {
     const [openAdd, setOpenAdd] = useState(false)
     const [newItem, setNewItem] = useState({ content: '', topic: '', year: '2024', event: '' })
 
-    const { data: items, isLoading } = useQuery({
+    const { data: items, isLoading, error: fetchError, isError } = useQuery({
         queryKey: ['knowledge'],
         queryFn: async () => {
-            const res = await axios.get(endpoints.brain.admin.knowledge)
-            return res.data
-        }
+            try {
+                const res = await axios.get(endpoints.brain.admin.knowledge)
+                return res.data
+            } catch (err: any) {
+                console.error('FETCH ERROR:', err);
+                throw err;
+            }
+        },
+        retry: 1
     })
 
     const mutation = useMutation({
@@ -184,13 +190,21 @@ export default function KnowledgeBaseManager() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {isLoading ? (
                     <p className="text-muted-foreground">Cargando documentos...</p>
-                ) : items === undefined ? (
+                ) : isError || items === undefined ? (
                     <Card className="col-span-full border-dashed p-8 text-center text-muted-foreground">
                         <p>Error al conectar con la base de conocimientos.</p>
-                        <p className="text-sm mt-2">Verifica que el backend esté activo y la tabla 'knowledge_docs' exista.</p>
-                        <Button variant="outline" size="sm" className="mt-4" onClick={() => window.location.reload()}>
-                            Reintentar
-                        </Button>
+                        <p className="text-sm mt-2 font-mono text-red-500">
+                            {fetchError instanceof Error ? fetchError.message : 'Error desconocido'}
+                        </p>
+                        <p className="text-sm mt-2">Verifica que el backend esté activo y las credenciales configuradas.</p>
+                        <div className="flex justify-center gap-2 mt-4">
+                            <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                                Reintentar
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => window.open('/api/debug', '_blank')}>
+                                Ver Debug API
+                            </Button>
+                        </div>
                     </Card>
                 ) : items.length === 0 ? (
                     <Card className="col-span-full border-dashed p-8 text-center text-muted-foreground">

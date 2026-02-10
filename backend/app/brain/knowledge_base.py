@@ -14,12 +14,14 @@ supabase_key = os.environ.get("SUPABASE_KEY")
 openai_api_key = os.environ.get("OPENAI_API_KEY")
 
 if not supabase_url or not supabase_key:
-    raise ValueError("Missing Supabase Credentials")
-
-if not openai_api_key:
-    print("WARNING: OPENAI_API_KEY not found. RAG will fail.")
-
-supabase: Client = create_client(supabase_url, supabase_key)
+    print("CRITICAL: Missing Supabase Credentials in knowledge_base.py")
+    supabase = None
+else:
+    try:
+        supabase: Client = create_client(supabase_url, supabase_key)
+    except Exception as e:
+        print(f"CRITICAL: Error creating Supabase client: {e}")
+        supabase = None
 
 # Lazy instantiation of embeddings to avoid startup crash if key is missing
 embeddings = None

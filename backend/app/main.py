@@ -34,8 +34,19 @@ app.include_router(admin_router, prefix="/api")
 app.include_router(reports_router, prefix="/api")
 
 @app.get("/health")
+@app.get("/api/health")
 async def health_check():
     return {"status": "ok", "service": "nlace-backend"}
+
+@app.get("/api/debug")
+async def debug_env():
+    import os
+    return {
+        "supabase_url_set": bool(os.environ.get("SUPABASE_URL")),
+        "supabase_key_set": bool(os.environ.get("SUPABASE_KEY")),
+        "openai_key_set": bool(os.environ.get("OPENAI_API_KEY")),
+        "env_keys": list(os.environ.keys())[:10] # First 10 keys for sanity check
+    }
 
 @app.get("/")
 async def root():
