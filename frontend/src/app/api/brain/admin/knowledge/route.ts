@@ -16,8 +16,7 @@ export async function GET() {
 
         const { data: items, error } = await supabase
             .from('knowledge_docs')
-            .select('id, content, metadata')
-            .order('created_at', { ascending: false })
+            .select('id, content, metadata, created_at')
             .limit(100)
 
         console.log('[Knowledge GET] Query result:', {
