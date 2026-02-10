@@ -11,8 +11,6 @@ const config: Config = {
         "./src/**/*.{js,ts,jsx,tsx,mdx}",
     ],
     theme: {
-        transparent: "transparent",
-        current: "currentColor",
         container: {
             center: true,
             padding: "2rem",
