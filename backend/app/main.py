@@ -1,3 +1,10 @@
+import sys
+import os
+from pathlib import Path
+
+# Agregar el directorio raíz del backend al path para que las importaciones de 'app' funcionen
+sys.path.append(str(Path(__file__).parent.parent))
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 import traceback
@@ -58,6 +65,10 @@ async def debug_env():
         "openai_key_set": bool(os.environ.get("OPENAI_API_KEY")),
         "env_keys": list(os.environ.keys())[:10] # First 10 keys for sanity check
     }
+
+@app.get("/api/ping")
+async def ping():
+    return {"message": "pong", "env": "production"}
 
 @app.get("/")
 async def root():

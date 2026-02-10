@@ -35,12 +35,19 @@ def get_embeddings():
     return embeddings
 
 def get_vector_store():
-    return SupabaseVectorStore(
-        client=supabase,
-        embedding=get_embeddings(),
-        table_name="knowledge_docs",
-        query_name="match_documents",
-    )
+    if not supabase:
+        print("ERROR: Supabase client not initialized. Vector store unavailable.")
+        return None
+    try:
+        return SupabaseVectorStore(
+            client=supabase,
+            embedding=get_embeddings(),
+            table_name="knowledge_docs",
+            query_name="match_documents",
+        )
+    except Exception as e:
+        print(f"ERROR initializing vector store: {e}")
+        return None
 
 def ingest_text(text: str, metadata: dict):
     """

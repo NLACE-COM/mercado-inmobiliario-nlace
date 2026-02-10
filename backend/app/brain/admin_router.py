@@ -34,8 +34,8 @@ class SystemPrompt(BaseModel):
 
 @router.get("/prompts", response_model=List[SystemPrompt])
 def get_prompts():
-    if check_table_exists("system_prompts"):
-        supabase = get_supabase_client()
+    supabase = get_supabase_client()
+    if supabase and check_table_exists("system_prompts"):
         res = supabase.table("system_prompts").select("*").order("created_at", desc=True).execute()
         return res.data
     else:
@@ -142,12 +142,13 @@ class KnowledgeItem(BaseModel):
 def get_knowledge():
     try:
         supabase = get_supabase_client()
-        # Assuming 'knowledge_docs' table exists from vector store
+        if not supabase:
+            return []
+        # Check if table exists manually to avoid error 500
         res = supabase.table("knowledge_docs").select("id, content, metadata").limit(100).execute() 
         return res.data
     except Exception as e:
         print(f"Error fetching knowledge: {e}")
-        # If table doesn't exist, return empty list to avoid UI freeze
         return []
 
 @router.post("/knowledge")
