@@ -9,9 +9,17 @@ export async function middleware(request: NextRequest) {
         },
     })
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+        console.error('Middleware: Supabase environment variables are missing');
+        return response;
+    }
+
     const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        supabaseUrl,
+        supabaseKey,
         {
             cookies: {
                 get(name: string) {
@@ -55,7 +63,14 @@ export async function middleware(request: NextRequest) {
         }
     )
 
-    const { data: { user }, } = await supabase.auth.getUser()
+    // Using try-catch to prevent middleware from crashing if getUser fails
+    let user = null;
+    try {
+        const { data } = await supabase.auth.getUser();
+        user = data.user;
+    } catch (e) {
+        console.error('Middleware: Error getting user', e);
+    }
 
     // Protected routes logic
     if (request.nextUrl.pathname.startsWith('/dashboard') && !user) {
