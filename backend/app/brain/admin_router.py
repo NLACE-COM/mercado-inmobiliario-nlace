@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
-from app.db import get_supabase_client
-from app.brain.knowledge_base import get_vector_store
+from db import get_supabase_client
+from brain.knowledge_base import get_vector_store
 import uuid
 
 router = APIRouter(prefix="/brain/admin", tags=["Brain Admin"])
@@ -156,7 +156,7 @@ def get_knowledge():
 @router.post("/knowledge")
 def add_knowledge(item: KnowledgeItem):
     # We use the vector store logic to add, to ensure embeddings are generated
-    from app.brain.knowledge_base import ingest_text
+    from brain.knowledge_base import ingest_text
     
     try:
         ingest_text(item.content, item.metadata)
@@ -181,7 +181,7 @@ async def upload_knowledge_file(file: UploadFile = File(...), metadata: str = No
     """
     Sube y procesa archivos (Excel, CSV, DOCX, TXT) para la base de conocimientos.
     """
-    from app.brain.knowledge_base import ingest_text
+    from brain.knowledge_base import ingest_text
     import json
     
     try:

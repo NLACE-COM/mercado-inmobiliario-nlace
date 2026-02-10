@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
-from app.brain.agent import query_brain_with_rag
+from brain.agent import query_brain_with_rag
 import traceback
 
 router = APIRouter(prefix="/brain", tags=["brain"])
@@ -88,7 +88,7 @@ async def health_check():
     Verifica que el servicio del cerebro AI esté funcionando.
     """
     try:
-        from app.brain.tools import ALL_TOOLS
+        from brain.tools import ALL_TOOLS
         
         return {
             "status": "healthy",
