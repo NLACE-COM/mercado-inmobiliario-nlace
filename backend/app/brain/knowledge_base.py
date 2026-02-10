@@ -3,11 +3,7 @@ import os
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import SupabaseVectorStore
 from supabase import create_client, Client
-from dotenv import load_dotenv
-
-# Load env from root or backend
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../../../.env'))
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../../.env'))
+# Environment variables are already in memory
 
 supabase_url = os.environ.get("SUPABASE_URL")
 supabase_key = os.environ.get("SUPABASE_KEY")

@@ -1,17 +1,12 @@
-import sys
-import os
-from pathlib import Path
-
-# Agregar el directorio raíz del backend al path para que las importaciones de 'app' funcionen
-sys.path.append(str(Path(__file__).parent.parent))
-
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 import traceback
 from contextlib import asynccontextmanager
-from app.brain.router import router as brain_router
-from app.brain.admin_router import router as admin_router
-from app.brain.reports_router import router as reports_router
+
+# Import routers relatively or via app package
+from .brain.router import router as brain_router
+from .brain.admin_router import router as admin_router
+from .brain.reports_router import router as reports_router
 from fastapi.middleware.cors import CORSMiddleware
 
 @asynccontextmanager
