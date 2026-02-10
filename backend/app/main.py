@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.brain.router import router as brain_router
+from app.brain.admin_router import router as admin_router
 from fastapi.middleware.cors import CORSMiddleware
 
 @asynccontextmanager
@@ -28,6 +29,7 @@ app.add_middleware(
 )
 
 app.include_router(brain_router)
+app.include_router(admin_router)
 
 @app.get("/health")
 async def health_check():

@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import Map, { Marker, Popup, NavigationControl, FullscreenControl } from 'react-map-gl'
+import Map, { Marker, Popup, NavigationControl, FullscreenControl } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { Building2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
