@@ -12,22 +12,29 @@ export async function ingestText(content: string, metadata: Record<string, any> 
     try {
         const supabase = getSupabaseAdmin()
 
-        // For now, just store the text directly
-        // In the future, you can add OpenAI embeddings here
-        const { error } = await supabase
+        console.log('Ingesting text, length:', content.length)
+
+        // Insert without embedding for now
+        const { data, error } = await supabase
             .from('knowledge_docs')
             .insert({
                 content,
                 metadata: {
                     ...metadata,
                     created_at: new Date().toISOString()
-                }
+                },
+                embedding: null  // Explicitly set to null
             })
+            .select()
 
         if (error) {
+            console.error('Supabase insert error:', error)
             throw new Error(`Failed to ingest text: ${error.message}`)
         }
-    } catch (error) {
+
+        console.log('Successfully ingested, ID:', data?.[0]?.id)
+        return data?.[0]
+    } catch (error: any) {
         console.error('Error ingesting text:', error)
         throw error
     }
