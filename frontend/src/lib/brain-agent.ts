@@ -174,6 +174,9 @@ export async function queryBrainWithRAG(question: string, conversationHistory: a
 
             // Execute each tool
             for (const toolCall of message.tool_calls) {
+                // TypeScript guard: ensure it's a function call
+                if (toolCall.type !== 'function') continue;
+
                 const fnName = toolCall.function.name;
                 const args = JSON.parse(toolCall.function.arguments);
                 let result = "";
