@@ -3,19 +3,24 @@ import ReportView from '@/components/reports/ReportView'
 
 export const dynamic = 'force-dynamic'
 
+import { getSupabaseAdmin } from '@/lib/supabase-server'
+
 async function getReport(id: string) {
     try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-        const fetchUrl = (apiUrl.includes('127.0.0.1') || apiUrl.includes('localhost'))
-            ? `${apiUrl}/brain/reports/${id}`
-            : `/api/brain/reports/${id}`;
+        const supabase = getSupabaseAdmin()
 
-        const res = await fetch(fetchUrl, {
-            cache: 'no-store'
-        })
-        if (res.status === 404) return null
-        if (!res.ok) throw new Error('Failed to fetch report')
-        return res.json()
+        const { data: report, error } = await supabase
+            .from('generated_reports')
+            .select('*')
+            .eq('id', id)
+            .single()
+
+        if (error) {
+            console.error('Error fetching report:', error)
+            return null
+        }
+
+        return report
     } catch (e) {
         console.error(e)
         return null
