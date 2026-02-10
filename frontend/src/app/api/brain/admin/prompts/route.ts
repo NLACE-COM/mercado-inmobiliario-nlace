@@ -42,12 +42,19 @@ export async function GET() {
         }
 
         return NextResponse.json(prompts || [])
-    } catch (error) {
-        console.error('Error in GET /api/brain/admin/prompts:', error)
-        return NextResponse.json(
-            { error: 'Failed to fetch prompts' },
-            { status: 500 }
-        )
+    } catch (error: any) {
+        console.error('Error in GET /api/brain/admin/prompts:', error.message)
+
+        // Return default prompt instead of error
+        return NextResponse.json([
+            {
+                id: 'default',
+                content: 'Eres un analista experto en el mercado inmobiliario chileno. Tienes acceso a herramientas para buscar proyectos, obtener estadísticas y detalles específicos. Usa siempre datos concretos cuando respondas preguntas.',
+                is_active: true,
+                label: 'Default System Prompt',
+                created_at: new Date().toISOString()
+            }
+        ])
     }
 }
 
