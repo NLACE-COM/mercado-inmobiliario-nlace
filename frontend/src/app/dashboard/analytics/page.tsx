@@ -31,6 +31,15 @@ interface PriceRange {
     percentage: number
 }
 
+interface RawProject {
+    region: string | null
+    total_units: number | null
+    sold_units: number | null
+    available_units: number | null
+    avg_price_uf: number | null
+    avg_price_m2_uf: number | null
+}
+
 export default function DashboardPage() {
     const [stats, setStats] = useState<DashboardStats | null>(null)
     const [regionData, setRegionData] = useState<RegionData[]>([])
@@ -53,20 +62,21 @@ export default function DashboardPage() {
             if (error) throw error
 
             if (projects) {
+                const typedProjects = projects as RawProject[]
                 // Calculate overall stats
-                const totalProjects = projects.length
-                const totalUnits = projects.reduce((sum, p) => sum + (p.total_units || 0), 0)
-                const soldUnits = projects.reduce((sum, p) => sum + (p.sold_units || 0), 0)
-                const availableUnits = projects.reduce((sum, p) => sum + (p.available_units || 0), 0)
+                const totalProjects = typedProjects.length
+                const totalUnits = typedProjects.reduce((sum: number, p: RawProject) => sum + (p.total_units || 0), 0)
+                const soldUnits = typedProjects.reduce((sum: number, p: RawProject) => sum + (p.sold_units || 0), 0)
+                const availableUnits = typedProjects.reduce((sum: number, p: RawProject) => sum + (p.available_units || 0), 0)
 
-                const pricesWithValues = projects.filter(p => p.avg_price_uf)
+                const pricesWithValues = typedProjects.filter((p: RawProject) => p.avg_price_uf)
                 const avgPrice = pricesWithValues.length > 0
-                    ? pricesWithValues.reduce((sum, p) => sum + (p.avg_price_uf || 0), 0) / pricesWithValues.length
+                    ? pricesWithValues.reduce((sum: number, p: RawProject) => sum + (p.avg_price_uf || 0), 0) / pricesWithValues.length
                     : 0
 
-                const pricesM2WithValues = projects.filter(p => p.avg_price_m2_uf)
+                const pricesM2WithValues = typedProjects.filter((p: RawProject) => p.avg_price_m2_uf)
                 const avgPriceM2 = pricesM2WithValues.length > 0
-                    ? pricesM2WithValues.reduce((sum, p) => sum + (p.avg_price_m2_uf || 0), 0) / pricesM2WithValues.length
+                    ? pricesM2WithValues.reduce((sum: number, p: RawProject) => sum + (p.avg_price_m2_uf || 0), 0) / pricesM2WithValues.length
                     : 0
 
                 const sellThroughRate = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
@@ -83,7 +93,7 @@ export default function DashboardPage() {
 
                 // Group by region
                 const regionMap = new Map<string, RegionData>()
-                projects.forEach(p => {
+                typedProjects.forEach((p: RawProject) => {
                     const region = p.region || 'N/A'
                     if (!regionMap.has(region)) {
                         regionMap.set(region, {
@@ -118,7 +128,7 @@ export default function DashboardPage() {
                 ]
 
                 const distribution = priceRanges.map(range => {
-                    const count = projects.filter(p => {
+                    const count = typedProjects.filter((p: RawProject) => {
                         const price = p.avg_price_uf || 0
                         return price >= range.min && price < range.max
                     }).length
