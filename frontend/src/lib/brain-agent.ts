@@ -1,25 +1,32 @@
-import { ChatOpenAI } from '@langchain/openai'
-import { AgentExecutor, createOpenAIFunctionsAgent } from 'langchain/agents'
-import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts'
-import { getVectorStore } from './vector-store'
+import { ChatOpenAI } from 'openai'
 import { getSupabaseAdmin } from './supabase-server'
-import { DynamicStructuredTool } from '@langchain/core/tools'
-import { z } from 'zod'
 
 /**
- * Tool: Search projects by filters
+ * Simple AI agent without LangChain - uses OpenAI directly
  */
-const searchProjectsTool = new DynamicStructuredTool({
+
+interface Tool {
+    name: string
+    description: string
+    parameters: any
+    execute: (params: any) => Promise<string>
+}
+
+// Tool: Search projects
+const searchProjectsTool: Tool = {
     name: 'search_projects',
     description: 'Search real estate projects by location, price range, bedrooms, etc.',
-    schema: z.object({
-        comuna: z.string().optional().describe('Comuna/city to filter by'),
-        min_price: z.number().optional().describe('Minimum price in UF'),
-        max_price: z.number().optional().describe('Maximum price in UF'),
-        bedrooms: z.number().optional().describe('Number of bedrooms'),
-        limit: z.number().optional().default(10).describe('Maximum number of results')
-    }),
-    func: async ({ comuna, min_price, max_price, bedrooms, limit = 10 }) => {
+    parameters: {
+        type: 'object',
+        properties: {
+            comuna: { type: 'string', description: 'Comuna/city to filter by' },
+            min_price: { type: 'number', description: 'Minimum price in UF' },
+            max_price: { type: 'number', description: 'Maximum price in UF' },
+            bedrooms: { type: 'number', description: 'Number of bedrooms' },
+            limit: { type: 'number', description: 'Maximum number of results', default: 10 }
+        }
+    },
+    execute: async ({ comuna, min_price, max_price, bedrooms, limit = 10 }) => {
         try {
             const supabase = getSupabaseAdmin()
             let query = supabase
@@ -27,26 +34,14 @@ const searchProjectsTool = new DynamicStructuredTool({
                 .select('name, comuna, price_uf, bedrooms, bathrooms, total_area, developer')
                 .limit(limit)
 
-            if (comuna) {
-                query = query.ilike('comuna', `%${comuna}%`)
-            }
-            if (min_price) {
-                query = query.gte('price_uf', min_price)
-            }
-            if (max_price) {
-                query = query.lte('price_uf', max_price)
-            }
-            if (bedrooms) {
-                query = query.eq('bedrooms', bedrooms)
-            }
+            if (comuna) query = query.ilike('comuna', `%${comuna}%`)
+            if (min_price) query = query.gte('price_uf', min_price)
+            if (max_price) query = query.lte('price_uf', max_price)
+            if (bedrooms) query = query.eq('bedrooms', bedrooms)
 
             const { data, error } = await query
 
-            if (error) {
-                return `Error searching projects: ${error.message}`
-            }
-
-            if (!data || data.length === 0) {
+            if (error || !data || data.length === 0) {
                 return 'No projects found matching the criteria.'
             }
 
@@ -55,62 +50,57 @@ const searchProjectsTool = new DynamicStructuredTool({
             return `Error: ${error}`
         }
     }
-})
+}
 
-/**
- * Tool: Get project statistics
- */
-const getStatsTool = new DynamicStructuredTool({
+// Tool: Get statistics
+const getStatsTool: Tool = {
     name: 'get_market_stats',
     description: 'Get market statistics like average prices, total projects, etc.',
-    schema: z.object({
-        comuna: z.string().optional().describe('Filter stats by comuna')
-    }),
-    func: async ({ comuna }) => {
+    parameters: {
+        type: 'object',
+        properties: {
+            comuna: { type: 'string', description: 'Filter stats by comuna' }
+        }
+    },
+    execute: async ({ comuna }) => {
         try {
             const supabase = getSupabaseAdmin()
-            let query = supabase
-                .from('projects')
-                .select('price_uf, total_area, comuna')
+            let query = supabase.from('projects').select('price_uf, total_area, comuna')
 
-            if (comuna) {
-                query = query.ilike('comuna', `%${comuna}%`)
-            }
+            if (comuna) query = query.ilike('comuna', `%${comuna}%`)
 
             const { data, error } = await query
 
-            if (error || !data) {
-                return 'Unable to fetch statistics'
-            }
+            if (error || !data) return 'Unable to fetch statistics'
 
             const prices = data.map(p => p.price_uf).filter(Boolean)
             const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length
-            const minPrice = Math.min(...prices)
-            const maxPrice = Math.max(...prices)
 
             return JSON.stringify({
                 total_projects: data.length,
                 average_price_uf: Math.round(avgPrice),
-                min_price_uf: minPrice,
-                max_price_uf: maxPrice,
+                min_price_uf: Math.min(...prices),
+                max_price_uf: Math.max(...prices),
                 comunas: [...new Set(data.map(p => p.comuna))]
             }, null, 2)
         } catch (error) {
             return `Error: ${error}`
         }
     }
-})
+}
 
-/**
- * Tool: Get specific project details
- */
-const getProjectDetailsTool = new DynamicStructuredTool({
+// Tool: Get project details
+const getProjectDetailsTool: Tool = {
     name: 'get_project_details',
     description: 'Get detailed information about a specific project by name',
-    schema: z.object({
-        project_name: z.string().describe('Name of the project to search for')
-    }),
-    func: async ({ project_name }) => {
+    parameters: {
+        type: 'object',
+        properties: {
+            project_name: { type: 'string', description: 'Name of the project to search for' }
+        },
+        required: ['project_name']
+    },
+    execute: async ({ project_name }) => {
         try {
             const supabase = getSupabaseAdmin()
             const { data, error } = await supabase
@@ -120,16 +110,14 @@ const getProjectDetailsTool = new DynamicStructuredTool({
                 .limit(1)
                 .single()
 
-            if (error || !data) {
-                return `Project "${project_name}" not found`
-            }
+            if (error || !data) return `Project "${project_name}" not found`
 
             return JSON.stringify(data, null, 2)
         } catch (error) {
             return `Error: ${error}`
         }
     }
-})
+}
 
 const tools = [searchProjectsTool, getStatsTool, getProjectDetailsTool]
 
@@ -145,65 +133,92 @@ async function getSystemPrompt(): Promise<string> {
             .eq('is_active', true)
             .single()
 
-        if (data?.content) {
-            return data.content
-        }
+        if (data?.content) return data.content
     } catch (error) {
         console.error('Error fetching system prompt:', error)
     }
 
-    // Fallback to default
     return `Eres un analista experto en el mercado inmobiliario chileno. 
 Tienes acceso a herramientas para buscar proyectos, obtener estadísticas y detalles específicos.
 Usa siempre datos concretos cuando respondas preguntas.`
 }
 
 /**
- * Create and execute the AI agent
+ * Query the AI brain with function calling
  */
 export async function queryBrainWithRAG(question: string, conversationHistory: any[] = []) {
     try {
-        // Initialize LLM
-        const llm = new ChatOpenAI({
-            modelName: 'gpt-4o-mini',
-            temperature: 0.7,
-            openAIApiKey: process.env.OPENAI_API_KEY
-        })
+        const apiKey = process.env.OPENAI_API_KEY
+        if (!apiKey) {
+            throw new Error('OPENAI_API_KEY not configured')
+        }
 
-        // Get system prompt
         const systemPrompt = await getSystemPrompt()
 
-        // Create prompt template
-        const prompt = ChatPromptTemplate.fromMessages([
-            ['system', systemPrompt],
-            new MessagesPlaceholder('chat_history'),
-            ['human', '{input}'],
-            new MessagesPlaceholder('agent_scratchpad')
-        ])
+        // Prepare messages
+        const messages: any[] = [
+            { role: 'system', content: systemPrompt },
+            ...conversationHistory,
+            { role: 'user', content: question }
+        ]
 
-        // Create agent
-        const agent = await createOpenAIFunctionsAgent({
-            llm,
-            tools,
-            prompt
+        // Call OpenAI with function calling
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages,
+                functions: tools.map(t => ({
+                    name: t.name,
+                    description: t.description,
+                    parameters: t.parameters
+                })),
+                temperature: 0.7
+            })
         })
 
-        // Create executor
-        const executor = new AgentExecutor({
-            agent,
-            tools,
-            verbose: true,
-            maxIterations: 3
-        })
+        const data = await response.json()
+        const message = data.choices[0].message
 
-        // Execute
-        const result = await executor.invoke({
-            input: question,
-            chat_history: conversationHistory
-        })
+        // Check if function call is needed
+        if (message.function_call) {
+            const tool = tools.find(t => t.name === message.function_call.name)
+            if (tool) {
+                const params = JSON.parse(message.function_call.arguments)
+                const result = await tool.execute(params)
+
+                // Call again with function result
+                const secondResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            ...messages,
+                            message,
+                            { role: 'function', name: tool.name, content: result }
+                        ],
+                        temperature: 0.7
+                    })
+                })
+
+                const secondData = await secondResponse.json()
+                return {
+                    answer: secondData.choices[0].message.content,
+                    sources: []
+                }
+            }
+        }
 
         return {
-            answer: result.output,
+            answer: message.content,
             sources: []
         }
     } catch (error) {

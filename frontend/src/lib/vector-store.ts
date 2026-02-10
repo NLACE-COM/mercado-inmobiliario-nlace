@@ -1,59 +1,59 @@
-import { OpenAIEmbeddings } from '@langchain/openai'
-import { SupabaseVectorStore } from '@langchain/community/vectorstores/supabase'
 import { getSupabaseAdmin } from './supabase-server'
 
 /**
- * Initialize OpenAI embeddings
+ * Simplified vector store without LangChain
+ * Uses Supabase directly for knowledge base operations
  */
-export function getEmbeddings() {
-    const apiKey = process.env.OPENAI_API_KEY
-
-    if (!apiKey) {
-        throw new Error('OPENAI_API_KEY not configured')
-    }
-
-    return new OpenAIEmbeddings({
-        openAIApiKey: apiKey,
-        modelName: 'text-embedding-3-small'
-    })
-}
-
-/**
- * Get Supabase vector store for RAG
- */
-export async function getVectorStore() {
-    try {
-        const supabase = getSupabaseAdmin()
-        const embeddings = getEmbeddings()
-
-        return new SupabaseVectorStore(embeddings, {
-            client: supabase,
-            tableName: 'knowledge_docs',
-            queryName: 'match_documents'
-        })
-    } catch (error) {
-        console.error('Error initializing vector store:', error)
-        return null
-    }
-}
 
 /**
  * Ingest text into the knowledge base
  */
 export async function ingestText(content: string, metadata: Record<string, any> = {}) {
-    const vectorStore = await getVectorStore()
+    try {
+        const supabase = getSupabaseAdmin()
 
-    if (!vectorStore) {
-        throw new Error('Vector store not initialized')
-    }
+        // For now, just store the text directly
+        // In the future, you can add OpenAI embeddings here
+        const { error } = await supabase
+            .from('knowledge_docs')
+            .insert({
+                content,
+                metadata: {
+                    ...metadata,
+                    created_at: new Date().toISOString()
+                }
+            })
 
-    await vectorStore.addDocuments([
-        {
-            pageContent: content,
-            metadata: {
-                ...metadata,
-                created_at: new Date().toISOString()
-            }
+        if (error) {
+            throw new Error(`Failed to ingest text: ${error.message}`)
         }
-    ])
+    } catch (error) {
+        console.error('Error ingesting text:', error)
+        throw error
+    }
+}
+
+/**
+ * Search knowledge base (simple text search for now)
+ */
+export async function searchKnowledge(query: string, limit: number = 5) {
+    try {
+        const supabase = getSupabaseAdmin()
+
+        const { data, error } = await supabase
+            .from('knowledge_docs')
+            .select('*')
+            .textSearch('content', query)
+            .limit(limit)
+
+        if (error) {
+            console.error('Error searching knowledge:', error)
+            return []
+        }
+
+        return data || []
+    } catch (error) {
+        console.error('Error in searchKnowledge:', error)
+        return []
+    }
 }
