@@ -1,8 +1,13 @@
-from fastapi import FastAPI
+import sys
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+import traceback
 from contextlib import asynccontextmanager
-from app.brain.router import router as brain_router
-from app.brain.admin_router import router as admin_router
-from app.brain.reports_router import router as reports_router
+
+# Import routers from the same directory level
+from brain.router import router as brain_router
+from brain.admin_router import router as admin_router
+from brain.reports_router import router as reports_router
 from fastapi.middleware.cors import CORSMiddleware
 
 @asynccontextmanager
@@ -29,13 +34,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(brain_router)
-app.include_router(admin_router)
-app.include_router(reports_router)
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print(f"GLOBAL ERROR: {exc}")
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc), "traceback": traceback.format_exc().split("\n")[-3:]}
+    )
 
-@app.get("/health")
+@app.get("/api/health")
+@app.get("/api/ping")
 async def health_check():
-    return {"status": "ok", "service": "nlace-backend"}
+    return {"status": "ok", "service": "nlace-backend", "env": "production"}
+
+@app.get("/api/debug")
+async def debug_env():
+    import os
+    return {
+        "supabase_url_set": bool(os.environ.get("SUPABASE_URL")),
+        "supabase_key_set": bool(os.environ.get("SUPABASE_KEY")),
+        "openai_key_set": bool(os.environ.get("OPENAI_API_KEY")),
+        "python_version": sys.version
+    }
+
+app.include_router(brain_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
+app.include_router(reports_router, prefix="/api")
 
 @app.get("/")
 async def root():

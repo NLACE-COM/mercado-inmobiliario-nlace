@@ -4,8 +4,8 @@
  */
 
 export const config = {
-    // Backend API URL
-    apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+    // API URL - now using Next.js API routes
+    apiUrl: '/api',
 
     // Supabase (already configured via createClient)
     supabase: {
@@ -20,15 +20,14 @@ export const config = {
     },
 } as const
 
-// API endpoints
+// API endpoints - all using Next.js API routes now
 export const endpoints = {
     brain: {
-        ask: `${config.apiUrl}/brain/ask`,
-        health: `${config.apiUrl}/brain/health`,
+        chat: '/api/brain/chat',
+        health: '/api/brain/chat', // GET on same endpoint
         admin: {
-            prompts: `${config.apiUrl}/brain/admin/prompts`,
-            knowledge: `${config.apiUrl}/brain/admin/knowledge`,
-            knowledgeUpload: `${config.apiUrl}/brain/admin/knowledge/upload`,
+            prompts: '/api/brain/admin/prompts',
+            knowledge: '/api/brain/admin/knowledge',
         },
     },
 } as const

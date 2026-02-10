@@ -7,9 +7,9 @@ datos reales del mercado inmobiliario.
 
 from langchain.tools import tool
 from typing import Optional, List, Dict, Any
-from app.db import get_supabase_client
+from db import get_supabase_client
 from pydantic import BaseModel, Field
-from app.utils.cache import stats_cache, projects_cache
+from utils.cache import stats_cache, projects_cache
 
 
 class ProjectSearchInput(BaseModel):

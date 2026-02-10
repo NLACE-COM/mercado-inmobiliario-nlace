@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
-from app.db import get_supabase_client
-from app.brain.knowledge_base import get_vector_store
+from db import get_supabase_client
+from brain.knowledge_base import get_vector_store
 import uuid
 
 router = APIRouter(prefix="/brain/admin", tags=["Brain Admin"])
@@ -18,6 +18,8 @@ PROMPTS_FILE = Path("system_prompts.json")
 def check_table_exists(table_name: str):
     try:
         supabase = get_supabase_client()
+        if not supabase:
+            return False
         supabase.table(table_name).select("id").limit(1).execute()
         return True
     except:
@@ -26,16 +28,16 @@ def check_table_exists(table_name: str):
 # --- System Prompts ---
 
 class SystemPrompt(BaseModel):
-    id: Optional[str] = None
+    id: Optional[Any] = None
     content: str
     is_active: bool = False
-    label: str
-    created_at: Optional[str] = None
+    label: Optional[str] = "Version"
+    created_at: Optional[Any] = None
 
 @router.get("/prompts", response_model=List[SystemPrompt])
 def get_prompts():
-    if check_table_exists("system_prompts"):
-        supabase = get_supabase_client()
+    supabase = get_supabase_client()
+    if supabase and check_table_exists("system_prompts"):
         res = supabase.table("system_prompts").select("*").order("created_at", desc=True).execute()
         return res.data
     else:
@@ -134,26 +136,27 @@ def activate_prompt(prompt_id: str):
 # --- Knowledge Base ---
 
 class KnowledgeItem(BaseModel):
-    id: Optional[str] = None
+    id: Optional[Any] = None
     content: str
-    metadata: Dict[str, Any]
+    metadata: Optional[Dict[str, Any]] = {}
 
 @router.get("/knowledge", response_model=List[KnowledgeItem])
 def get_knowledge():
     try:
         supabase = get_supabase_client()
-        # Assuming 'knowledge_docs' table exists from vector store
+        if not supabase:
+            return []
+        # Check if table exists manually to avoid error 500
         res = supabase.table("knowledge_docs").select("id, content, metadata").limit(100).execute() 
         return res.data
     except Exception as e:
         print(f"Error fetching knowledge: {e}")
-        # If table doesn't exist, return empty list to avoid UI freeze
         return []
 
 @router.post("/knowledge")
 def add_knowledge(item: KnowledgeItem):
     # We use the vector store logic to add, to ensure embeddings are generated
-    from app.brain.knowledge_base import ingest_text
+    from brain.knowledge_base import ingest_text
     
     try:
         ingest_text(item.content, item.metadata)
@@ -178,7 +181,7 @@ async def upload_knowledge_file(file: UploadFile = File(...), metadata: str = No
     """
     Sube y procesa archivos (Excel, CSV, DOCX, TXT) para la base de conocimientos.
     """
-    from app.brain.knowledge_base import ingest_text
+    from brain.knowledge_base import ingest_text
     import json
     
     try:

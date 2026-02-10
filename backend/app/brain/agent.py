@@ -9,8 +9,8 @@ from langchain_openai import ChatOpenAI
 from langchain.agents import create_openai_functions_agent, AgentExecutor
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.memory import ConversationBufferMemory
-from app.brain.tools import ALL_TOOLS
-from app.brain.knowledge_base import get_vector_store
+from brain.tools import ALL_TOOLS
+from brain.knowledge_base import get_vector_store
 import os
 
 

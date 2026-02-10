@@ -3,23 +3,21 @@ import os
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import SupabaseVectorStore
 from supabase import create_client, Client
-from dotenv import load_dotenv
-
-# Load env from root or backend
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../../../.env'))
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../../.env'))
+# Environment variables are already in memory
 
 supabase_url = os.environ.get("SUPABASE_URL")
 supabase_key = os.environ.get("SUPABASE_KEY")
 openai_api_key = os.environ.get("OPENAI_API_KEY")
 
 if not supabase_url or not supabase_key:
-    raise ValueError("Missing Supabase Credentials")
-
-if not openai_api_key:
-    print("WARNING: OPENAI_API_KEY not found. RAG will fail.")
-
-supabase: Client = create_client(supabase_url, supabase_key)
+    print("CRITICAL: Missing Supabase Credentials in knowledge_base.py")
+    supabase = None
+else:
+    try:
+        supabase: Client = create_client(supabase_url, supabase_key)
+    except Exception as e:
+        print(f"CRITICAL: Error creating Supabase client: {e}")
+        supabase = None
 
 # Lazy instantiation of embeddings to avoid startup crash if key is missing
 embeddings = None
@@ -33,12 +31,19 @@ def get_embeddings():
     return embeddings
 
 def get_vector_store():
-    return SupabaseVectorStore(
-        client=supabase,
-        embedding=get_embeddings(),
-        table_name="knowledge_docs",
-        query_name="match_documents",
-    )
+    if not supabase:
+        print("ERROR: Supabase client not initialized. Vector store unavailable.")
+        return None
+    try:
+        return SupabaseVectorStore(
+            client=supabase,
+            embedding=get_embeddings(),
+            table_name="knowledge_docs",
+            query_name="match_documents",
+        )
+    except Exception as e:
+        print(f"ERROR initializing vector store: {e}")
+        return None
 
 def ingest_text(text: str, metadata: dict):
     """

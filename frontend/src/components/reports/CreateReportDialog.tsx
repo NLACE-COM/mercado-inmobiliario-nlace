@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import {
@@ -25,7 +25,7 @@ import { FileText, Loader2, Map as MapIcon } from 'lucide-react'
 import { useToast } from "@/components/ui/use-toast"
 import MapAreaSelector from './MapAreaSelector'
 
-const AVAILABLE_COMMUNES = [
+const FALLBACK_COMMUNES = [
     "CONCEPCION", "ANTOFAGASTA", "CHILLAN", "COQUIMBO", "CHIGUAYANTE",
     "COPIAPO", "ARICA", "CALAMA", "ALTO HOSPICIO"
 ].sort()
@@ -37,6 +37,21 @@ export default function CreateReportDialog() {
     const [commune, setCommune] = useState('')
     const [type, setType] = useState('COMMUNE_MARKET')
     const [polygonWkt, setPolygonWkt] = useState<string | null>(null)
+    const [communeList, setCommuneList] = useState<string[]>(FALLBACK_COMMUNES)
+
+    useEffect(() => {
+        if (open) {
+            // Fetch communes dynamically when dialog opens
+            fetch('/api/brain/reports/communes')
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data) && data.length > 0) {
+                        setCommuneList(data)
+                    }
+                })
+                .catch(err => console.error("Failed to load communes", err))
+        }
+    }, [open])
 
     const router = useRouter()
     const { toast } = useToast()
@@ -148,8 +163,10 @@ export default function CreateReportDialog() {
                                         <SelectValue placeholder="Selecciona comuna" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {AVAILABLE_COMMUNES.map(c => (
-                                            <SelectItem key={c} value={c}>{c}</SelectItem>
+                                        {communeList.map((c: string) => (
+                                            <SelectItem key={c} value={c}>
+                                                {c}
+                                            </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>

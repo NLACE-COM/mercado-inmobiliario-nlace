@@ -14,18 +14,24 @@ import CreateReportDialog from '@/components/reports/CreateReportDialog'
 
 export const dynamic = 'force-dynamic'
 
+import { getSupabaseAdmin } from '@/lib/supabase-server'
+
 async function getReports() {
     try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-        const fetchUrl = (apiUrl.includes('127.0.0.1') || apiUrl.includes('localhost'))
-            ? `${apiUrl}/brain/reports`
-            : `/api/brain/reports`;
+        const supabase = getSupabaseAdmin()
 
-        const res = await fetch(fetchUrl, {
-            cache: 'no-store'
-        })
-        if (!res.ok) return []
-        return res.json()
+        const { data: reports, error } = await supabase
+            .from('generated_reports')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(100)
+
+        if (error) {
+            console.error('Error fetching reports:', error)
+            return []
+        }
+
+        return reports || []
     } catch (e) {
         console.error("Error fetching reports", e)
         return []

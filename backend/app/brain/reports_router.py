@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import json
 import os
-from ..db import get_supabase_client
+from db import get_supabase_client
 
 router = APIRouter(prefix="/brain/reports", tags=["reports"])
 
