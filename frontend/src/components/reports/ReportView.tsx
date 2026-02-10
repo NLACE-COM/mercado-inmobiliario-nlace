@@ -151,9 +151,7 @@ export default function ReportView({ report }: { report: any }) {
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-lg leading-relaxed text-slate-700 whitespace-pre-wrap">
-                                        {section.content}
-                                    </p>
+                                    <MarkdownRenderer content={section.content} />
                                 </CardContent>
                             </Card>
                         )
@@ -301,3 +299,61 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     }
     return null;
 };
+
+// Simple Markdown Renderer for Bold and Lists
+function MarkdownRenderer({ content }: { content: string }) {
+    if (!content) return null;
+
+    // Split by paragraphs
+    const paragraphs = content.split('\n\n');
+
+    return (
+        <div className="space-y-4 text-slate-700">
+            {paragraphs.map((paragraph, idx) => {
+                // Check if it's a list item
+                if (paragraph.trim().startsWith('- ') || paragraph.trim().startsWith('* ')) {
+                    const items = paragraph.split('\n').filter(l => l.trim().length > 0);
+                    return (
+                        <ul key={idx} className="list-disc pl-5 space-y-1">
+                            {items.map((item, i) => (
+                                <li key={i}>
+                                    <FormattedText text={item.replace(/^[-*] /, '')} />
+                                </li>
+                            ))}
+                        </ul>
+                    );
+                }
+
+                // Handle Headers
+                if (paragraph.trim().startsWith('### ')) {
+                    return <h3 key={idx} className="text-lg font-bold mt-4 mb-2"><FormattedText text={paragraph.replace(/^### /, '')} /></h3>
+                }
+
+                return (
+                    <p key={idx} className="leading-relaxed">
+                        <FormattedText text={paragraph} />
+                    </p>
+                )
+            })}
+        </div>
+    );
+}
+
+// Helper to render bold text
+function FormattedText({ text }: { text: string }) {
+    if (!text) return null;
+
+    // Split by double asterisks for bold
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+
+    return (
+        <>
+            {parts.map((part, index) => {
+                if (part.startsWith('**') && part.endsWith('**')) {
+                    return <strong key={index} className="font-semibold text-slate-900">{part.slice(2, -2)}</strong>;
+                }
+                return <span key={index}>{part}</span>;
+            })}
+        </>
+    );
+}
