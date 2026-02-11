@@ -54,10 +54,11 @@ export default function DashboardPage() {
         try {
             const supabase = createClient()
 
-            // Fetch all projects
+            // Fetch all projects (increased limit for total coverage)
             const { data: projects, error } = await supabase
                 .from('projects')
                 .select('region, total_units, sold_units, available_units, avg_price_uf, avg_price_m2_uf')
+                .limit(10000)
 
             if (error) throw error
 
