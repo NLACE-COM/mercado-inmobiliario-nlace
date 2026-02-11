@@ -230,7 +230,15 @@ export default function CreateReportDialog() {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button type="submit" disabled={isLoading || (type !== 'AREA_POLYGON' && !commune) || (type === 'AREA_POLYGON' && !polygonWkt)}>
+                        <Button
+                            type="submit"
+                            disabled={
+                                isLoading ||
+                                (type === 'AREA_POLYGON' && !polygonWkt) ||
+                                (type === 'MULTI_COMMUNE_COMPARISON' && selectedCommunes.length < 2) ||
+                                ((type === 'COMMUNE_MARKET' || type === 'PROJECT_BENCHMARK') && !commune)
+                            }
+                        >
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Generar Reporte
                         </Button>
