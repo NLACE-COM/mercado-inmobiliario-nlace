@@ -2,39 +2,34 @@ import { jsPDF } from 'jspdf'
 import html2canvas from 'html2canvas'
 
 /**
- * Client-side PDF export for reports using html2canvas & jsPDF.
+ * Client-side PDF export for reports.
  * 
- * THE ULTIMATE FIX: "Style Baking"
- * Tailwind 4 and some modern UI libs use oklch(), lab() and color-mix()
- * which crash the html2canvas legacy CSS parser.
- * 
- * Instead of trying to regex-replace CSS, we "bake" the computed styles
- * (which the browser already converted to RGB) directly into the elements
- * as inline styles, and then strip all stylesheets.
+ * THE ULTIMATE "SAFE MODE" FIX:
+ * If html2canvas's CSS parser continues to fail due to modern CSS (lab, oklch),
+ * we use a strategy that minimizes the work the parser has to do.
  */
 export async function exportReportToPDF(elementId: string, title: string) {
     if (typeof window === 'undefined') return;
 
     const reportElement = document.getElementById(elementId);
     if (!reportElement) {
-        throw new Error(`Report element "${elementId}" not found in DOM.`);
+        throw new Error(`Report element "${elementId}" not found.`);
     }
 
     const originalScrollPos = window.scrollY;
-    window.scrollTo(0, 0);
 
     try {
-        // Wait for rendering & animations
+        // 1. Prepare for capture
+        window.scrollTo(0, 0);
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         const height = reportElement.scrollHeight;
         const width = reportElement.scrollWidth || 1200;
 
-        let safeScale = 2;
-        if (height > 5000) safeScale = 1.5;
-        if (height > 10000) safeScale = 1;
+        // Use a more conservative scale to prevent memory issues
+        const safeScale = height > 5000 ? 1 : 1.5;
 
-        console.log(`[PDF Export] Starting capture: ${width}x${height} at scale ${safeScale}`);
+        console.log(`[PDF Export] Capturing in Safe Mode: ${width}x${height}`);
 
         const canvas = await html2canvas(reportElement, {
             scale: safeScale,
@@ -42,72 +37,62 @@ export async function exportReportToPDF(elementId: string, title: string) {
             allowTaint: true,
             backgroundColor: '#ffffff',
             logging: false,
-            scrollY: -window.scrollY,
-            windowWidth: width,
-            windowHeight: height,
+            // Optimization: Remove foreignObject usage which is often where lab() fails
+            foreignObjectRendering: false,
             onclone: (clonedDoc) => {
                 const clones = clonedDoc.querySelectorAll('*');
                 const originals = reportElement.querySelectorAll('*');
 
-                // 1. "Style Baking" - Convert all computed colors to inline RGB
-                // Browser's getComputedStyle always returns RGB/RGBA for oklch/lab colors
+                // 2. CRITICAL: Pre-sanitize any element that has a 'lab' or 'oklch' color
+                // We do this by checking computed styles and forcing RGB
                 for (let i = 0; i < clones.length; i++) {
                     const clone = clones[i] as HTMLElement;
                     const original = originals[i] as HTMLElement;
-                    if (!original || !clone.style) continue;
+                    if (!original) continue;
 
                     try {
-                        const computed = window.getComputedStyle(original);
+                        const style = window.getComputedStyle(original);
 
-                        // Bake essential styles that might use modern color functions
-                        clone.style.color = computed.color;
-                        clone.style.backgroundColor = computed.backgroundColor;
-                        clone.style.borderColor = computed.borderColor;
-                        clone.style.fill = computed.fill;
-                        clone.style.stroke = computed.stroke;
+                        // We ONLY force bake the most problematic properties
+                        // This avoids the "too much work" problem while fixing the crash
+                        if (style.color.includes('lab') || style.color.includes('oklch')) {
+                            clone.style.color = '#1e293b';
+                        }
+                        if (style.backgroundColor.includes('lab') || style.backgroundColor.includes('oklch')) {
+                            clone.style.backgroundColor = '#ffffff';
+                        }
 
-                        // If it's a chart or card, ensure it's fully opaque and visible
+                        // Fix for charts
                         if (clone.classList.contains('tremor-base') || clone.classList.contains('recharts-responsive-container')) {
                             clone.style.width = '1000px';
                             clone.style.height = '400px';
-                            clone.style.display = 'block';
-                            clone.style.visibility = 'visible';
-                            clone.style.opacity = '1';
                         }
-                    } catch (e) {
-                        // Skip if element is detached or restricted
+                    } catch (e) { }
+
+                    // Hide UI
+                    if (clone.classList.contains('print:hidden') || clone.tagName === 'BUTTON') {
+                        clone.style.display = 'none';
                     }
                 }
 
-                // 2. The Nuclear Option: Remove all stylesheets, links, and scripts
-                // Since we "baked" the styles, we don't need the stylesheets anymore.
-                // This prevents html2canvas from ever seeing the problematic "lab()" code.
-                clonedDoc.querySelectorAll('style, link[rel="stylesheet"], script').forEach(el => {
-                    // Safety: Keep our manual baked styles if any, but html2canvas normally 
-                    // handles inline styles fine without any stylesheets present.
-                    el.remove();
+                // 3. NUCLEAR: Remove all style tags that contain problematic strings
+                // This is faster than style baking everything and prevents the parser crash
+                clonedDoc.querySelectorAll('style').forEach(styleTag => {
+                    const content = styleTag.innerHTML;
+                    if (content.includes('lab(') || content.includes('oklch(')) {
+                        // Instead of removing, we try to "clean" it simply
+                        styleTag.innerHTML = content.replace(/(lab|oklch|oklab|color-mix)\([^)]+\)/g, '#3b82f6');
+                    }
                 });
-
-                // 3. Manual override for UI elements
-                clonedDoc.querySelectorAll('.print\\:hidden, button').forEach(el => {
-                    (el as HTMLElement).style.display = 'none';
-                });
-
-                // 4. Force white background on the container
-                const clonedElement = clonedDoc.getElementById(elementId);
-                if (clonedElement) {
-                    clonedElement.style.backgroundColor = '#ffffff';
-                    clonedElement.style.padding = '40px';
-                }
             }
         });
 
-        // Generate PDF
+        // 3. Generate PDF
         const imgWidth = 210;
         const pageHeight = 297;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         const pdf = new jsPDF('p', 'mm', 'a4', true);
-        const imgData = canvas.toDataURL('image/jpeg', 0.85);
+        const imgData = canvas.toDataURL('image/jpeg', 0.8); // Slightly higher compression
 
         let heightLeft = imgHeight;
         let position = 0;
@@ -131,6 +116,6 @@ export async function exportReportToPDF(elementId: string, title: string) {
     } catch (error: any) {
         console.error('[PDF Export] Failed:', error);
         window.scrollTo(0, originalScrollPos);
-        throw new Error('Error técnico al capturar los colores del reporte. Por favor, intenta de nuevo o usa Ctrl+P para guardar como PDF.');
+        throw new Error('Lo sentimos, el reporte es demasiado complejo para el generador actual. Como alternativa, puedes usar "Imprimir" (Ctrl+P) y seleccionar "Guardar como PDF".');
     }
 }
