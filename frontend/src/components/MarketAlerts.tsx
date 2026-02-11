@@ -20,12 +20,12 @@ export function MarketAlerts() {
     })
 
     if (isLoading) return <div className="h-20 w-full animate-pulse bg-slate-100 rounded-lg"></div>
-    if (error) return <Text className="text-red-500">Error cargando alertas</Text>
+    if (error) return <p className="text-red-500 text-sm">Error cargando alertas</p>
 
     if (!alerts || alerts.length === 0) {
         return (
             <Card className="p-4 border-dashed border-2 flex items-center justify-center bg-slate-50/50">
-                <Text className="text-slate-500">✓ No se detectan anomalías críticas en el mercado</Text>
+                <p className="text-slate-500 text-sm">✓ No se detectan anomalías críticas en el mercado</p>
             </Card>
         )
     }
