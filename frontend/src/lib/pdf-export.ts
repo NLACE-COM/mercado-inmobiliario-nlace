@@ -3,78 +3,120 @@ import html2canvas from 'html2canvas'
 
 /**
  * Client-side PDF export for reports using html2canvas & jsPDF
- * Improved version with better stability for long reports and charts
+ * High-performance version with specialized handling for long reports and charts.
+ * Features: Auto-scaling, memory management, and SVG precision fixing.
  */
 export async function exportReportToPDF(elementId: string, title: string) {
     if (typeof window === 'undefined') return;
 
-    // 1. Scroll to top to ensure correct capture offsets
-    window.scrollTo(0, 0);
-
-    const reportElement = document.getElementById(elementId)
+    const reportElement = document.getElementById(elementId);
     if (!reportElement) {
-        console.error('Report element not found:', elementId)
-        return
+        throw new Error(`Report element "${elementId}" not found in DOM.`);
     }
 
+    // Capture initial state
+    const originalScrollPos = window.scrollY;
+    window.scrollTo(0, 0);
+
     try {
-        // 2. Short delay for any animations to finish
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Wait for rendering & animations
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // 3. Capture canvas
-        const canvas = await html2canvas(reportElement, {
-            scale: 1.5, // Balanced quality/performance
-            useCORS: true,
-            allowTaint: true,
-            logging: false,
-            backgroundColor: '#ffffff',
-            // Use static width to avoid layout shifts during capture
-            windowWidth: 1200,
-            onclone: (clonedDoc) => {
-                // Remove buttons or elements we don't want in the PDF
-                const hiddenElements = clonedDoc.querySelectorAll('.print\\:hidden');
-                hiddenElements.forEach(el => {
-                    (el as HTMLElement).style.display = 'none';
-                });
+        // Memory Management: Calculate optimal scale based on element height
+        // Chrome has a canvas limit (approx 16,384px height). 
+        // We stay safe by capping total pixels.
+        const height = reportElement.scrollHeight;
+        const width = reportElement.scrollWidth || 1200;
 
-                // Ensure all tremor charts are visible
-                const charts = clonedDoc.querySelectorAll('.tremor-base');
-                charts.forEach(chart => {
-                    (chart as HTMLElement).style.opacity = '1';
-                });
-            }
-        })
-
-        const imgData = canvas.toDataURL('image/jpeg', 0.9)
-        const pdf = new jsPDF('p', 'mm', 'a4')
-
-        const pdfWidth = pdf.internal.pageSize.getWidth()
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width
-
-        const pageHeight = pdf.internal.pageSize.getHeight()
-        let heightLeft = pdfHeight
-        let position = 0
-
-        // Add first page
-        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight, undefined, 'FAST')
-        heightLeft -= pageHeight
-
-        // Add subsequent pages if the content is longer than one A4
-        while (heightLeft > 0) {
-            position = heightLeft - pdfHeight
-            // We need to move the "view window" of the image
-            pdf.addPage()
-            pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight, undefined, 'FAST')
-            heightLeft -= pageHeight
+        let safeScale = 2; // Default high quality
+        if (height * safeScale > 15000) {
+            safeScale = 1.5;
+        }
+        if (height * safeScale > 15000) {
+            safeScale = 1;
         }
 
-        const cleanTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase()
-        const fileName = `nlace-reporte-${cleanTitle}-${new Date().toISOString().split('T')[0]}.pdf`
+        console.log(`[PDF Export] Starting capture: ${width}x${height} at scale ${safeScale}`);
 
-        pdf.save(fileName)
+        const canvas = await html2canvas(reportElement, {
+            scale: safeScale,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            logging: false,
+            // Capture full scrollable area
+            scrollY: -window.scrollY,
+            windowWidth: width,
+            windowHeight: height,
+            onclone: (clonedDoc) => {
+                const clonedElement = clonedDoc.getElementById(elementId);
+                if (clonedElement) {
+                    // Force the clone to show all content without scrolls
+                    clonedElement.style.height = 'auto';
+                    clonedElement.style.maxHeight = 'none';
+                    clonedElement.style.overflow = 'visible';
+                    clonedElement.style.display = 'block';
+                    clonedElement.style.padding = '40px'; // Professional margins
+
+                    // Hide UI-only elements
+                    clonedDoc.querySelectorAll('.print\\:hidden, button, .action-bar').forEach(el => {
+                        (el as HTMLElement).style.setProperty('display', 'none', 'important');
+                    });
+
+                    // Fix for Recharts/Tremor SVGs that sometimes don't show up
+                    clonedDoc.querySelectorAll('.recharts-responsive-container, .tremor-base').forEach(chart => {
+                        (chart as HTMLElement).style.width = '1000px';
+                        (chart as HTMLElement).style.height = '400px';
+                        (chart as HTMLElement).style.position = 'relative';
+                    });
+
+                    clonedDoc.querySelectorAll('svg').forEach(svg => {
+                        svg.setAttribute('shape-rendering', 'geometricPrecision');
+                        // Ensure text is visible and sized correctly in charts
+                        svg.querySelectorAll('text').forEach(t => {
+                            t.style.fontFamily = 'sans-serif';
+                            t.style.fontSize = '12px';
+                        });
+                    });
+                }
+            }
+        });
+
+        // Generate PDF
+        const imgWidth = 210; // A4 Width in mm
+        const pageHeight = 297; // A4 Height in mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        const pdf = new jsPDF('p', 'mm', 'a4', true);
+
+        // JPEG compression level (0.85 is a good balance for data charts)
+        const imgData = canvas.toDataURL('image/jpeg', 0.85);
+
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        // Add first page
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+        heightLeft -= pageHeight;
+
+        // Handle multi-page content
+        while (heightLeft > 0) {
+            pdf.addPage();
+            position = heightLeft - imgHeight;
+            pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+            heightLeft -= pageHeight;
+        }
+
+        const dateStr = new Date().toISOString().split('T')[0];
+        const safeTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        pdf.save(`nlace-reporte-${safeTitle}-${dateStr}.pdf`);
+
+        // Success - clean up
+        window.scrollTo(0, originalScrollPos);
+
     } catch (error) {
-        console.error('Error generating PDF:', error)
-        // Re-throw to be handled by the UI (e.g. show a toast)
-        throw error
+        console.error('[PDF Export] Failed:', error);
+        window.scrollTo(0, originalScrollPos);
+        throw error;
     }
 }

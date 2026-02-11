@@ -85,14 +85,14 @@ export default function ReportView({ report }: { report: any }) {
         try {
             await exportReportToPDF('report-container', report.title || 'reporte')
             toast({
-                title: "Casi listo",
-                description: "El reporte se ha generado correctamente.",
+                title: "Reporte descargado",
+                description: "El archivo PDF se ha generado con éxito.",
             })
-        } catch (e) {
+        } catch (e: any) {
             console.error(e)
             toast({
                 title: "Error al exportar",
-                description: "No se pudo generar el PDF. El reporte podría ser muy largo o contener elementos no soportados.",
+                description: e.message || "No se pudo generar el PDF por un error técnico del navegador.",
                 variant: "destructive"
             })
         } finally {
