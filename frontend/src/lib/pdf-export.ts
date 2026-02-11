@@ -2,9 +2,10 @@ import { jsPDF } from 'jspdf'
 import html2canvas from 'html2canvas'
 
 /**
- * Client-side PDF export for reports using html2canvas & jsPDF
- * High-performance version with specialized handling for long reports and charts.
- * Features: Auto-scaling, memory management, and SVG precision fixing.
+ * Client-side PDF export for reports using html2canvas & jsPDF.
+ * 
+ * SPECIAL FIX: Tailwind 4 and modern UI libraries use color functions like lab() and oklch()
+ * which html2canvas cannot parse. This utility sanitizes the DOM clone before capture.
  */
 export async function exportReportToPDF(elementId: string, title: string) {
     if (typeof window === 'undefined') return;
@@ -14,27 +15,21 @@ export async function exportReportToPDF(elementId: string, title: string) {
         throw new Error(`Report element "${elementId}" not found in DOM.`);
     }
 
-    // Capture initial state
+    // Store state
     const originalScrollPos = window.scrollY;
     window.scrollTo(0, 0);
 
     try {
-        // Wait for rendering & animations
+        // Wait for charts to settle
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Memory Management: Calculate optimal scale based on element height
-        // Chrome has a canvas limit (approx 16,384px height). 
-        // We stay safe by capping total pixels.
         const height = reportElement.scrollHeight;
         const width = reportElement.scrollWidth || 1200;
 
-        let safeScale = 2; // Default high quality
-        if (height * safeScale > 15000) {
-            safeScale = 1.5;
-        }
-        if (height * safeScale > 15000) {
-            safeScale = 1;
-        }
+        // Quality vs Memory: Cap scale for very long documents
+        let safeScale = 2;
+        if (height > 5000) safeScale = 1.5;
+        if (height > 10000) safeScale = 1;
 
         console.log(`[PDF Export] Starting capture: ${width}x${height} at scale ${safeScale}`);
 
@@ -44,98 +39,81 @@ export async function exportReportToPDF(elementId: string, title: string) {
             allowTaint: true,
             backgroundColor: '#ffffff',
             logging: false,
-            // Capture full scrollable area
             scrollY: -window.scrollY,
             windowWidth: width,
             windowHeight: height,
             onclone: (clonedDoc) => {
+                // 1. Aggressive Style Sanitization for html2canvas compatibility
+                // Remove modern CSS color functions that cause "parsing error" in html2canvas
+                const styleTags = clonedDoc.querySelectorAll('style');
+                styleTags.forEach(tag => {
+                    // Replace oklch(), lab(), oklab() and color-mix() with safe fallbacks
+                    // This is a regex-based "polyfill" to prevent html2canvas parser crashes
+                    let css = tag.innerHTML;
+                    css = css.replace(/oklch\([^)]+\)/g, '#3b82f6');
+                    css = css.replace(/oklab\([^)]+\)/g, '#3b82f6');
+                    css = css.replace(/lab\([^)]+\)/g, '#3b82f6');
+                    css = css.replace(/color-mix\([^)]+\)/g, '#64748b');
+                    tag.innerHTML = css;
+                });
+
+                // 2. Element-level cleanup
                 const clonedElement = clonedDoc.getElementById(elementId);
                 if (clonedElement) {
-                    // Force the clone to show all content without scrolls
                     clonedElement.style.height = 'auto';
                     clonedElement.style.maxHeight = 'none';
                     clonedElement.style.overflow = 'visible';
                     clonedElement.style.display = 'block';
-                    clonedElement.style.padding = '40px'; // Professional margins
+                    clonedElement.style.padding = '40px';
 
-                    // Hide UI-only elements
+                    // Kill any problematic inline styles
+                    const allInClone = clonedElement.querySelectorAll('*');
+                    allInClone.forEach(el => {
+                        const htmlEl = el as HTMLElement;
+                        const styleAttr = htmlEl.getAttribute('style') || '';
+                        if (styleAttr.includes('lab(') || styleAttr.includes('oklch(') || styleAttr.includes('color-mix(')) {
+                            // Strip modern color functions from inline styles
+                            htmlEl.setAttribute('style', styleAttr
+                                .replace(/oklch\([^)]+\)/g, '#3b82f6')
+                                .replace(/lab\([^)]+\)/g, '#3b82f6')
+                            );
+                        }
+                    });
+
+                    // 3. Hide UI actions
                     clonedDoc.querySelectorAll('.print\\:hidden, button, .action-bar').forEach(el => {
                         (el as HTMLElement).style.setProperty('display', 'none', 'important');
                     });
 
-                    // --- COLOR COMPATIBILITY FIX ---
-                    // Fix for 'lab()' and 'oklch()' color functions not supported by html2canvas
-                    const styleTag = clonedDoc.createElement('style');
-                    styleTag.innerHTML = `
-                        * {
-                            /* Attempt to override any variables that might use modern color spaces */
-                            --tw-ring-color: rgba(59, 130, 246, 0.5) !important;
-                            --tw-ring-offset-color: white !important;
-                        }
-                        /* Tremor / Recharts dynamic classes sometimes hit this */
-                        [class*="lab("], [style*="lab("], [style*="oklch("] {
-                            color: #1e293b !important;
-                            background-color: #ffffff !important;
-                            fill: #3b82f6 !important;
-                        }
-                    `;
-                    clonedDoc.head.appendChild(styleTag);
-
-                    const allElements = clonedDoc.querySelectorAll('*');
-                    allElements.forEach(el => {
-                        const htmlEl = el as HTMLElement;
-                        // Some libraries put lab() directly in inline styles via JS
-                        const inlineStyle = htmlEl.getAttribute('style') || '';
-                        if (inlineStyle.includes('lab(') || inlineStyle.includes('oklch(') || inlineStyle.includes('color-mix(')) {
-                            // Strip the problematic property or replace it
-                            htmlEl.style.color = '#1e293b';
-                            htmlEl.style.backgroundColor = 'transparent';
-                            if (htmlEl.tagName.toLowerCase() === 'path' || htmlEl.tagName.toLowerCase() === 'rect') {
-                                htmlEl.style.fill = '#3b82f6';
-                            }
-                        }
-                    });
-
-                    // Fix for Recharts/Tremor SVGs that sometimes don't show up
+                    // 4. Stabilize Charts for capture
                     clonedDoc.querySelectorAll('.recharts-responsive-container, .tremor-base').forEach(chart => {
                         (chart as HTMLElement).style.width = '1000px';
                         (chart as HTMLElement).style.height = '400px';
                         (chart as HTMLElement).style.position = 'relative';
-                    });
-
-                    clonedDoc.querySelectorAll('svg').forEach(svg => {
-                        svg.setAttribute('shape-rendering', 'geometricPrecision');
-                        // Ensure text is visible and sized correctly in charts
-                        svg.querySelectorAll('text').forEach(t => {
-                            t.style.fontFamily = 'sans-serif';
-                            t.style.fontSize = '12px';
-                        });
+                        (chart as HTMLElement).style.visibility = 'visible';
+                        (chart as HTMLElement).style.opacity = '1';
                     });
                 }
             }
         });
 
-        // Generate PDF
-        const imgWidth = 210; // A4 Width in mm
-        const pageHeight = 297; // A4 Height in mm
+        // Final PDF generation
+        const imgWidth = 210; // A4 Width mm
+        const pageHeight = 297; // A4 Height mm
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
         const pdf = new jsPDF('p', 'mm', 'a4', true);
-
-        // JPEG compression level (0.85 is a good balance for data charts)
         const imgData = canvas.toDataURL('image/jpeg', 0.85);
 
         let heightLeft = imgHeight;
         let position = 0;
 
-        // Add first page
         pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
         heightLeft -= pageHeight;
 
-        // Handle multi-page content
-        while (heightLeft > 0) {
-            pdf.addPage();
+        while (heightLeft >= 0) {
             position = heightLeft - imgHeight;
+            pdf.addPage();
             pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
             heightLeft -= pageHeight;
         }
@@ -144,7 +122,6 @@ export async function exportReportToPDF(elementId: string, title: string) {
         const safeTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
         pdf.save(`nlace-reporte-${safeTitle}-${dateStr}.pdf`);
 
-        // Success - clean up
         window.scrollTo(0, originalScrollPos);
 
     } catch (error) {
