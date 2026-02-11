@@ -68,16 +68,33 @@ function exportToCsv(report: any) {
 import { exportReportToPDF } from '@/lib/pdf-export'
 import { useState } from 'react'
 
+import { useToast } from "@/components/ui/use-toast"
+
 export default function ReportView({ report }: { report: any }) {
     const router = useRouter()
+    const { toast } = useToast()
     const [isExporting, setIsExporting] = useState(false)
 
     const handleDownloadPDF = async () => {
         setIsExporting(true)
+        toast({
+            title: "Generando PDF",
+            description: "Esto puede tardar unos segundos dependiendo del tamaño del reporte.",
+        })
+
         try {
             await exportReportToPDF('report-container', report.title || 'reporte')
+            toast({
+                title: "Casi listo",
+                description: "El reporte se ha generado correctamente.",
+            })
         } catch (e) {
             console.error(e)
+            toast({
+                title: "Error al exportar",
+                description: "No se pudo generar el PDF. El reporte podría ser muy largo o contener elementos no soportados.",
+                variant: "destructive"
+            })
         } finally {
             setIsExporting(false)
         }
