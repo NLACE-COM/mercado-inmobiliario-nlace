@@ -63,6 +63,39 @@ export async function exportReportToPDF(elementId: string, title: string) {
                         (el as HTMLElement).style.setProperty('display', 'none', 'important');
                     });
 
+                    // --- COLOR COMPATIBILITY FIX ---
+                    // Fix for 'lab()' and 'oklch()' color functions not supported by html2canvas
+                    const styleTag = clonedDoc.createElement('style');
+                    styleTag.innerHTML = `
+                        * {
+                            /* Attempt to override any variables that might use modern color spaces */
+                            --tw-ring-color: rgba(59, 130, 246, 0.5) !important;
+                            --tw-ring-offset-color: white !important;
+                        }
+                        /* Tremor / Recharts dynamic classes sometimes hit this */
+                        [class*="lab("], [style*="lab("], [style*="oklch("] {
+                            color: #1e293b !important;
+                            background-color: #ffffff !important;
+                            fill: #3b82f6 !important;
+                        }
+                    `;
+                    clonedDoc.head.appendChild(styleTag);
+
+                    const allElements = clonedDoc.querySelectorAll('*');
+                    allElements.forEach(el => {
+                        const htmlEl = el as HTMLElement;
+                        // Some libraries put lab() directly in inline styles via JS
+                        const inlineStyle = htmlEl.getAttribute('style') || '';
+                        if (inlineStyle.includes('lab(') || inlineStyle.includes('oklch(') || inlineStyle.includes('color-mix(')) {
+                            // Strip the problematic property or replace it
+                            htmlEl.style.color = '#1e293b';
+                            htmlEl.style.backgroundColor = 'transparent';
+                            if (htmlEl.tagName.toLowerCase() === 'path' || htmlEl.tagName.toLowerCase() === 'rect') {
+                                htmlEl.style.fill = '#3b82f6';
+                            }
+                        }
+                    });
+
                     // Fix for Recharts/Tremor SVGs that sometimes don't show up
                     clonedDoc.querySelectorAll('.recharts-responsive-container, .tremor-base').forEach(chart => {
                         (chart as HTMLElement).style.width = '1000px';
