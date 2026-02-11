@@ -453,14 +453,36 @@ export async function getHistoricalTrends({ commune, months = 6 }: { commune: st
         const startDate = new Date();
         startDate.setMonth(startDate.getMonth() - limitMonths);
 
+        // 1. Get project IDs for the commune
+        const { data: projects, error: projectsError } = await supabase
+            .from('projects')
+            .select('id')
+            .ilike('commune', commune);
+
+        if (projectsError) throw projectsError;
+
+        const projectIds = projects?.map(p => p.id) || [];
+
+        if (projectIds.length === 0) {
+            return JSON.stringify({
+                message: "No projects found for this commune to fetch historical data.",
+                commune
+            });
+        }
+
+        // 2. Query history only for those projects
         const { data, error } = await supabase
             .from('project_metrics_history')
             .select('snapshot_date, project_id, avg_price_uf, available_units, sales_speed_monthly')
+            .in('project_id', projectIds)
             .gte('snapshot_date', startDate.toISOString())
             .lte('snapshot_date', endDate.toISOString())
             .order('snapshot_date', { ascending: true });
 
-        if (error) throw error;
+        if (error) {
+            console.error(`[AI Agent] Database error in getHistoricalTrends:`, error);
+            throw error;
+        }
 
         if (!data || data.length === 0) {
             return JSON.stringify({
@@ -547,7 +569,7 @@ export async function getTypologyAnalysis({ commune }: { commune: string }) {
     try {
         const supabase = getSupabaseAdmin();
 
-        // Query projects with their typologies
+        // Query projects with their typologies using a proper relational filter
         const { data, error } = await supabase
             .from('project_typologies')
             .select(`
@@ -562,9 +584,12 @@ export async function getTypologyAnalysis({ commune }: { commune: string }) {
                     sales_speed_monthly
                 )
             `)
-            .ilike('projects.commune', `%${commune.trim()}%`);
+            .eq('projects.commune', commune.toUpperCase()); // Exact match is safer for typologies
 
-        if (error) throw error;
+        if (error) {
+            console.error(`[AI Agent] Database error in getTypologyAnalysis:`, error);
+            throw error;
+        }
 
         if (!data || data.length === 0) {
             return JSON.stringify({
