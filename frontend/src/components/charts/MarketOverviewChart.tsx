@@ -1,6 +1,6 @@
 'use client'
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { BarChart, Card, Title, Subtitle } from '@tremor/react'
 
 interface MarketData {
     region: string
@@ -15,38 +15,30 @@ interface MarketOverviewChartProps {
 }
 
 export default function MarketOverviewChart({ data }: MarketOverviewChartProps) {
+    const chartData = data.map(item => ({
+        region: item.region,
+        "Total Unidades": item.totalUnits,
+        "Vendidas": item.soldUnits,
+        "Disponibles": item.availableUnits,
+    }))
+
     return (
-        <div className="w-full h-[400px] bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900">Panorama del Mercado por Región</h3>
-            <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis
-                        dataKey="region"
-                        tick={{ fill: '#6b7280', fontSize: 12 }}
-                        axisLine={{ stroke: '#e5e7eb' }}
-                    />
-                    <YAxis
-                        tick={{ fill: '#6b7280', fontSize: 12 }}
-                        axisLine={{ stroke: '#e5e7eb' }}
-                    />
-                    <Tooltip
-                        contentStyle={{
-                            backgroundColor: '#fff',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
-                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                        }}
-                    />
-                    <Legend
-                        wrapperStyle={{ paddingTop: '20px' }}
-                        iconType="circle"
-                    />
-                    <Bar dataKey="totalUnits" fill="#3b82f6" name="Total Unidades" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="soldUnits" fill="#10b981" name="Vendidas" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="availableUnits" fill="#f59e0b" name="Disponibles" radius={[4, 4, 0, 0]} />
-                </BarChart>
-            </ResponsiveContainer>
-        </div>
+        <Card className="p-6">
+            <Title>Panorama del Mercado por Región</Title>
+            <Subtitle>
+                Distribución de inventario y ventas en las principales zonas
+            </Subtitle>
+            <BarChart
+                className="mt-6 h-[400px]"
+                data={chartData}
+                index="region"
+                categories={["Total Unidades", "Vendidas", "Disponibles"]}
+                colors={["blue", "emerald", "amber"]}
+                valueFormatter={(number: number) =>
+                    Intl.NumberFormat("es-CL").format(number).toString()
+                }
+                yAxisWidth={48}
+            />
+        </Card>
     )
 }

@@ -12,6 +12,7 @@ import {
     TableRow
 } from "@/components/ui/table"
 import { ArrowLeft, Download, Building2, TrendingUp, DollarSign, Loader2, FileText, BarChart3, ScatterChart as ScatterIcon } from 'lucide-react'
+import { Card as TremorCard, Metric, Text as TremorText, Grid, Title } from "@tremor/react"
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
@@ -64,8 +65,23 @@ function exportToCsv(report: any) {
     document.body.removeChild(link)
 }
 
+import { exportReportToPDF } from '@/lib/pdf-export'
+import { useState } from 'react'
+
 export default function ReportView({ report }: { report: any }) {
     const router = useRouter()
+    const [isExporting, setIsExporting] = useState(false)
+
+    const handleDownloadPDF = async () => {
+        setIsExporting(true)
+        try {
+            await exportReportToPDF('report-container', report.title || 'reporte')
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setIsExporting(false)
+        }
+    }
 
     useEffect(() => {
         if (report.status === 'generating') {
@@ -102,7 +118,7 @@ export default function ReportView({ report }: { report: any }) {
     if (!content) return <div>Reporte vacío</div>
 
     return (
-        <div className="space-y-8 pb-16 print:p-0 print:space-y-4">
+        <div id="report-container" className="space-y-8 pb-16 print:p-0 print:space-y-4 bg-white p-8 rounded-xl shadow-sm">
             {/* Header / Actions */}
             <div className="flex justify-between items-center print:hidden">
                 <Link href="/dashboard/reports">
@@ -116,9 +132,17 @@ export default function ReportView({ report }: { report: any }) {
                         <FileText className="h-4 w-4 mr-2" />
                         Exportar CSV
                     </Button>
-                    <Button variant="outline" onClick={() => window.print()}>
-                        <Download className="h-4 w-4 mr-2" />
-                        Descargar PDF
+                    <Button
+                        variant="outline"
+                        onClick={handleDownloadPDF}
+                        disabled={isExporting}
+                    >
+                        {isExporting ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                            <Download className="h-4 w-4 mr-2" />
+                        )}
+                        {isExporting ? 'Generando...' : 'Descargar PDF'}
                     </Button>
                 </div>
             </div>
@@ -148,29 +172,40 @@ export default function ReportView({ report }: { report: any }) {
                     case 'summary':
                     case 'analysis_text': // Handle both text types similarly
                         return (
-                            <Card key={key} className="bg-slate-50 border-none shadow-none print:break-inside-avoid">
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        {section.type === 'summary' ? <Building2 className="h-5 w-5 text-blue-600" /> : <TrendingUp className="h-5 w-5 text-green-600" />}
-                                        {section.title}
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <MarkdownRenderer content={section.content} />
-                                </CardContent>
-                            </Card>
+                            <TremorCard key={key} className="bg-slate-50 p-6 print:break-inside-avoid">
+                                <div className="flex items-center gap-2 mb-4">
+                                    {section.type === 'summary' ? <Building2 className="h-5 w-5 text-blue-600" /> : <TrendingUp className="h-5 w-5 text-green-600" />}
+                                    <Title className="text-slate-900">{section.title}</Title>
+                                </div>
+                                <MarkdownRenderer content={section.content} />
+                            </TremorCard>
                         )
 
                     case 'kpi_grid':
                         return (
                             <div key={key} className="space-y-6">
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 print:break-inside-avoid">
-                                    <KpiCard title="Proyectos Totales" value={section.data.total_projects} icon={Building2} />
-                                    <KpiCard title="Precio Promedio (UF)" value={section.data.avg_price?.toLocaleString()} icon={DollarSign} />
-                                    <KpiCard title="Vel. Venta Promedio" value={section.data.avg_sales_speed} icon={TrendingUp} />
-                                    <KpiCard title="Stock Total" value={section.data.total_stock} icon={BarChart3} />
-                                    <KpiCard title="MAO Promedio" value={section.data.avg_mao} icon={ScatterIcon} />
-                                </div>
+                                <Grid numItemsSm={2} numItemsMd={3} numItemsLg={5} className="gap-4 print:break-inside-avoid">
+                                    <TremorCard decoration="top" decorationColor="blue">
+                                        <TremorText>Proyectos Totales</TremorText>
+                                        <Metric>{section.data.total_projects}</Metric>
+                                    </TremorCard>
+                                    <TremorCard decoration="top" decorationColor="emerald">
+                                        <TremorText>Precio Promedio (UF)</TremorText>
+                                        <Metric>{section.data.avg_price?.toLocaleString()}</Metric>
+                                    </TremorCard>
+                                    <TremorCard decoration="top" decorationColor="indigo">
+                                        <TremorText>Vel. Venta Promedio</TremorText>
+                                        <Metric>{section.data.avg_sales_speed}</Metric>
+                                    </TremorCard>
+                                    <TremorCard decoration="top" decorationColor="amber">
+                                        <TremorText>Stock Total</TremorText>
+                                        <Metric>{section.data.total_stock}</Metric>
+                                    </TremorCard>
+                                    <TremorCard decoration="top" decorationColor="rose">
+                                        <TremorText>MAO Promedio</TremorText>
+                                        <Metric>{section.data.avg_mao}</Metric>
+                                    </TremorCard>
+                                </Grid>
                                 {section.data.total_projects === 0 && (
                                     <div className="bg-amber-50 border border-amber-200 p-4 rounded-md text-amber-800 text-sm">
                                         No se encontraron proyectos activos para los criterios seleccionados. Verifica que la comuna sea correcta o intenta con otra.
