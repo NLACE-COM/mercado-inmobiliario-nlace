@@ -87,6 +87,62 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
                 required: []
             }
         }
+    },
+    {
+        type: "function",
+        function: {
+            name: "compare_communes_detailed",
+            description: "Compare detailed market statistics across multiple communes side-by-side. Returns comparative metrics for pricing, stock, and sales performance.",
+            parameters: {
+                type: "object",
+                properties: {
+                    communes: {
+                        type: "array",
+                        items: { type: "string" },
+                        description: "Array of commune names to compare (e.g., ['Santiago', 'Ñuñoa', 'Las Condes']). Minimum 2, maximum 5 communes."
+                    }
+                },
+                required: ["communes"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "get_historical_trends",
+            description: "Get historical market trends for a specific commune over the last 6 months. Returns time series data showing evolution of prices, stock, and sales speed.",
+            parameters: {
+                type: "object",
+                properties: {
+                    commune: {
+                        type: "string",
+                        description: "The name of the commune to analyze historical trends for"
+                    },
+                    months: {
+                        type: "number",
+                        description: "Number of months to look back (default: 6, max: 12)"
+                    }
+                },
+                required: ["commune"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "get_typology_analysis",
+            description: "Analyze market by unit typology (1D, 2D, 3D, etc.) for a specific commune. Returns breakdown of stock, pricing, and sales speed by number of bedrooms.",
+            parameters: {
+                type: "object",
+                properties: {
+                    commune: {
+                        type: "string",
+                        description: "The name of the commune to analyze typologies for"
+                    }
+                },
+                required: ["commune"]
+            }
+        }
     }
 ];
 
@@ -319,7 +375,281 @@ async function getMarketSummary() {
     }
 }
 
+async function compareCommunes({ communes }: { communes: string[] }) {
+    console.log(`[AI Agent] Comparing communes:`, communes);
+    try {
+        const supabase = getSupabaseAdmin();
+        const comparison: any[] = [];
+
+        for (const commune of communes) {
+            const { data, error } = await supabase
+                .from('projects')
+                .select('id, name, total_units, sold_units, available_units, avg_price_uf, avg_price_m2_uf, sales_speed_monthly')
+                .ilike('commune', `%${commune.trim()}%`)
+                .limit(500);
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                const totalProjects = data.length;
+                const totalUnits = data.reduce((sum, p) => sum + (p.total_units || 0), 0);
+                const totalSold = data.reduce((sum, p) => sum + (p.sold_units || 0), 0);
+                const totalAvailable = data.reduce((sum, p) => sum + (p.available_units || 0), 0);
+
+                const validPrices = data.filter(p => p.avg_price_uf).map(p => p.avg_price_uf);
+                const avgPrice = validPrices.length > 0
+                    ? Math.round(validPrices.reduce((a, b) => a + b, 0) / validPrices.length)
+                    : 0;
+
+                const validPricesM2 = data.filter(p => p.avg_price_m2_uf).map(p => p.avg_price_m2_uf);
+                const avgPriceM2 = validPricesM2.length > 0
+                    ? Math.round(validPricesM2.reduce((a, b) => a + b, 0) / validPricesM2.length)
+                    : 0;
+
+                const validSpeeds = data.filter(p => p.sales_speed_monthly).map(p => p.sales_speed_monthly);
+                const avgSalesSpeed = validSpeeds.length > 0
+                    ? (validSpeeds.reduce((a, b) => a + b, 0) / validSpeeds.length).toFixed(1)
+                    : '0.0';
+
+                const sellThrough = totalUnits > 0 ? ((totalSold / totalUnits) * 100).toFixed(1) : '0.0';
+                const mao = parseFloat(avgSalesSpeed) > 0 ? (totalAvailable / parseFloat(avgSalesSpeed)).toFixed(1) : '-';
+
+                comparison.push({
+                    commune,
+                    total_projects: totalProjects,
+                    total_units: totalUnits,
+                    total_sold: totalSold,
+                    total_available: totalAvailable,
+                    avg_price_uf: avgPrice,
+                    avg_price_m2_uf: avgPriceM2,
+                    avg_sales_speed: avgSalesSpeed,
+                    sell_through_pct: sellThrough,
+                    mao: mao
+                });
+            } else {
+                comparison.push({
+                    commune,
+                    error: 'No data found for this commune'
+                });
+            }
+        }
+
+        return JSON.stringify(comparison, null, 2);
+    } catch (e: any) {
+        return `Error comparing communes: ${e.message}`;
+    }
+}
+
+async function getHistoricalTrends({ commune, months = 6 }: { commune: string, months?: number }) {
+    console.log(`[AI Agent] Fetching historical trends for ${commune}, last ${months} months`);
+    try {
+        const supabase = getSupabaseAdmin();
+
+        // Limit months to max 12
+        const limitMonths = Math.min(months, 12);
+
+        // Calculate date range
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setMonth(startDate.getMonth() - limitMonths);
+
+        const { data, error } = await supabase
+            .from('project_metrics_history')
+            .select('snapshot_date, project_id, avg_price_uf, available_units, sales_speed_monthly')
+            .gte('snapshot_date', startDate.toISOString())
+            .lte('snapshot_date', endDate.toISOString())
+            .order('snapshot_date', { ascending: true });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            return JSON.stringify({
+                message: "No historical data available for this commune. Historical metrics may not have been backfilled yet.",
+                commune,
+                months_requested: limitMonths
+            });
+        }
+
+        // Group by month and calculate averages
+        const monthlyData: Record<string, any> = {};
+
+        data.forEach(record => {
+            const month = record.snapshot_date.substring(0, 7); // YYYY-MM format
+
+            if (!monthlyData[month]) {
+                monthlyData[month] = {
+                    prices: [],
+                    stock: [],
+                    speeds: []
+                };
+            }
+
+            if (record.avg_price_uf) monthlyData[month].prices.push(record.avg_price_uf);
+            if (record.available_units) monthlyData[month].stock.push(record.available_units);
+            if (record.sales_speed_monthly) monthlyData[month].speeds.push(record.sales_speed_monthly);
+        });
+
+        // Calculate monthly averages
+        const trends = Object.entries(monthlyData).map(([month, values]: [string, any]) => {
+            const avgPrice = values.prices.length > 0
+                ? Math.round(values.prices.reduce((a: number, b: number) => a + b, 0) / values.prices.length)
+                : null;
+
+            const totalStock = values.stock.length > 0
+                ? values.stock.reduce((a: number, b: number) => a + b, 0)
+                : null;
+
+            const avgSpeed = values.speeds.length > 0
+                ? (values.speeds.reduce((a: number, b: number) => a + b, 0) / values.speeds.length).toFixed(1)
+                : null;
+
+            return {
+                month,
+                avg_price_uf: avgPrice,
+                total_stock: totalStock,
+                avg_sales_speed: avgSpeed
+            };
+        }).sort((a, b) => a.month.localeCompare(b.month));
+
+        // Calculate trend indicators
+        let priceChange = null;
+        let stockChange = null;
+
+        if (trends.length >= 2) {
+            const firstMonth = trends[0];
+            const lastMonth = trends[trends.length - 1];
+
+            if (firstMonth.avg_price_uf && lastMonth.avg_price_uf) {
+                priceChange = (((lastMonth.avg_price_uf - firstMonth.avg_price_uf) / firstMonth.avg_price_uf) * 100).toFixed(1);
+            }
+
+            if (firstMonth.total_stock && lastMonth.total_stock) {
+                stockChange = (((lastMonth.total_stock - firstMonth.total_stock) / firstMonth.total_stock) * 100).toFixed(1);
+            }
+        }
+
+        return JSON.stringify({
+            commune,
+            period: `${trends[0]?.month} to ${trends[trends.length - 1]?.month}`,
+            trends,
+            indicators: {
+                price_change_pct: priceChange,
+                stock_change_pct: stockChange
+            }
+        }, null, 2);
+    } catch (e: any) {
+        return `Error fetching historical trends: ${e.message}`;
+    }
+}
+
+async function getTypologyAnalysis({ commune }: { commune: string }) {
+    console.log(`[AI Agent] Analyzing typologies for ${commune}`);
+    try {
+        const supabase = getSupabaseAdmin();
+
+        // Query projects with their typologies
+        const { data, error } = await supabase
+            .from('project_typologies')
+            .select(`
+                bedrooms,
+                bathrooms,
+                surface_m2,
+                price_uf,
+                project_id,
+                projects!inner (
+                    commune,
+                    available_units,
+                    sales_speed_monthly
+                )
+            `)
+            .ilike('projects.commune', `%${commune.trim()}%`);
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            return JSON.stringify({
+                message: "No typology data available for this commune. Typologies may not have been backfilled yet.",
+                commune
+            });
+        }
+
+        // Group by bedrooms (typology)
+        const typologyStats: Record<string, any> = {};
+
+        data.forEach((record: any) => {
+            const bedrooms = record.bedrooms || 0;
+            const typologyKey = `${bedrooms}D`;
+
+            if (!typologyStats[typologyKey]) {
+                typologyStats[typologyKey] = {
+                    count: 0,
+                    total_stock: 0,
+                    prices: [],
+                    speeds: [],
+                    surfaces: []
+                };
+            }
+
+            typologyStats[typologyKey].count += 1;
+
+            if (record.projects?.available_units) {
+                typologyStats[typologyKey].total_stock += record.projects.available_units;
+            }
+
+            if (record.price_uf) {
+                typologyStats[typologyKey].prices.push(record.price_uf);
+            }
+
+            if (record.projects?.sales_speed_monthly) {
+                typologyStats[typologyKey].speeds.push(record.projects.sales_speed_monthly);
+            }
+
+            if (record.surface_m2) {
+                typologyStats[typologyKey].surfaces.push(record.surface_m2);
+            }
+        });
+
+        // Calculate averages and percentages
+        const totalStock = Object.values(typologyStats).reduce((sum: number, t: any) => sum + t.total_stock, 0);
+
+        const analysis = Object.entries(typologyStats).map(([typology, stats]: [string, any]) => {
+            const avgPrice = stats.prices.length > 0
+                ? Math.round(stats.prices.reduce((a: number, b: number) => a + b, 0) / stats.prices.length)
+                : null;
+
+            const avgSpeed = stats.speeds.length > 0
+                ? (stats.speeds.reduce((a: number, b: number) => a + b, 0) / stats.speeds.length).toFixed(1)
+                : null;
+
+            const avgSurface = stats.surfaces.length > 0
+                ? Math.round(stats.surfaces.reduce((a: number, b: number) => a + b, 0) / stats.surfaces.length)
+                : null;
+
+            const percentage = totalStock > 0 ? ((stats.total_stock / totalStock) * 100).toFixed(1) : '0.0';
+
+            return {
+                typology,
+                units_count: stats.count,
+                stock: stats.total_stock,
+                avg_price_uf: avgPrice,
+                avg_surface_m2: avgSurface,
+                avg_sales_speed: avgSpeed,
+                percentage_of_total: percentage
+            };
+        }).sort((a, b) => b.stock - a.stock); // Sort by stock descending
+
+        return JSON.stringify({
+            commune,
+            total_stock: totalStock,
+            typologies: analysis
+        }, null, 2);
+    } catch (e: any) {
+        return `Error analyzing typologies: ${e.message}`;
+    }
+}
+
 // --- Main Agent Function ---
+
 
 export async function queryBrainWithRAG(question: string, conversationHistory: any[] = []) {
     try {
@@ -353,9 +683,22 @@ export async function queryBrainWithRAG(question: string, conversationHistory: a
                 Tu objetivo es ayudar a desarrolladores e inversores con datos precisos.
                 
                 TIENES ACCESO A DATOS EN TIEMPO REAL DE LA BASE DE DATOS 'projects'.
-                - Si te preguntan por precios, stock, o tendencias, DEBES usar la herramienta 'get_market_stats'.
-                - Si te preguntan por proyectos específicos, usa 'search_projects'.
-                - Si te preguntan algo general (ej. "¿Cómo está el mercado?"), usa 'get_market_stats' sin parámetros.
+                
+                HERRAMIENTAS DISPONIBLES:
+                - 'get_market_stats': Estadísticas de una comuna específica o mercado general
+                - 'search_projects': Buscar proyectos con filtros específicos
+                - 'compare_regions': Comparar regiones amplias (RM, V, VIII)
+                - 'compare_communes_detailed': Comparar múltiples comunas lado a lado (NUEVA - USA ESTA para comparaciones detalladas)
+                - 'get_top_sales': Top 10 proyectos con mayor velocidad de venta
+                - 'get_market_summary': Resumen ejecutivo del mercado completo
+                - 'get_historical_trends': Tendencias históricas de una comuna (últimos 6 meses) (NUEVA)
+                - 'get_typology_analysis': Análisis por tipología (1D, 2D, 3D) de una comuna (NUEVA)
+                
+                CUÁNDO USAR CADA HERRAMIENTA:
+                - Si preguntan por comparar comunas: USA 'compare_communes_detailed'
+                - Si preguntan por tendencias o evolución: USA 'get_historical_trends'
+                - Si preguntan por tipologías o tipos de unidades: USA 'get_typology_analysis'
+                - Si preguntan por precios/stock de una comuna: USA 'get_market_stats'
                 ${ragContext}
                 IMPORTANTE:
                 - Responde siempre en español.
@@ -411,9 +754,16 @@ export async function queryBrainWithRAG(question: string, conversationHistory: a
                     result = await getTopSales();
                 } else if (fnName === "get_market_summary") {
                     result = await getMarketSummary();
+                } else if (fnName === "compare_communes_detailed") {
+                    result = await compareCommunes(args);
+                } else if (fnName === "get_historical_trends") {
+                    result = await getHistoricalTrends(args);
+                } else if (fnName === "get_typology_analysis") {
+                    result = await getTypologyAnalysis(args);
                 } else {
                     result = "Error: Tool not found";
                 }
+
 
                 console.log(`[AI Agent] Tool result preview:`, result.slice(0, 100));
 

@@ -26,7 +26,12 @@ import {
     Tooltip as RechartsTooltip,
     BarChart,
     Bar,
-    Legend
+    Legend,
+    LineChart,
+    Line,
+    PieChart,
+    Pie,
+    Cell
 } from 'recharts'
 
 function exportToCsv(report: any) {
@@ -253,6 +258,154 @@ export default function ReportView({ report }: { report: any }) {
                                                 ))}
                                             </TableBody>
                                         </Table>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )
+
+                    case 'comparison_table':
+                        if (!section.data || section.data.length === 0) return null;
+                        return (
+                            <Card key={key} className="print:break-inside-avoid">
+                                <CardHeader>
+                                    <CardTitle>{section.title || 'Comparativa Regional'}</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="rounded-md border overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Comuna</TableHead>
+                                                    <TableHead className="text-right">Proyectos</TableHead>
+                                                    <TableHead className="text-right">Precio Prom. (UF)</TableHead>
+                                                    <TableHead className="text-right">UF/m²</TableHead>
+                                                    <TableHead className="text-right">Stock Total</TableHead>
+                                                    <TableHead className="text-right">Vel. Venta</TableHead>
+                                                    <TableHead className="text-right">MAO (meses)</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {section.data.map((row: any, idx: number) => (
+                                                    <TableRow key={idx}>
+                                                        <TableCell className="font-semibold">{row.commune}</TableCell>
+                                                        <TableCell className="text-right">{row.total_projects}</TableCell>
+                                                        <TableCell className="text-right">{row.avg_price_uf?.toLocaleString()}</TableCell>
+                                                        <TableCell className="text-right">{row.avg_price_m2_uf?.toLocaleString()}</TableCell>
+                                                        <TableCell className="text-right">{row.total_available?.toLocaleString()}</TableCell>
+                                                        <TableCell className="text-right font-bold text-green-600">{row.avg_sales_speed}</TableCell>
+                                                        <TableCell className="text-right">{row.mao}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )
+
+                    case 'trend_chart':
+                        if (!section.data || section.data.length === 0) return null;
+                        return (
+                            <Card key={key} className="print:break-inside-avoid">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center justify-between">
+                                        <span>{section.title || 'Tendencias Históricas'}</span>
+                                        {section.trend_indicators && (
+                                            <div className="flex gap-4 text-sm">
+                                                {section.trend_indicators.price_change_pct && (
+                                                    <Badge variant={parseFloat(section.trend_indicators.price_change_pct) > 0 ? 'default' : 'secondary'}>
+                                                        Precio: {parseFloat(section.trend_indicators.price_change_pct) > 0 ? '↑' : '↓'} {Math.abs(section.trend_indicators.price_change_pct)}%
+                                                    </Badge>
+                                                )}
+                                                {section.trend_indicators.stock_change_pct && (
+                                                    <Badge variant={parseFloat(section.trend_indicators.stock_change_pct) > 0 ? 'default' : 'secondary'}>
+                                                        Stock: {parseFloat(section.trend_indicators.stock_change_pct) > 0 ? '↑' : '↓'} {Math.abs(section.trend_indicators.stock_change_pct)}%
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        )}
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="h-[400px] w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={section.data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="month" />
+                                            <YAxis yAxisId="left" label={{ value: 'Precio (UF)', angle: -90, position: 'insideLeft' }} />
+                                            <YAxis yAxisId="right" orientation="right" label={{ value: 'Stock (unidades)', angle: 90, position: 'insideRight' }} />
+                                            <RechartsTooltip />
+                                            <Legend />
+                                            <Line yAxisId="left" type="monotone" dataKey="avg_price_uf" stroke="#3b82f6" strokeWidth={2} name="Precio Promedio (UF)" />
+                                            <Line yAxisId="right" type="monotone" dataKey="total_stock" stroke="#10b981" strokeWidth={2} name="Stock Total" />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </CardContent>
+                            </Card>
+                        )
+
+                    case 'typology_breakdown':
+                        if (!section.data || Object.keys(section.data).length === 0) return null;
+
+                        const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+                        const pieData = Object.entries(section.data).map(([typology, stats]: [string, any]) => ({
+                            name: typology,
+                            value: stats.stock,
+                            percentage: stats.percentage_of_total
+                        }));
+
+                        return (
+                            <Card key={key} className="print:break-inside-avoid">
+                                <CardHeader>
+                                    <CardTitle>{section.title || 'Análisis por Tipología'}</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                        {/* Pie Chart */}
+                                        <div className="h-[300px]">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <PieChart>
+                                                    <Pie
+                                                        data={pieData}
+                                                        cx="50%"
+                                                        cy="50%"
+                                                        labelLine={false}
+                                                        label={(entry: any) => `${entry.name}: ${entry.percentage}%`}
+                                                        outerRadius={80}
+                                                        fill="#8884d8"
+                                                        dataKey="value"
+                                                    >
+                                                        {pieData.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                        ))}
+                                                    </Pie>
+                                                    <RechartsTooltip />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                        </div>
+
+                                        {/* Stats Table */}
+                                        <div className="rounded-md border">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Tipología</TableHead>
+                                                        <TableHead className="text-right">Stock</TableHead>
+                                                        <TableHead className="text-right">Precio (UF)</TableHead>
+                                                        <TableHead className="text-right">Vel. Venta</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {Object.entries(section.data).map(([typology, stats]: [string, any], idx) => (
+                                                        <TableRow key={idx}>
+                                                            <TableCell className="font-semibold">{typology}</TableCell>
+                                                            <TableCell className="text-right">{stats.stock}</TableCell>
+                                                            <TableCell className="text-right">{stats.avg_price_uf?.toLocaleString()}</TableCell>
+                                                            <TableCell className="text-right">{stats.avg_sales_speed || 'N/A'}</TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>
