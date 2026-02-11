@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
+import { requireAuth } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/brain/reports/[id]
- * Fetch a single report by ID
+ * Fetch a single report by ID (only if owned by the authenticated user)
  */
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    // Require authentication
+    const auth = await requireAuth(request)
+    if (auth.error) return auth.error
+
     try {
         const { id } = await params
         const supabase = getSupabaseAdmin()
@@ -19,6 +24,7 @@ export async function GET(
             .from('generated_reports')
             .select('*')
             .eq('id', id)
+            .eq('user_id', auth.user.id) // Ensure user owns this report
             .single()
 
         if (error) {

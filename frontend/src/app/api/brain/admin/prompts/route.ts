@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
+import { requireAdmin } from '@/lib/api-auth'
 import fs from 'fs'
 import path from 'path'
 
@@ -7,9 +8,13 @@ export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/brain/admin/prompts
- * Fetch all system prompts
+ * Fetch all system prompts (admin only)
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+    // Require admin authentication
+    const auth = await requireAdmin(request)
+    if (auth.error) return auth.error
+
     try {
         const supabase = getSupabaseAdmin()
 
@@ -67,9 +72,13 @@ export async function GET() {
 
 /**
  * POST /api/brain/admin/prompts
- * Create a new system prompt
+ * Create a new system prompt (admin only)
  */
 export async function POST(request: NextRequest) {
+    // Require admin authentication
+    const auth = await requireAdmin(request)
+    if (auth.error) return auth.error
+
     try {
         const body = await request.json()
         const { content, label } = body

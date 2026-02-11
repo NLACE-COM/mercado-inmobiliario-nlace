@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
+import { requireAuth } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -7,7 +8,11 @@ export const dynamic = 'force-dynamic'
  * GET /api/brain/reports/communes
  * Fetch all distinct communes from the projects table efficienty
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+    // Require authentication
+    const auth = await requireAuth(request)
+    if (auth.error) return auth.error
+
     try {
         const supabase = getSupabaseAdmin()
 

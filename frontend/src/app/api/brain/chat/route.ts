@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { queryBrainWithRAG } from '@/lib/brain-agent'
+import { requireAuth } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60 // Allow up to 60 seconds for AI responses
@@ -9,6 +10,10 @@ export const maxDuration = 60 // Allow up to 60 seconds for AI responses
  * Chat with the AI brain
  */
 export async function POST(request: NextRequest) {
+    // Require authentication
+    const auth = await requireAuth(request)
+    if (auth.error) return auth.error
+
     try {
         const body = await request.json()
         const { question, conversation_history = [] } = body

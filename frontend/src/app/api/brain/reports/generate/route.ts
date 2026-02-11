@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
+import { requireAuth } from '@/lib/api-auth'
 import OpenAI from 'openai'
 
 // Increase timeout for Vercel Hobby plan (max 10s usually, but let's try to be fast)
@@ -15,6 +16,10 @@ const openai = new OpenAI({
  * Generate a new report with REAL DATA and OpenAI Analysis
  */
 export async function POST(request: NextRequest) {
+    // Require authentication
+    const auth = await requireAuth(request)
+    if (auth.error) return auth.error
+
     try {
         const body = await request.json()
         const { title, report_type, parameters } = body // e.g., parameters: { commune: 'SANTIAGO' }
@@ -28,7 +33,7 @@ export async function POST(request: NextRequest) {
 
         const supabase = getSupabaseAdmin()
 
-        // 1. Create Initial Report Entry (status: 'generating')
+        // 1. Create Initial Report Entry (status: 'generating') with user_id
         const { data: initialReport, error: createError } = await supabase
             .from('generated_reports')
             .insert({
@@ -36,7 +41,8 @@ export async function POST(request: NextRequest) {
                 report_type,
                 parameters,
                 status: 'generating',
-                content: null
+                content: null,
+                user_id: auth.user.id // Track which user created this report
             })
             .select()
             .single()

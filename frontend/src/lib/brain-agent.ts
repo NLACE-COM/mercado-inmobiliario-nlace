@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from './supabase-server'
+import { searchKnowledge } from './vector-store'
 import OpenAI from 'openai'
 
 const openai = new OpenAI({
@@ -42,6 +43,48 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
                     max_price_uf: { type: "number" },
                     limit: { type: "number", default: 5 }
                 }
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "compare_regions",
+            description: "Compare market statistics across multiple regions/comunas. Returns side-by-side comparison of prices, stock, and sales metrics.",
+            parameters: {
+                type: "object",
+                properties: {
+                    regions: {
+                        type: "array",
+                        items: { type: "string" },
+                        description: "Array of region/comuna names to compare (e.g., ['RM', 'V', 'VIII'] or ['Santiago', 'Ñuñoa', 'Las Condes'])"
+                    }
+                },
+                required: ["regions"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "get_top_sales",
+            description: "Get the top 10 projects with the highest sales speed. Returns projects ranked by monthly sales velocity.",
+            parameters: {
+                type: "object",
+                properties: {},
+                required: []
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "get_market_summary",
+            description: "Get a comprehensive market summary with global totals and regional breakdown. Returns executive summary of the entire market.",
+            parameters: {
+                type: "object",
+                properties: {},
+                required: []
             }
         }
     }
@@ -124,11 +167,185 @@ async function searchProjects({ comuna, min_price_uf, max_price_uf, limit = 5 }:
     }
 }
 
+async function compareRegions({ regions }: { regions: string[] }) {
+    console.log(`[AI Agent] Comparing regions:`, regions);
+    try {
+        const supabase = getSupabaseAdmin();
+        const comparison: any[] = [];
+
+        for (const region of regions) {
+            const { data, error } = await supabase
+                .from('projects')
+                .select('id, name, total_units, sold_units, available_units, avg_price_uf, sales_speed_monthly')
+                .ilike('commune', `%${region.trim()}%`)
+                .limit(500);
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                const totalProjects = data.length;
+                const totalUnits = data.reduce((sum, p) => sum + (p.total_units || 0), 0);
+                const totalSold = data.reduce((sum, p) => sum + (p.sold_units || 0), 0);
+                const totalAvailable = data.reduce((sum, p) => sum + (p.available_units || 0), 0);
+
+                const validPrices = data.filter(p => p.avg_price_uf).map(p => p.avg_price_uf);
+                const avgPrice = validPrices.length > 0
+                    ? Math.round(validPrices.reduce((a, b) => a + b, 0) / validPrices.length)
+                    : 0;
+
+                const sellThrough = totalUnits > 0 ? ((totalSold / totalUnits) * 100).toFixed(1) : '0.0';
+
+                comparison.push({
+                    region,
+                    total_projects: totalProjects,
+                    total_units: totalUnits,
+                    total_sold: totalSold,
+                    total_available: totalAvailable,
+                    avg_price_uf: avgPrice,
+                    sell_through_pct: sellThrough
+                });
+            } else {
+                comparison.push({
+                    region,
+                    error: 'No data found for this region'
+                });
+            }
+        }
+
+        return JSON.stringify(comparison, null, 2);
+    } catch (e: any) {
+        return `Error comparing regions: ${e.message}`;
+    }
+}
+
+async function getTopSales() {
+    console.log(`[AI Agent] Fetching top sales projects`);
+    try {
+        const supabase = getSupabaseAdmin();
+
+        const { data, error } = await supabase
+            .from('projects')
+            .select('id, name, developer, commune, available_units, total_units, sold_units, sales_speed_monthly, avg_price_uf')
+            .not('sales_speed_monthly', 'is', null)
+            .order('sales_speed_monthly', { ascending: false })
+            .limit(10);
+
+        if (error) throw error;
+        if (!data || data.length === 0) return "No projects with sales data found.";
+
+        const topProjects = data.map(p => {
+            const sellThrough = p.total_units > 0
+                ? ((p.sold_units || 0) / p.total_units * 100).toFixed(1)
+                : '0.0';
+
+            return {
+                name: p.name,
+                developer: p.developer,
+                commune: p.commune,
+                sales_speed_monthly: p.sales_speed_monthly,
+                available_units: p.available_units,
+                sell_through_pct: sellThrough,
+                avg_price_uf: p.avg_price_uf
+            };
+        });
+
+        return JSON.stringify(topProjects, null, 2);
+    } catch (e: any) {
+        return `Error fetching top sales: ${e.message}`;
+    }
+}
+
+async function getMarketSummary() {
+    console.log(`[AI Agent] Generating market summary`);
+    try {
+        const supabase = getSupabaseAdmin();
+
+        const { data, error } = await supabase
+            .from('projects')
+            .select('commune, total_units, sold_units, available_units, avg_price_uf')
+            .limit(5000);
+
+        if (error) throw error;
+        if (!data || data.length === 0) return "No market data available.";
+
+        // Global totals
+        const totalProjects = data.length;
+        const totalUnits = data.reduce((sum, p) => sum + (p.total_units || 0), 0);
+        const totalSold = data.reduce((sum, p) => sum + (p.sold_units || 0), 0);
+        const totalAvailable = data.reduce((sum, p) => sum + (p.available_units || 0), 0);
+
+        const validPrices = data.filter(p => p.avg_price_uf).map(p => p.avg_price_uf);
+        const avgPrice = validPrices.length > 0
+            ? Math.round(validPrices.reduce((a, b) => a + b, 0) / validPrices.length)
+            : 0;
+
+        // Group by region
+        const regionStats: Record<string, any> = {};
+        data.forEach(p => {
+            const region = p.commune || 'Unknown';
+            if (!regionStats[region]) {
+                regionStats[region] = {
+                    projects: 0,
+                    total_units: 0,
+                    sold_units: 0,
+                    available_units: 0
+                };
+            }
+            regionStats[region].projects += 1;
+            regionStats[region].total_units += p.total_units || 0;
+            regionStats[region].sold_units += p.sold_units || 0;
+            regionStats[region].available_units += p.available_units || 0;
+        });
+
+        // Top 5 regions by project count
+        const topRegions = Object.entries(regionStats)
+            .map(([name, stats]) => ({ name, ...stats }))
+            .sort((a, b) => b.projects - a.projects)
+            .slice(0, 5);
+
+        return JSON.stringify({
+            global: {
+                total_projects: totalProjects,
+                total_units: totalUnits,
+                total_sold: totalSold,
+                total_available: totalAvailable,
+                avg_price_uf: avgPrice,
+                sell_through_pct: totalUnits > 0 ? ((totalSold / totalUnits) * 100).toFixed(1) : '0.0'
+            },
+            top_5_regions: topRegions
+        }, null, 2);
+    } catch (e: any) {
+        return `Error generating market summary: ${e.message}`;
+    }
+}
+
 // --- Main Agent Function ---
 
 export async function queryBrainWithRAG(question: string, conversationHistory: any[] = []) {
     try {
-        // 1. Prepare messages
+        // 1. Search knowledge base for relevant context (RAG)
+        console.log('[AI Agent] Searching knowledge base for context...')
+        const relevantDocs = await searchKnowledge(question, 3)
+        const sources: any[] = []
+
+        let ragContext = ''
+        if (relevantDocs && relevantDocs.length > 0) {
+            console.log(`[AI Agent] Found ${relevantDocs.length} relevant documents`)
+            ragContext = '\n\nCONTEXTO HISTÓRICO RELEVANTE:\n'
+            relevantDocs.forEach((doc: any, idx: number) => {
+                const topic = doc.metadata?.topic || doc.metadata?.filename || 'Documento'
+                ragContext += `- ${doc.content.substring(0, 500)}... (Fuente: ${topic})\n`
+                sources.push({
+                    id: doc.id,
+                    content: doc.content,
+                    metadata: doc.metadata
+                })
+            })
+        } else {
+            console.log('[AI Agent] No relevant documents found in knowledge base')
+        }
+
+        // 2. Prepare messages with RAG context
         const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
             {
                 role: "system",
@@ -139,12 +356,13 @@ export async function queryBrainWithRAG(question: string, conversationHistory: a
                 - Si te preguntan por precios, stock, o tendencias, DEBES usar la herramienta 'get_market_stats'.
                 - Si te preguntan por proyectos específicos, usa 'search_projects'.
                 - Si te preguntan algo general (ej. "¿Cómo está el mercado?"), usa 'get_market_stats' sin parámetros.
-                
+                ${ragContext}
                 IMPORTANTE:
                 - Responde siempre en español.
                 - Usa formato Markdown (negritas, listas) para que se vea bien en el chat.
                 - Sé conciso y profesional.
                 - Si la herramienta devuelve datos, úsalos explícitamente en tu respuesta (cita números exactos).
+                - Si tienes contexto histórico relevante arriba, úsalo para enriquecer tu respuesta.
                 - NO inventes datos. Si la herramienta no devuelve nada, dilo.`
             },
             ...conversationHistory.map((msg: any) => ({
@@ -187,6 +405,12 @@ export async function queryBrainWithRAG(question: string, conversationHistory: a
                     result = await getMarketStats(args.comuna);
                 } else if (fnName === "search_projects") {
                     result = await searchProjects(args);
+                } else if (fnName === "compare_regions") {
+                    result = await compareRegions(args);
+                } else if (fnName === "get_top_sales") {
+                    result = await getTopSales();
+                } else if (fnName === "get_market_summary") {
+                    result = await getMarketSummary();
                 } else {
                     result = "Error: Tool not found";
                 }
@@ -209,14 +433,14 @@ export async function queryBrainWithRAG(question: string, conversationHistory: a
 
             return {
                 answer: finalResponse.choices[0].message.content || "Lo siento, no pude generar una respuesta final con los datos.",
-                sources: [] // We could populate this if we had RAG docs
+                sources: sources // Return RAG sources
             };
         }
 
         // No tool called, just return text
         return {
             answer: message.content || "No tengo una respuesta para eso.",
-            sources: []
+            sources: sources // Return RAG sources
         };
 
     } catch (error: any) {
