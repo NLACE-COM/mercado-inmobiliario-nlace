@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { Callout, Card, Text } from '@tremor/react'
+import { Card } from '@tremor/react'
 import { AlertTriangle, AlertCircle, Info, ArrowUpRight } from 'lucide-react'
 import { Alert } from '@/lib/alerts'
 import Link from 'next/link'
@@ -32,27 +32,40 @@ export function MarketAlerts() {
 
     return (
         <div className="space-y-4">
-            {alerts.map((alert) => (
-                <Callout
-                    key={alert.id}
-                    title={alert.title}
-                    icon={alert.type === 'critical' ? AlertCircle : alert.type === 'warning' ? AlertTriangle : Info}
-                    color={alert.type === 'critical' ? 'rose' : alert.type === 'warning' ? 'amber' : 'blue'}
-                    className="animate-in fade-in slide-in-from-top-2 duration-300"
-                >
-                    <div className="mt-2 flex flex-col gap-2">
-                        <Text>{alert.description}</Text>
-                        {alert.actionable && (
-                            <Link
-                                href={alert.actionable.href}
-                                className="text-sm font-medium flex items-center gap-1 hover:underline"
-                            >
-                                {alert.actionable.label} <ArrowUpRight className="h-3 w-3" />
-                            </Link>
-                        )}
+            {alerts.map((alert) => {
+                const Icon = alert.type === 'critical' ? AlertCircle : alert.type === 'warning' ? AlertTriangle : Info
+                const colorClass = alert.type === 'critical' ? 'bg-rose-50 border-rose-200 text-rose-900' :
+                    alert.type === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-900' :
+                        'bg-blue-50 border-blue-200 text-blue-900'
+                const iconColor = alert.type === 'critical' ? 'text-rose-600' :
+                    alert.type === 'warning' ? 'text-amber-600' :
+                        'text-blue-600'
+
+                return (
+                    <div
+                        key={alert.id}
+                        className={`p-4 rounded-md border ${colorClass} animate-in fade-in slide-in-from-top-2 duration-300`}
+                    >
+                        <div className="flex gap-3">
+                            <Icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${iconColor}`} />
+                            <div className="flex-1">
+                                <h4 className="font-semibold text-sm">{alert.title}</h4>
+                                <div className="mt-1 text-sm opacity-90">
+                                    {alert.description}
+                                </div>
+                                {alert.actionable && (
+                                    <Link
+                                        href={alert.actionable.href}
+                                        className="mt-2 text-sm font-medium flex items-center gap-1 hover:underline w-fit"
+                                    >
+                                        {alert.actionable.label} <ArrowUpRight className="h-3 w-3" />
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
                     </div>
-                </Callout>
-            ))}
+                )
+            })}
         </div>
     )
 }

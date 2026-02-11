@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @config "../../tailwind.config.ts";
 @source "../../src";
+@source "../../node_modules/@tremor/react/dist/**/*.{js,ts,jsx,tsx}";
 
 @layer base {
   :root {
@@ -33,6 +34,51 @@
     --ring: 222.2 84% 4.9%;
 
     --radius: 0.5rem;
+
+    /* Tremor Colors */
+    --tremor-brand-faint: 210 40% 96.1%;
+    --tremor-brand-muted: 214.3 31.8% 91.4%;
+    --tremor-brand-subtle: 215.4 16.3% 46.9%;
+    --tremor-brand-default: 222.2 47.4% 11.2%;
+    --tremor-brand-emphasis: 222.2 84% 4.9%;
+    --tremor-brand-inverted: 0 0% 100%;
+
+    --tremor-background-muted: 210 40% 96.1%;
+    --tremor-background-subtle: 210 40% 96.1%;
+    --tremor-background-default: 0 0% 100%;
+    --tremor-background-emphasis: 222.2 47.4% 11.2%;
+
+    --tremor-border-default: 214.3 31.8% 91.4%;
+    --tremor-ring-default: 214.3 31.8% 91.4%;
+
+    --tremor-content-subtle: 215.4 16.3% 46.9%;
+    --tremor-content-default: 215.4 16.3% 46.9%;
+    --tremor-content-emphasis: 222.2 47.4% 11.2%;
+    --tremor-content-strong: 222.2 84% 4.9%;
+    --tremor-content-inverted: 0 0% 100%;
+  }
+
+  @theme {
+    --color-tremor-brand-faint: var(--color-blue-50);
+    --color-tremor-brand-muted: var(--color-blue-200);
+    --color-tremor-brand-subtle: var(--color-blue-400);
+    --color-tremor-brand-default: var(--color-blue-500);
+    --color-tremor-brand-emphasis: var(--color-blue-700);
+    --color-tremor-brand-inverted: var(--color-white);
+
+    --color-tremor-background-muted: var(--color-gray-50);
+    --color-tremor-background-subtle: var(--color-gray-100);
+    --color-tremor-background-default: var(--color-white);
+    --color-tremor-background-emphasis: var(--color-gray-700);
+
+    --color-tremor-border-default: var(--color-gray-200);
+    --color-tremor-ring-default: var(--color-gray-200);
+
+    --color-tremor-content-subtle: var(--color-gray-400);
+    --color-tremor-content-default: var(--color-gray-500);
+    --color-tremor-content-emphasis: var(--color-gray-700);
+    --color-tremor-content-strong: var(--color-gray-900);
+    --color-tremor-content-inverted: var(--color-white);
   }
 
   .dark {
@@ -74,5 +120,51 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+  }
+}
+
+@layer utilities {
+  .fill-blue-500 {
+    fill: #3b82f6 !important;
+  }
+
+  .fill-emerald-500 {
+    fill: #10b981 !important;
+  }
+
+  .fill-amber-500 {
+    fill: #f59e0b !important;
+  }
+
+  .fill-cyan-500 {
+    fill: #06b6d4 !important;
+  }
+
+  .fill-indigo-500 {
+    fill: #6366f1 !important;
+  }
+
+  .fill-violet-500 {
+    fill: #8b5cf6 !important;
+  }
+
+  .fill-purple-500 {
+    fill: #a855f7 !important;
+  }
+
+  .fill-rose-500 {
+    fill: #f43f5e !important;
+  }
+
+  .fill-gray-500 {
+    fill: #6b7280 !important;
+  }
+
+  .fill-slate-500 {
+    fill: #64748b !important;
+  }
+
+  .recharts-rectangle {
+    transition: fill 0.3s ease;
   }
 }

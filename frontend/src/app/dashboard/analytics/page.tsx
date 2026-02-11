@@ -54,18 +54,44 @@ export default function DashboardPage() {
         try {
             const supabase = createClient()
 
-            // Fetch all projects (increased limit for total coverage)
-            const { data: projects, error } = await supabase
+            // Fetch total count separately (exact count)
+            const countQuery = await supabase
                 .from('projects')
-                .select('region, total_units, sold_units, available_units, avg_price_uf, avg_price_m2_uf')
-                .limit(10000)
+                .select('*', { count: 'exact', head: true })
 
-            if (error) throw error
+            // Fetch data for aggregations in batches (to overcome 1000 row limit)
+            let allProjects: RawProject[] = []
+            let from = 0
+            let pageSize = 1000
+            let hasMore = true
 
-            if (projects) {
-                const typedProjects = projects as RawProject[]
+            while (hasMore) {
+                const { data, error } = await supabase
+                    .from('projects')
+                    .select('region, total_units, sold_units, available_units, avg_price_uf, avg_price_m2_uf')
+                    .range(from, from + pageSize - 1)
+
+                if (error) {
+                    console.error('Error fetching analytics batch:', error)
+                    break
+                }
+
+                if (data && data.length > 0) {
+                    allProjects = [...allProjects, ...(data as RawProject[])]
+                    if (data.length < pageSize) {
+                        hasMore = false
+                    } else {
+                        from += pageSize
+                    }
+                } else {
+                    hasMore = false
+                }
+            }
+
+            if (allProjects.length > 0) {
+                const typedProjects = allProjects
                 // Calculate overall stats
-                const totalProjects = typedProjects.length
+                const totalProjects = countQuery.count || typedProjects.length
                 const totalUnits = typedProjects.reduce((sum: number, p: RawProject) => sum + (p.total_units || 0), 0)
                 const soldUnits = typedProjects.reduce((sum: number, p: RawProject) => sum + (p.sold_units || 0), 0)
                 const availableUnits = typedProjects.reduce((sum: number, p: RawProject) => sum + (p.available_units || 0), 0)

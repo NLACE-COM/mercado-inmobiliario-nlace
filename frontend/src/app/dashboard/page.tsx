@@ -36,35 +36,45 @@ async function getDashboardData() {
         .from('projects')
         .select('*', { count: 'exact', head: true })
 
-    // 2. Get data for aggregations (increased limit)
-    const { data: projects, error } = await supabase
-        .from('projects')
-        .select(`
-            id, name, developer, commune, region, address,
-            latitude, longitude, 
-            avg_price_uf, avg_price_m2_uf, min_price_uf, max_price_uf,
-            total_units, sold_units, available_units,
-            sales_speed_monthly, project_status, property_type
-        `)
-        .order('sales_speed_monthly', { ascending: false })
-        .limit(10000)
+    // 2. Get data for aggregations in batches (to overcome 1000 row limit)
+    let allProjects: DashboardProject[] = []
+    let from = 0
+    let pageSize = 1000
+    let hasMore = true
 
-    if (error) {
-        console.error('Error fetching dashboard data:', error)
-        return {
-            projectCount: 0,
-            totalStock: 0,
-            avgSalesSpeed: 0,
-            totalSold: 0,
-            projects: [],
-            regionData: [],
-            deltas: { projects: 0, stock: 0, speed: 0, sold: 0 },
-            mixData: [],
-            priceRangeData: []
+    while (hasMore) {
+        const { data, error } = await supabase
+            .from('projects')
+            .select(`
+                id, name, developer, commune, region, address,
+                latitude, longitude, 
+                avg_price_uf, avg_price_m2_uf, min_price_uf, max_price_uf,
+                total_units, sold_units, available_units,
+                sales_speed_monthly, project_status, property_type
+            `)
+            .order('sales_speed_monthly', { ascending: false })
+            .range(from, from + pageSize - 1)
+
+        if (error) {
+            console.error('Error fetching dashboard batch:', error)
+            break
+        }
+
+        if (data && data.length > 0) {
+            allProjects = [...allProjects, ...(data as DashboardProject[])]
+            if (data.length < pageSize) {
+                hasMore = false
+            } else {
+                from += pageSize
+            }
+        } else {
+            hasMore = false
         }
     }
 
-    const validProjects = (projects || []) as DashboardProject[]
+    const projects = allProjects
+
+    const validProjects = allProjects
 
     // Use the real count from DB, or fallback to array length
     const projectCount = countQuery.count || validProjects.length
@@ -77,13 +87,12 @@ async function getDashboardData() {
         ? parseFloat((validProjects.reduce((acc: number, p: DashboardProject) => acc + (p.sales_speed_monthly || 0), 0) / validProjects.length).toFixed(1))
         : 0
 
-    // Mock deltas for visualization (in a real scenario, we would compare with historical table)
-    // For Tarea 1, we focus on the UI result.
+    // Mock deltas for visualization
     const deltas = {
-        projects: 5.2, // +5.2% vs last month
-        stock: -2.1,   // -2.1% (stock reducing is often good)
-        speed: 8.4,    // +8.4%
-        sold: 12.5     // +12.5%
+        projects: 5.2,
+        stock: -2.1,
+        speed: 8.4,
+        sold: 12.5
     }
 
     // Process data for charts
@@ -108,11 +117,11 @@ async function getDashboardData() {
 
     const regionData = Array.from(regionMap.values())
         .sort((a, b) => b.projects - a.projects)
-        .slice(0, 5) // Top 5 regions
+        .slice(0, 5)
 
     const mapProjects = validProjects.filter(p => p.latitude && p.longitude)
 
-    // NEW: Calculate Product Mix
+    // Calculate Product Mix
     const mixMap = new Map<string, number>()
     validProjects.forEach(p => {
         const type = p.property_type || 'Otros'
@@ -123,7 +132,7 @@ async function getDashboardData() {
         .sort((a, b) => b.count - a.count)
         .slice(0, 5)
 
-    // NEW: Calculate Price Range Analysis
+    // Calculate Price Range Analysis
     const ranges = [
         { label: '0-2k', min: 0, max: 2000 },
         { label: '2k-4k', min: 2000, max: 4000 },
