@@ -645,15 +645,18 @@ serve(async (req) => {
   try {
     const syncService = new TocTocSyncService()
 
-    // Comunas prioritarias
-    const priorityCommunes = [
-      'ÑUÑOA', 'PROVIDENCIA', 'LAS CONDES', 'VITACURA',
-      'LA REINA', 'SANTIAGO', 'RECOLETA', 'INDEPENDENCIA'
-    ]
+    // Obtener todas las comunas únicas de los proyectos existentes
+    const { data: projects } = await supabase
+      .from('projects')
+      .select('commune')
+      .not('commune', 'is', null)
+
+    const communes = [...new Set(projects.map(p => p.commune))]
+      .sort()
 
     const results = []
 
-    for (const commune of priorityCommunes) {
+    for (const commune of communes) {
       console.log(`[Cron] Syncing ${commune}...`)
 
       const result = await syncService.syncCommune(commune, {
@@ -1119,7 +1122,7 @@ TOCTOC_API_TIMEOUT=30000
 # Configuración de sincronización
 TOCTOC_SYNC_ENABLED=true
 TOCTOC_SYNC_INTERVAL=daily
-TOCTOC_SYNC_COMMUNES=ÑUÑOA,PROVIDENCIA,LAS_CONDES,VITACURA
+# Las comunas se obtienen automáticamente de la tabla projects
 ```
 
 ### Permisos Supabase
