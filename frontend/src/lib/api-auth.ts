@@ -114,17 +114,32 @@ export async function requireAdmin(request: NextRequest): Promise<AuthResult> {
                     get(name: string) {
                         return request.cookies.get(name)?.value
                     },
-                    set() {},
-                    remove() {}
+                    set() { },
+                    remove() { }
                 }
             }
         )
 
-        // Check if user is admin via RPC function
-        const { data: isAdmin, error } = await supabase.rpc('is_admin')
+        // Check if user is admin via profiles table (more robust than RPC in some environments)
+        const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
 
-        if (error) {
-            console.error('[API Auth] Error checking admin status:', error)
+        if (profileError) {
+            // If profile not found, they certainly aren't an admin
+            if (profileError.code === 'PGRST116') {
+                return {
+                    user: null,
+                    error: NextResponse.json(
+                        { error: 'Forbidden - User profile not found' },
+                        { status: 403 }
+                    )
+                }
+            }
+
+            console.error('[API Auth] Error checking admin status:', profileError)
             return {
                 user: null,
                 error: NextResponse.json(
@@ -134,7 +149,7 @@ export async function requireAdmin(request: NextRequest): Promise<AuthResult> {
             }
         }
 
-        if (!isAdmin) {
+        if (!profile || profile.role !== 'admin') {
             console.log('[API Auth] Forbidden - user is not admin:', user.id)
             return {
                 user: null,

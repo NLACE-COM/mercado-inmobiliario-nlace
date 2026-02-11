@@ -159,7 +159,7 @@ async function getMarketStats(comuna?: string) {
             // Trim and use ilike for better matching
             query = query.ilike('commune', `%${comuna.trim()}%`);
         } else {
-            query = query.limit(1000); // Limit global query for performance
+            query = query.limit(10000); // Expanded limit for production
         }
 
         const { data, error } = await query;
@@ -319,7 +319,7 @@ async function getMarketSummary() {
         const { data, error } = await supabase
             .from('projects')
             .select('commune, total_units, sold_units, available_units, avg_price_uf')
-            .limit(5000);
+            .limit(10000);
 
         if (error) throw error;
         if (!data || data.length === 0) return "No market data available.";
