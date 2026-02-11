@@ -4,8 +4,14 @@ import html2canvas from 'html2canvas'
 /**
  * Client-side PDF export for reports using html2canvas & jsPDF.
  * 
- * SPECIAL FIX: Tailwind 4 and modern UI libraries use color functions like lab() and oklch()
- * which html2canvas cannot parse. This utility sanitizes the DOM clone before capture.
+ * FINAL BOSS FIX: html2canvas has a legacy CSS parser that crashes on modern CSS functions 
+ * like lab(), oklch(), and color-mix().
+ * 
+ * This version uses a "Sanitization by Exclusion" strategy:
+ * 1. Clones the document.
+ * 2. Aggressively removes ALL external stylesheets (link tags) and styles that might contain modern CSS.
+ * 3. Injects a minimal, sanitized, high-compatibility CSS for the report components.
+ * 4. Forces basic colors on all components to prevent parser crashes.
  */
 export async function exportReportToPDF(elementId: string, title: string) {
     if (typeof window === 'undefined') return;
@@ -15,18 +21,17 @@ export async function exportReportToPDF(elementId: string, title: string) {
         throw new Error(`Report element "${elementId}" not found in DOM.`);
     }
 
-    // Store state
+    // Capture initial state
     const originalScrollPos = window.scrollY;
     window.scrollTo(0, 0);
 
     try {
-        // Wait for charts to settle
+        // Wait for charts and animations to settle
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         const height = reportElement.scrollHeight;
         const width = reportElement.scrollWidth || 1200;
 
-        // Quality vs Memory: Cap scale for very long documents
         let safeScale = 2;
         if (height > 5000) safeScale = 1.5;
         if (height > 10000) safeScale = 1;
@@ -38,68 +43,96 @@ export async function exportReportToPDF(elementId: string, title: string) {
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#ffffff',
-            logging: false,
+            logging: true, // Enable logging to see where it hangs if it fails
             scrollY: -window.scrollY,
             windowWidth: width,
             windowHeight: height,
             onclone: (clonedDoc) => {
-                // 1. Aggressive Style Sanitization for html2canvas compatibility
-                // Remove modern CSS color functions that cause "parsing error" in html2canvas
-                const styleTags = clonedDoc.querySelectorAll('style');
-                styleTags.forEach(tag => {
-                    // Replace oklch(), lab(), oklab() and color-mix() with safe fallbacks
-                    // This is a regex-based "polyfill" to prevent html2canvas parser crashes
-                    let css = tag.innerHTML;
-                    css = css.replace(/oklch\([^)]+\)/g, '#3b82f6');
-                    css = css.replace(/oklab\([^)]+\)/g, '#3b82f6');
-                    css = css.replace(/lab\([^)]+\)/g, '#3b82f6');
-                    css = css.replace(/color-mix\([^)]+\)/g, '#64748b');
-                    tag.innerHTML = css;
+                const clonedElement = clonedDoc.getElementById(elementId);
+                if (!clonedElement) return;
+
+                // --- THE NUCLEAR SANITIZATION ---
+
+                // 1. Remove all external links and scripts to prevent the parser from even attempting to read complex CSS
+                clonedDoc.querySelectorAll('link[rel="stylesheet"], script, iframe').forEach(el => el.remove());
+
+                // 2. Sanitize all remaining style tags
+                clonedDoc.querySelectorAll('style').forEach(style => {
+                    let css = style.innerHTML;
+                    // Replace ALL problematic functions with safe defaults via regex
+                    // We use a broader regex to catch variations and nested functions
+                    css = css.replace(/(lab|oklch|oklab|color-mix)\([^)]+\)/g, '#3b82f6');
+                    style.innerHTML = css;
                 });
 
-                // 2. Element-level cleanup
-                const clonedElement = clonedDoc.getElementById(elementId);
-                if (clonedElement) {
-                    clonedElement.style.height = 'auto';
-                    clonedElement.style.maxHeight = 'none';
-                    clonedElement.style.overflow = 'visible';
-                    clonedElement.style.display = 'block';
-                    clonedElement.style.padding = '40px';
+                // 3. Inject a 'Report Compatibility' CSS to restore basic layout without the complex Tailwind/Tremor artifacts
+                const compatStyle = clonedDoc.createElement('style');
+                compatStyle.innerHTML = `
+                    /* Modern CSS Reset for html2canvas */
+                    * {
+                        transition: none !important;
+                        animation: none !important;
+                        text-rendering: optimizeLegibility !important;
+                        -webkit-font-smoothing: antialiased !important;
+                        /* Kill all variables that might hold problematic colors */
+                        --tw-ring-color: #3b82f6 !important;
+                        --tw-ring-offset-color: #ffffff !important;
+                        --tw-shadow: 0 0 #0000 !important;
+                    }
+                    /* Ensure containers are visible and styled simply */
+                    #${elementId} {
+                        background-color: white !important;
+                        color: #1e293b !important;
+                        display: block !important;
+                        height: auto !important;
+                        overflow: visible !important;
+                    }
+                    /* Simple styling for cards and charts in the PDF */
+                    .tremor-base, .recharts-responsive-container {
+                        width: 1000px !important;
+                        height: 400px !important;
+                        opacity: 1 !important;
+                        visibility: visible !important;
+                    }
+                    .recharts-pie-sector path {
+                        stroke-width: 1 !important;
+                    }
+                `;
+                clonedDoc.head.appendChild(compatStyle);
 
-                    // Kill any problematic inline styles
-                    const allInClone = clonedElement.querySelectorAll('*');
-                    allInClone.forEach(el => {
-                        const htmlEl = el as HTMLElement;
-                        const styleAttr = htmlEl.getAttribute('style') || '';
-                        if (styleAttr.includes('lab(') || styleAttr.includes('oklch(') || styleAttr.includes('color-mix(')) {
-                            // Strip modern color functions from inline styles
-                            htmlEl.setAttribute('style', styleAttr
-                                .replace(/oklch\([^)]+\)/g, '#3b82f6')
-                                .replace(/lab\([^)]+\)/g, '#3b82f6')
-                            );
-                        }
-                    });
+                // 4. Manual element-level cleanup for high-risk attributes
+                clonedDoc.querySelectorAll('*').forEach(el => {
+                    const htmlEl = el as HTMLElement;
 
-                    // 3. Hide UI actions
-                    clonedDoc.querySelectorAll('.print\\:hidden, button, .action-bar').forEach(el => {
-                        (el as HTMLElement).style.setProperty('display', 'none', 'important');
-                    });
+                    // Check for inline styles
+                    const inline = htmlEl.getAttribute('style') || '';
+                    if (inline.includes('lab(') || inline.includes('oklch(') || inline.includes('color-mix(')) {
+                        htmlEl.style.color = '#1e293b';
+                        htmlEl.style.backgroundColor = '';
+                        // Remove problematic inline properties
+                        htmlEl.style.removeProperty('fill');
+                        htmlEl.style.removeProperty('stroke');
+                        htmlEl.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                    }
 
-                    // 4. Stabilize Charts for capture
-                    clonedDoc.querySelectorAll('.recharts-responsive-container, .tremor-base').forEach(chart => {
-                        (chart as HTMLElement).style.width = '1000px';
-                        (chart as HTMLElement).style.height = '400px';
-                        (chart as HTMLElement).style.position = 'relative';
-                        (chart as HTMLElement).style.visibility = 'visible';
-                        (chart as HTMLElement).style.opacity = '1';
-                    });
-                }
+                    // Hide UI-only elements
+                    if (htmlEl.classList.contains('print:hidden') || htmlEl.tagName === 'BUTTON') {
+                        htmlEl.style.display = 'none';
+                    }
+                });
+
+                // 5. Special fix for SVG text (Recharts/Tremor)
+                clonedDoc.querySelectorAll('svg text').forEach(text => {
+                    (text as HTMLElement).style.fontFamily = 'Arial, sans-serif';
+                    (text as HTMLElement).style.fontSize = '12px';
+                    (text as HTMLElement).style.fill = '#64748b';
+                });
             }
         });
 
-        // Final PDF generation
-        const imgWidth = 210; // A4 Width mm
-        const pageHeight = 297; // A4 Height mm
+        // Generate PDF pages
+        const imgWidth = 210;
+        const pageHeight = 297;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
         const pdf = new jsPDF('p', 'mm', 'a4', true);
@@ -124,9 +157,15 @@ export async function exportReportToPDF(elementId: string, title: string) {
 
         window.scrollTo(0, originalScrollPos);
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('[PDF Export] Failed:', error);
         window.scrollTo(0, originalScrollPos);
-        throw error;
+        // Better error message for the user
+        const userError = new Error(
+            error.message?.includes('lab')
+                ? 'El navegador no pudo procesar los colores del gráfico para el PDF. Prueba recargando la página.'
+                : error.message
+        );
+        throw userError;
     }
 }
