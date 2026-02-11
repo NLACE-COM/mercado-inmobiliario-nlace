@@ -21,9 +21,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { FileText, Loader2, Map as MapIcon } from 'lucide-react'
+import { FileText, Loader2, Map as MapIcon, X } from 'lucide-react'
 import { useToast } from "@/components/ui/use-toast"
 import MapAreaSelector from './MapAreaSelector'
+import { Badge } from '@/components/ui/badge'
 
 const FALLBACK_COMMUNES = [
     "CONCEPCION", "ANTOFAGASTA", "CHILLAN", "COQUIMBO", "CHIGUAYANTE",
@@ -35,6 +36,7 @@ export default function CreateReportDialog() {
     const [isLoading, setIsLoading] = useState(false)
     const [title, setTitle] = useState('')
     const [commune, setCommune] = useState('')
+    const [selectedCommunes, setSelectedCommunes] = useState<string[]>([])
     const [type, setType] = useState('COMMUNE_MARKET')
     const [polygonWkt, setPolygonWkt] = useState<string | null>(null)
     const [communeList, setCommuneList] = useState<string[]>(FALLBACK_COMMUNES)
@@ -56,14 +58,31 @@ export default function CreateReportDialog() {
     const router = useRouter()
     const { toast } = useToast()
 
+    const addCommune = (c: string) => {
+        if (c && !selectedCommunes.includes(c)) {
+            setSelectedCommunes([...selectedCommunes, c])
+            setCommune('')
+        }
+    }
+
+    const removeCommune = (c: string) => {
+        setSelectedCommunes(selectedCommunes.filter(item => item !== c))
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
 
         try {
-            const reportParameters = type === 'AREA_POLYGON'
-                ? { polygon_wkt: polygonWkt }
-                : { commune };
+            const reportParameters: any = {};
+
+            if (type === 'AREA_POLYGON') {
+                reportParameters.polygon_wkt = polygonWkt;
+            } else if (type === 'MULTI_COMMUNE_COMPARISON') {
+                reportParameters.communes = selectedCommunes;
+            } else {
+                reportParameters.commune = commune;
+            }
 
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
             const fetchUrl = (apiUrl.includes('127.0.0.1') || apiUrl.includes('localhost'))
@@ -74,7 +93,7 @@ export default function CreateReportDialog() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    title: title || `Reporte ${type === 'AREA_POLYGON' ? 'Área Dibujada' : commune} - ${new Date().toLocaleDateString()}`,
+                    title: title || `Reporte ${type === 'AREA_POLYGON' ? 'Área Dibujada' : (type === 'MULTI_COMMUNE_COMPARISON' ? 'Comparativa' : commune)} - ${new Date().toLocaleDateString()}`,
                     report_type: type,
                     parameters: reportParameters
                 })
@@ -82,12 +101,6 @@ export default function CreateReportDialog() {
 
             if (!res.ok) {
                 const errorText = await res.text()
-                console.error("API Error Report Generation:", {
-                    url: res.url,
-                    status: res.status,
-                    statusText: res.statusText,
-                    body: errorText
-                })
                 throw new Error(`Error ${res.status}: ${errorText}`)
             }
 
@@ -125,7 +138,7 @@ export default function CreateReportDialog() {
                     <DialogHeader>
                         <DialogTitle>Generar Reporte Inmobiliario</DialogTitle>
                         <DialogDescription>
-                            Crea un nuevo análisis de mercado utilizando Inteligencia Artificial y datos en tiempo real.
+                            Crea un nuevo análisis de mercado utilizando Inteligencia Artificial y datos estratégicos de Nivel 1.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
@@ -139,6 +152,7 @@ export default function CreateReportDialog() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="COMMUNE_MARKET">Análisis de Mercado Comunal</SelectItem>
+                                    <SelectItem value="MULTI_COMMUNE_COMPARISON">Comparativa Multi-Comuna</SelectItem>
                                     <SelectItem value="PROJECT_BENCHMARK">Benchmark de Proyectos</SelectItem>
                                     <SelectItem value="AREA_POLYGON">Seleccionar Área en Mapa</SelectItem>
                                 </SelectContent>
@@ -152,6 +166,35 @@ export default function CreateReportDialog() {
                                 {polygonWkt && (
                                     <p className="text-[10px] text-green-600 font-medium">✓ Área definida correctamente</p>
                                 )}
+                            </div>
+                        ) : type === 'MULTI_COMMUNE_COMPARISON' ? (
+                            <div className="space-y-3">
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label className="text-right">Comunas</Label>
+                                    <Select value={commune} onValueChange={addCommune}>
+                                        <SelectTrigger className="col-span-3">
+                                            <SelectValue placeholder="Agregar comuna..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {communeList.map((c: string) => (
+                                                <SelectItem key={c} value={c}>
+                                                    {c}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex flex-wrap gap-2 pl-[100px]">
+                                    {selectedCommunes.map(c => (
+                                        <Badge key={c} variant="secondary" className="gap-1 px-2 py-1">
+                                            {c}
+                                            <X className="h-3 w-3 cursor-pointer hover:text-red-500" onClick={() => removeCommune(c)} />
+                                        </Badge>
+                                    ))}
+                                    {selectedCommunes.length === 0 && (
+                                        <p className="text-xs text-muted-foreground italic">Selecciona al menos 2 comunas</p>
+                                    )}
+                                </div>
                             </div>
                         ) : (
                             <div className="grid grid-cols-4 items-center gap-4">

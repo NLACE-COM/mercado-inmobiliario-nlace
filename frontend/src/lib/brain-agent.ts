@@ -12,7 +12,7 @@ const openai = new OpenAI({
 
 // --- Tool Definitions ---
 
-const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     {
         type: "function",
         function: {
@@ -375,7 +375,7 @@ async function getMarketSummary() {
     }
 }
 
-async function compareCommunes({ communes }: { communes: string[] }) {
+export async function compareCommunes({ communes }: { communes: string[] }) {
     console.log(`[AI Agent] Comparing communes:`, communes);
     try {
         const supabase = getSupabaseAdmin();
@@ -440,7 +440,7 @@ async function compareCommunes({ communes }: { communes: string[] }) {
     }
 }
 
-async function getHistoricalTrends({ commune, months = 6 }: { commune: string, months?: number }) {
+export async function getHistoricalTrends({ commune, months = 6 }: { commune: string, months?: number }) {
     console.log(`[AI Agent] Fetching historical trends for ${commune}, last ${months} months`);
     try {
         const supabase = getSupabaseAdmin();
@@ -542,7 +542,7 @@ async function getHistoricalTrends({ commune, months = 6 }: { commune: string, m
     }
 }
 
-async function getTypologyAnalysis({ commune }: { commune: string }) {
+export async function getTypologyAnalysis({ commune }: { commune: string }) {
     console.log(`[AI Agent] Analyzing typologies for ${commune}`);
     try {
         const supabase = getSupabaseAdmin();

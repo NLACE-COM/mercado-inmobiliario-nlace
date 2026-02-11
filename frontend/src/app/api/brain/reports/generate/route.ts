@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
 import { requireAuth } from '@/lib/api-auth'
 import OpenAI from 'openai'
+import { getHistoricalTrends, getTypologyAnalysis, compareCommunes } from '@/lib/brain-agent'
 
 // Increase timeout for Vercel Hobby plan (max 10s usually, but let's try to be fast)
 export const maxDuration = 60 // Allow up to 60 seconds (Pro plan) or try to fit in 10s (Hobby)
@@ -55,15 +56,34 @@ export async function POST(request: NextRequest) {
         // 2. Fetch Real Data from Supabase (Projects Table)
         const polygonWkt = parameters.polygon_wkt
         const commune = parameters.commune?.trim() || ''
+        const communes = parameters.communes || []
 
         let projects: any[] = []
         let searchLocationName = commune
+        let reportSections: any[] = []
+
+        // Handle Comparison Report explicitly if communes array is provided
+        if (report_type === 'MULTI_COMMUNE_COMPARISON' || communes.length > 1) {
+            console.log(`[Report Generate] Generating Multi-Commune Comparison for:`, communes)
+
+            const comparisonResultStr = await compareCommunes({ communes })
+            const comparisonData = JSON.parse(comparisonResultStr)
+
+            reportSections.push({
+                type: 'comparison_table',
+                title: 'Comparativa Detallada entre Comunas',
+                data: comparisonData
+            })
+
+            // Fetch projects for all communes to provide a combined table/stats if needed
+            // Or just use the first one for the summary
+            searchLocationName = communes.join(', ')
+        }
 
         if (polygonWkt) {
             console.log(`[Report Generate] Searching via Polygon WKT area...`)
-            searchLocationName = "Área Seleccionada" // Default name
+            searchLocationName = "Área Seleccionada"
 
-            // Use RPC for spatial search
             const { data: polygonProjects, error: polygonError } = await supabase.rpc('get_projects_in_polygon', {
                 polygon_wkt: polygonWkt
             });
@@ -75,23 +95,17 @@ export async function POST(request: NextRequest) {
             }
             projects = polygonProjects || []
 
-            // Try to infer commune name from first project if available
             if (projects.length > 0 && projects[0].commune) {
                 searchLocationName = projects[0].commune
             }
-        } else {
+        } else if (commune) {
             console.log(`[Report Generate] Searching projects for commune: "${commune}"`)
 
             let projectsQuery = supabase
                 .from('projects')
                 .select('id, name, developer, commune, avg_price_uf, avg_price_m2_uf, total_units, available_units, sales_speed_monthly, project_status, property_type')
+                .ilike('commune', commune)
 
-            if (commune) {
-                // Use ilike for case-insensitive matching
-                projectsQuery = projectsQuery.ilike('commune', commune)
-            }
-
-            // Limit to prevent huge payloads, but enough for stats
             const { data: communeProjects, error: fetchError } = await projectsQuery.limit(500)
 
             if (fetchError) {
@@ -100,13 +114,46 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ error: 'Failed to fetch market data' }, { status: 500 })
             }
             projects = communeProjects || []
+
+            // If single commune, fetch Trends and Typology
+            try {
+                const trendsStr = await getHistoricalTrends({ commune })
+                const trendsData = JSON.parse(trendsStr)
+                if (trendsData.trends && trendsData.trends.length > 0) {
+                    reportSections.push({
+                        type: 'trend_chart',
+                        title: `Tendencias del Mercado en ${commune} (6 Meses)`,
+                        data: trendsData.trends,
+                        trend_indicators: trendsData.indicators
+                    })
+                }
+
+                const typologyStr = await getTypologyAnalysis({ commune })
+                const typologyData = JSON.parse(typologyStr)
+                if (typologyData.typologies && typologyData.typologies.length > 0) {
+                    // Convert array to Record<string, any> as expected by typology_breakdown renderer
+                    const typologyRecord: Record<string, any> = {}
+                    typologyData.typologies.forEach((t: any) => {
+                        typologyRecord[t.typology] = t
+                    })
+
+                    reportSections.push({
+                        type: 'typology_breakdown',
+                        title: `Distribución por Tipología en ${commune}`,
+                        data: typologyRecord
+                    })
+                }
+            } catch (err) {
+                console.error("Error fetching Level 1 extensions:", err)
+                // Continue without extensions
+            }
         }
 
-        if (!projects || projects.length === 0) {
+        if ((!projects || projects.length === 0) && reportSections.length === 0) {
             console.log(`[Report Generate] No projects found for location: "${searchLocationName}"`)
             const notFoundMsg = polygonWkt
-                ? `No se encontraron proyectos dentro del área seleccionada en el mapa.\n\nIntente dibujar un polígono más grande o sobre una zona con mayor densidad inmobiliaria.`
-                : `No se encontraron proyectos para la comuna de **${searchLocationName}**.\n\nVerifique que el nombre de la comuna esté escrito correctamente (ej: "Ñuñoa" en lugar de "Nunoa") y que existan proyectos activos para esta ubicación.`
+                ? `No se encontraron proyectos dentro del área seleccionada en el mapa.`
+                : `No se encontraron proyectos para la selección de **${searchLocationName}**.`
 
             await updateReportStatus(supabase, initialReport.id, 'completed', null, {
                 title,
@@ -118,60 +165,74 @@ export async function POST(request: NextRequest) {
                     }
                 ]
             })
-            return NextResponse.json(initialReport) // Return early
+            return NextResponse.json(initialReport)
         }
 
         // 3. Calculate Statistics
-        const stats = calculateStats(projects)
+        const stats = projects.length > 0 ? calculateStats(projects) : null
 
         // 4. Generate Analysis with OpenAI
-        const analysisText = await generateAIAnalysis(searchLocationName, stats)
+        const analysisText = await generateAIAnalysis(searchLocationName, stats, reportSections)
 
-        // 5. Structure Final Content matching ReportView component
+        // 5. Structure Final Content
+        const finalSections = []
+
+        if (stats) {
+            finalSections.push({
+                type: 'kpi_grid',
+                data: {
+                    total_projects: projects.length,
+                    avg_price: Math.round(stats.avgPrice),
+                    avg_price_m2: Math.round(stats.avgPriceM2),
+                    total_stock: stats.totalStock,
+                    avg_sales_speed: stats.avgSalesSpeed.toFixed(1),
+                    avg_mao: stats.monthsToSellOut.toFixed(1)
+                }
+            })
+        }
+
+        // Add pre-fetched Level 1 sections
+        finalSections.push(...reportSections)
+
+        finalSections.push({
+            type: 'analysis_text',
+            title: 'Análisis de Mercado Estratégico',
+            content: analysisText
+        })
+
+        if (stats) {
+            finalSections.push({
+                type: 'chart_bar',
+                title: 'Estado de Obra',
+                data: stats.statusDistribution.map(s => ({
+                    developer: s.name,
+                    stock: s.value
+                }))
+            })
+        }
+
+        if (projects.length > 0) {
+            finalSections.push({
+                type: 'project_table',
+                title: 'Detalle de Proyectos',
+                data: projects
+                    .sort((a: any, b: any) => (b.available_units || 0) - (a.available_units || 0))
+                    .slice(0, 20)
+                    .map((p: any) => ({
+                        id: p.id,
+                        name: p.name,
+                        developer: p.developer || 'S/I',
+                        stock: p.available_units,
+                        avg_price_uf: p.avg_price_uf,
+                        sales_speed: p.sales_speed_monthly,
+                        mao: p.sales_speed_monthly > 0 ? (p.available_units / p.sales_speed_monthly).toFixed(1) : '-'
+                    }))
+            })
+        }
+
         const reportContent = {
             title,
-            sections: [
-                {
-                    type: 'kpi_grid',
-                    data: {
-                        total_projects: projects.length,
-                        avg_price: Math.round(stats.avgPrice),
-                        avg_price_m2: Math.round(stats.avgPriceM2),
-                        total_stock: stats.totalStock,
-                        avg_sales_speed: stats.avgSalesSpeed.toFixed(1),
-                        avg_mao: stats.monthsToSellOut.toFixed(1)
-                    }
-                },
-                {
-                    type: 'analysis_text',
-                    title: 'Análisis de Mercado con IA',
-                    content: analysisText
-                },
-                {
-                    type: 'chart_bar', // Reusing bar chart for status distribution for now
-                    title: 'Distribución de Stock por Estado de Obra',
-                    data: stats.statusDistribution.map(s => ({
-                        developer: s.name, // Mapping 'name' to 'developer' as expected by the bar chart component which uses 'developer' for YAxis
-                        stock: s.value
-                    }))
-                },
-                {
-                    type: 'project_table',
-                    title: 'Top Proyectos por Stock',
-                    data: projects
-                        .sort((a: any, b: any) => (b.available_units || 0) - (a.available_units || 0))
-                        .slice(0, 20)
-                        .map((p: any) => ({
-                            id: p.id,
-                            name: p.name,
-                            developer: p.developer || 'S/I',
-                            stock: p.available_units,
-                            avg_price_uf: p.avg_price_uf,
-                            sales_speed: p.sales_speed_monthly,
-                            mao: p.sales_speed_monthly > 0 ? (p.available_units / p.sales_speed_monthly).toFixed(1) : '-'
-                        }))
-                }
-            ]
+            sections: finalSections
         }
 
         // 6. Update Report (status: 'completed')
@@ -236,23 +297,46 @@ function calculateStats(projects: any[]) {
     }
 }
 
-async function generateAIAnalysis(commune: string, stats: any) {
+async function generateAIAnalysis(commune: string, stats: any, extraSections: any[] = []) {
     try {
+        let statsContext = "";
+        if (stats) {
+            statsContext = `
+            - Precio Promedio: ${Math.round(stats.avgPrice)} UF
+            - Precio Promedio UF/m²: ${Math.round(stats.avgPriceM2)} UF/m²
+            - Stock Total Disponible: ${stats.totalStock} unidades
+            - Velocidad de Venta Promedio: ${stats.avgSalesSpeed.toFixed(1)} unidades/mes
+            - Meses para Agotar Oferta (MAO): ${stats.monthsToSellOut.toFixed(1)} meses
+            - Distribución por Estado: ${JSON.stringify(stats.statusDistribution)}
+            `;
+        }
+
+        let extraContext = "";
+        if (extraSections.length > 0) {
+            extraContext = "Datos adicionales disponibles para tu análisis:\n";
+            extraSections.forEach(s => {
+                if (s.type === 'comparison_table') {
+                    extraContext += `- Comparativa de Comunas: ${JSON.stringify(s.data)}\n`;
+                } else if (s.type === 'trend_chart') {
+                    extraContext += `- Tendencias Históricas (6 meses): ${JSON.stringify(s.data)}\n`;
+                } else if (s.type === 'typology_breakdown') {
+                    extraContext += `- Desglose por Tipología: ${JSON.stringify(s.data)}\n`;
+                }
+            });
+        }
+
         const prompt = `
         Actúa como un analista inmobiliario senior experto en el mercado chileno.
-        Analiza los siguientes datos del mercado inmobiliario para la comuna de ${commune}:
+        Analiza los siguientes datos del mercado inmobiliario para ${commune}:
 
-        - Precio Promedio: ${Math.round(stats.avgPrice)} UF
-        - Precio Promedio UF/m²: ${Math.round(stats.avgPriceM2)} UF/m²
-        - Stock Total Disponible: ${stats.totalStock} unidades
-        - Velocidad de Venta Promedio: ${stats.avgSalesSpeed.toFixed(1)} unidades/mes
-        - Meses para Agotar Oferta (MAO): ${stats.monthsToSellOut.toFixed(1)} meses
-        - Distribución por Estado: ${JSON.stringify(stats.statusDistribution)}
+        ${statsContext}
+        ${extraContext}
 
-        Redacta un análisis breve pero perspicaz (máximo 3 párrafos).
-        1. Evalúa si es un mercado de compradores o vendedores basándote en el MAO (MAO > 24 meses suele ser mercado lento/compradores).
-        2. Comenta sobre los precios comparados con el promedio general (si tienes conocimiento, si no, solo describe los niveles).
-        3. Identifica la etapa predominante de los proyectos (En Blanco, Verde, etc.) y qué riesgo implica para la inversión.
+        Redacta un análisis estratégico y perspicaz (máximo 4 párrafos).
+        1. Contexto General: Evalúa el estado del mercado basándote en el MAO y los niveles de precio.
+        2. Análisis de Tendencias y Tipologías: Si hay datos de tendencias o tipologías, analiza la evolución de precios y qué tipos de unidades están dominando el mercado.
+        3. Perspectiva Comparativa: Si hay datos comparativos, identifica qué comunas ofrecen mejores oportunidades o mayor dinamismo.
+        4. Conclusión Estratégica: ¿Qué recomendarías a un desarrollador o inversionista hoy en esta zona?
         
         Usa formato Markdown simple (negritas para destacar cifras). Sé profesional y directo.
         `
