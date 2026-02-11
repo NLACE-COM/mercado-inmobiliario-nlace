@@ -333,12 +333,22 @@ async function generateAIAnalysis(commune: string, stats: any, extraSections: an
         ${extraContext}
 
         Redacta un análisis estratégico y perspicaz (máximo 4 párrafos).
-        1. Contexto General: Evalúa el estado del mercado basándote en el MAO y los niveles de precio.
-        2. Análisis de Tendencias y Tipologías: Si hay datos de tendencias o tipologías, analiza la evolución de precios y qué tipos de unidades están dominando el mercado.
-        3. Perspectiva Comparativa: Si hay datos comparativos, identifica qué comunas ofrecen mejores oportunidades o mayor dinamismo.
-        4. Conclusión Estratégica: ¿Qué recomendarías a un desarrollador o inversionista hoy en esta zona?
+        IMPORTANTE: Empieza directamente con el contenido, NO incluyas un título de nivel 1 (ej: # Análisis...).
         
-        Usa formato Markdown simple (negritas para destacar cifras). Sé profesional y directo.
+        Usa los siguientes puntos como guía:
+        ## 1. Contexto General
+        Evalúa el estado del mercado basándote en el MAO y los niveles de precio.
+        
+        ## 2. Análisis de Tendencias y Tipologías
+        Si hay datos de tendencias o tipologías, analiza la evolución de precios y qué tipos de unidades están dominando el mercado.
+        
+        ## 3. Perspectiva Comparativa
+        Si hay datos comparativos, identifica qué comunas ofrecen mejores oportunidades o mayor dinamismo.
+        
+        ## 4. Conclusión Estratégica
+        ¿Qué recomendarías a un desarrollador o inversionista hoy en esta zona?
+        
+        Usa formato Markdown (negritas para destacar cifras y los títulos ## indicados). Sé profesional y directo.
         `
 
         const completion = await openai.chat.completions.create({

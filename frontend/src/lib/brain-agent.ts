@@ -453,11 +453,11 @@ export async function getHistoricalTrends({ commune, months = 6 }: { commune: st
         const startDate = new Date();
         startDate.setMonth(startDate.getMonth() - limitMonths);
 
-        // 1. Get project IDs for the commune
+        // 1. Get project IDs for the commune - using wildcards and trimmed name
         const { data: projects, error: projectsError } = await supabase
             .from('projects')
             .select('id')
-            .ilike('commune', commune);
+            .ilike('commune', `%${commune.trim()}%`);
 
         if (projectsError) throw projectsError;
 
@@ -584,7 +584,7 @@ export async function getTypologyAnalysis({ commune }: { commune: string }) {
                     sales_speed_monthly
                 )
             `)
-            .eq('projects.commune', commune.toUpperCase()); // Exact match is safer for typologies
+            .ilike('projects.commune', `%${commune.trim()}%`); // ilike with wildcards is more robust
 
         if (error) {
             console.error(`[AI Agent] Database error in getTypologyAnalysis:`, error);
@@ -727,7 +727,7 @@ export async function queryBrainWithRAG(question: string, conversationHistory: a
                 ${ragContext}
                 IMPORTANTE:
                 - Responde siempre en español.
-                - Usa formato Markdown (negritas, listas) para que se vea bien en el chat.
+                - Usa formato Markdown (negritas, listas, títulos de nivel ## para secciones) para que se vea bien en el chat.
                 - Sé conciso y profesional.
                 - Si la herramienta devuelve datos, úsalos explícitamente en tu respuesta (cita números exactos).
                 - Si tienes contexto histórico relevante arriba, úsalo para enriquecer tu respuesta.
