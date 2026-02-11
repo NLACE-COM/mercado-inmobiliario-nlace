@@ -1,8 +1,8 @@
-# PLAN DE MEJORAS OPTIMIZADO
+# PLAN DE MEJORAS TÉCNICO
 ## Estrategia: Quick Wins + Máximo Impacto
 
 **Fecha:** 11 de Febrero 2026
-**Objetivo:** Llevar MVP de 74% a 95% en **3 semanas** (vs 6 semanas plan original)
+**Objetivo:** Llevar MVP de 74% a 95%
 **Método:** Priorización por Impacto/Esfuerzo
 
 ---
@@ -12,26 +12,26 @@
 ```
         │ ALTO IMPACTO
         │
-  QUICK │ 🟢 1. Instalar Tremor UI (1d)
-  WINS  │ 🟢 2. Knowledge Base Inicial (2d)
-        │ 🟢 3. KPI Cards Mejoradas (1d)
-        │ 🟢 4. Alertas Automáticas (1.5d)
-        │ 🟢 5. Gráficos Básicos Tremor (2d)
+  QUICK │ 🟢 1. Instalar Tremor UI
+  WINS  │ 🟢 2. Knowledge Base Inicial
+        │ 🟢 3. KPI Cards Mejoradas
+        │ 🟢 4. Alertas Automáticas
+        │ 🟢 5. Gráficos Básicos Tremor
   ──────┼────────────────────────────────
   BAJO  │
-  ESFUER│ 🟡 6. Exportación PDF Simple (2d)
-  ZO    │ 🟡 7. Filtros UI Esenciales (2d)
-        │ 🔵 8. Tabla Competencia (1d)
+  ESFUER│ 🟡 6. Exportación PDF Simple
+  ZO    │ 🟡 7. Filtros UI Esenciales
+        │ 🔵 8. Tabla Competencia
 ═══════════════════════════════════════════
         │
-  MAJOR │ 🟠 9. Template Reporte Completo (3d)
-  PROJE │ 🟠 10. Exportación PDF Pro (3d)
-  CTS   │ 🟠 11. Filtros Completos (4d)
+  MAJOR │ 🟠 9. Template Reporte Completo
+  PROJE │ 🟠 10. Filtros Completos
+  CTS   │
         │
   ──────┼────────────────────────────────
   ALTO  │
-  ESFUER│ ⚫ Integración CBR (3sem)
-  ZO    │ ⚫ Scraping Portales (3sem)
+  ESFUER│ ⚫ Integración CBR (Fase 2)
+  ZO    │ ⚫ Scraping Portales (Fase 2)
         │
         │ BAJO IMPACTO (corto plazo)
 ```
@@ -41,60 +41,60 @@
 ## 🎯 CRITERIOS DE IMPACTO
 
 ### Alto Impacto = Afecta directamente a:
-1. **Demostración de valor** en demos a clientes
-2. **Diferenciación** vs TINSA y competencia
-3. **Percepción de calidad** (look premium)
-4. **Funcionalidad core** del producto
-5. **Time-to-insight** del usuario
+1. **Funcionalidad core** del producto
+2. **UX y visualización** de datos
+3. **Calidad de insights** generados por IA
+4. **Usabilidad** del sistema
+5. **Rendimiento** y eficiencia
 
 ### Bajo Esfuerzo =
-- ≤ 2 días de implementación
 - Sin dependencias bloqueantes
 - Código bien localizado
-- Riesgo bajo
+- Riesgo técnico bajo
+- Librería/solución probada
 
 ---
 
-## 🚀 PLAN DE 3 SEMANAS (OPTIMIZADO)
+## 🚀 PLAN DE IMPLEMENTACIÓN
 
-### **SEMANA 1: QUICK WINS + IMPRESIÓN VISUAL** (7 días)
+### **FASE 1: QUICK WINS + MEJORAS VISUALES**
 
-#### 🟢 DÍA 1: Tremor UI + KPI Cards Mejoradas
-**Tiempo:** 1 día
+#### 🟢 Tarea 1: Tremor UI + KPI Cards Mejoradas
 **Impacto:** ⭐⭐⭐⭐⭐ (Muy Alto)
 **Esfuerzo:** ⚡ (Muy Bajo)
 
-**¿Por qué primero?**
-- Transforma visual de toda la app en 1 día
+**Justificación técnica:**
+- Actualización de librería de componentes UI
 - Afecta todas las vistas (dashboard, analytics, reportes)
-- Cero riesgo (solo cambio de librería de gráficos)
-- Impacto inmediato en demos
+- Cero riesgo (solo cambio de dependencia)
+- Mejora consistencia visual
 
-**Tareas:**
+**Tareas técnicas:**
 ```bash
-# 1. Instalación (10 min)
+# 1. Instalación de dependencia
 npm install @tremor/react
 
-# 2. Actualizar tailwind.config.ts (5 min)
+# 2. Configuración de Tailwind
+# Actualizar tailwind.config.ts
 content: [
   './src/**/*.{js,ts,jsx,tsx,mdx}',
   './node_modules/@tremor/**/*.{js,ts,jsx,tsx}',
 ]
 
-# 3. Reemplazar KPI Cards en /dashboard/page.tsx (2h)
+# 3. Actualizar KPI Cards en /dashboard/page.tsx
 - Card → Tremor Card
 - Agregar Metric, Text, BadgeDelta
-- Calcular deltas (% vs mes anterior)
+- Implementar cálculo de deltas (% vs mes anterior)
 
-# 4. Reemplazar MarketOverviewChart (2h)
+# 4. Migrar MarketOverviewChart
 - Recharts BarChart → Tremor BarChart
-- Mejor paleta de colores
-- ValueFormatter automático
+- Actualizar paleta de colores
+- Implementar ValueFormatter
 
-# 5. Reemplazar PriceDistributionChart (1h)
-- → Tremor BarChart con mejor diseño
+# 5. Migrar PriceDistributionChart
+- Implementar con Tremor BarChart
 
-# 6. Testing visual (1h)
+# 6. Testing visual y funcional
 ```
 
 **Output:**
@@ -110,20 +110,19 @@ content: [
 
 ---
 
-#### 🟢 DÍA 2-3: Knowledge Base Inicial (2 días)
-**Tiempo:** 2 días
-**Impacto:** ⭐⭐⭐⭐⭐ (Muy Alto - Diferenciador clave)
+#### 🟢 Tarea 2: Knowledge Base Inicial
+**Impacto:** ⭐⭐⭐⭐⭐ (Muy Alto)
 **Esfuerzo:** ⚡⚡ (Bajo)
 
-**¿Por qué segundo?**
-- **DIFERENCIADOR #1** del producto (Super Cerebro)
-- Permite demos mostrando IA con contexto real
-- Sin esto, IA da respuestas genéricas
-- Bloqueante para credibilidad
+**Justificación técnica:**
+- Implementación de RAG (Retrieval Augmented Generation)
+- Mejora significativa de calidad de respuestas del LLM
+- Sin conocimiento contextual, el modelo da respuestas genéricas
+- Base de datos vectorial con embeddings
 
-**Enfoque:** 5 documentos esenciales (no 20+)
+**Enfoque:** 5 documentos esenciales iniciales
 
-**DÍA 2: Preparar contenido (4-6h)**
+**Subtarea 2.1: Preparación de contenido**
 ```markdown
 Documento 1: Ley 21.210/2020 - IVA Viviendas
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -175,7 +174,7 @@ Elasticidad: +1% TPM → -8% ventas
 Fuente: Banco Central Chile
 ```
 
-**DÍA 3: Ingestar en vector store (2-4h)**
+**Subtarea 2.2: Ingesta en vector store**
 ```typescript
 // scripts/ingest-knowledge-quick.ts
 const documents = [
@@ -206,7 +205,7 @@ for (const doc of documents) {
 }
 ```
 
-**Testing (1h):**
+**Subtarea 2.3: Testing y validación**
 ```
 Queries de prueba:
 1. "¿Por qué bajó la demanda en viviendas sobre 4000 UF en 2021?"
@@ -219,22 +218,22 @@ Queries de prueba:
    → Debe explicar elasticidad -8%
 ```
 
-**Output:**
-- IA ahora responde con contexto chileno específico
-- Cita leyes y eventos históricos
-- Diferenciación real vs competencia
+**Resultado esperado:**
+- Sistema RAG funcional con vector search
+- Respuestas con contexto específico de mercado chileno
+- Citations de fuentes correctas
 
 ---
 
-#### 🟢 DÍA 4: Alertas Automáticas (1.5 días)
-**Tiempo:** 1.5 días
+#### 🟢 Tarea 3: Sistema de Alertas Automáticas
 **Impacto:** ⭐⭐⭐⭐ (Alto)
 **Esfuerzo:** ⚡⚡ (Bajo)
 
-**¿Por qué tercero?**
-- Funcionalidad única (competencia no tiene)
-- Demuestra valor proactivo
-- Implementación simple (solo lógica + UI)
+**Justificación técnica:**
+- Procesamiento automático de métricas
+- Detección de anomalías y thresholds
+- Sistema de notificaciones proactivas
+- Lógica de negocio + componentes UI
 
 **Implementación:**
 
@@ -331,15 +330,14 @@ export function MarketAlerts() {
 </div>
 ```
 
-**Output:**
-- Dashboard muestra alertas en tiempo real
-- Usuarios ven insights proactivos
-- Links accionables a análisis detallado
+**Resultado esperado:**
+- Dashboard con sistema de alertas en tiempo real
+- Detección automática de anomalías
+- Links accionables a vistas detalladas
 
 ---
 
-#### 🟢 DÍA 5: Gráficos Adicionales Tremor (2 días)
-**Tiempo:** 2 días
+#### 🟢 Tarea 4: Gráficos Adicionales con Tremor
 **Impacto:** ⭐⭐⭐⭐ (Alto)
 **Esfuerzo:** ⚡⚡ (Bajo)
 
@@ -439,7 +437,7 @@ export function PriceRangeChart({ projects }: { projects: Project[] }) {
 }
 ```
 
-**Integración en Analytics (2h):**
+**Integración en Analytics:**
 ```typescript
 // frontend/src/app/dashboard/analytics/page.tsx
 <div className="grid grid-cols-2 gap-6">
@@ -460,34 +458,35 @@ export function PriceRangeChart({ projects }: { projects: Project[] }) {
 </div>
 ```
 
-**Output:**
-- 3 nuevos gráficos profesionales
-- Analytics page muy mejorada
-- Data storytelling visual
+**Resultado esperado:**
+- 3 nuevos tipos de gráficos (DonutChart, LineChart, BarChart stacked)
+- Página de analytics mejorada
+- Visualización de datos más clara
 
 ---
 
-### **RESUMEN SEMANA 1:**
-| Día | Tarea | Tiempo | Impacto |
-|-----|-------|--------|---------|
-| 1 | Tremor UI + KPI Cards | 1d | ⭐⭐⭐⭐⭐ |
-| 2-3 | Knowledge Base (5 docs) | 2d | ⭐⭐⭐⭐⭐ |
-| 4 | Alertas Automáticas | 1.5d | ⭐⭐⭐⭐ |
-| 5-6 | Gráficos Tremor (3 tipos) | 2d | ⭐⭐⭐⭐ |
-| **TOTAL** | | **6.5 días** | **Muy Alto** |
+### **RESUMEN FASE 1:**
+| # | Tarea | Impacto | Esfuerzo |
+|---|-------|---------|----------|
+| 1 | Tremor UI + KPI Cards | ⭐⭐⭐⭐⭐ | ⚡ |
+| 2 | Knowledge Base (5 docs) | ⭐⭐⭐⭐⭐ | ⚡⚡ |
+| 3 | Alertas Automáticas | ⭐⭐⭐⭐ | ⚡⚡ |
+| 4 | Gráficos Tremor (3 tipos) | ⭐⭐⭐⭐ | ⚡⚡ |
 
 **Avance:** 74% → **82%** (+8%)
 
 ---
 
-## **SEMANA 2: REPORTERÍA + EXPORTACIÓN** (7 días)
+## **FASE 2: REPORTERÍA + EXPORTACIÓN**
 
-#### 🟡 DÍA 1-2: Exportación PDF Simple (2 días)
-**Tiempo:** 2 días
-**Impacto:** ⭐⭐⭐⭐ (Alto - Requerido por clientes)
-**Esfuerzo:** ⚡⚡ (Bajo con enfoque simple)
+#### 🟡 Tarea 5: Sistema de Exportación PDF
+**Impacto:** ⭐⭐⭐⭐ (Alto)
+**Esfuerzo:** ⚡⚡ (Bajo)
 
-**Enfoque:** PDF básico funcional (no perfecto)
+**Justificación técnica:**
+- Feature requerida para compartir reportes
+- Solución client-side simple (jsPDF + html2canvas)
+- Sin complejidad de servidor
 
 **Opción SIMPLE: jsPDF + html2canvas (client-side)**
 ```typescript
@@ -573,30 +572,35 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
 }
 ```
 
-**Instalación (30min):**
+**Instalación de dependencias:**
 ```bash
 npm install jspdf html2canvas
 npm install -D @types/jspdf
 ```
 
-**Testing (2h):**
-- Exportar reporte simple
-- Verificar paginación
-- Probar con diferentes tamaños
+**Testing necesario:**
+- Exportar reporte de múltiples páginas
+- Verificar paginación automática
+- Validar resolución de imágenes en PDF
 
-**Output:**
-- PDF funcional descargable
-- No perfecto pero 100% funcional
-- Mejora posterior en Semana 3 (opcional)
+**Resultado esperado:**
+- Sistema de exportación PDF funcional
+- Descarga client-side
+- Manejo correcto de multi-página
 
 ---
 
-#### 🟡 DÍA 3-4: Filtros UI Esenciales (2 días)
-**Tiempo:** 2 días
+#### 🟡 Tarea 6: Sistema de Filtros UI
 **Impacto:** ⭐⭐⭐⭐ (Alto)
 **Esfuerzo:** ⚡⚡ (Bajo)
 
-**Filtros prioritarios (no todos):**
+**Justificación técnica:**
+- Mejora significativa de UX
+- Queries filtradas en base de datos
+- Reducción de carga de datos
+- Componentes reutilizables
+
+**Filtros a implementar:**
 
 **1. Rango de Precio (2h)**
 ```typescript
@@ -748,17 +752,22 @@ export default function ProjectsPage() {
 }
 ```
 
-**Output:**
-- 4 filtros esenciales funcionando
-- UX mejorada significativamente
-- Búsqueda precisa de proyectos
+**Resultado esperado:**
+- 4 filtros esenciales funcionando (Región, Precio, Tipología, Estado)
+- Panel de filtros integrado
+- Query optimization con filtros en DB
+- Función de limpiar filtros
 
 ---
 
-#### 🔵 DÍA 5: Tabla de Competencia (1 día)
-**Tiempo:** 1 día
+#### 🔵 Tarea 7: Tabla de Análisis Competitivo
 **Impacto:** ⭐⭐⭐ (Medio-Alto)
 **Esfuerzo:** ⚡ (Muy Bajo)
+
+**Justificación técnica:**
+- Componente de tabla avanzada con Tremor
+- Sorting y badges condicionales
+- Visualización comparativa de proyectos
 
 ```typescript
 // frontend/src/components/reports/CompetitorTable.tsx (4h)
@@ -822,7 +831,7 @@ export function CompetitorTable({ projects }: { projects: Project[] }) {
 }
 ```
 
-**Integración en Reportes (2h):**
+**Integración en sistema de reportes:**
 ```typescript
 // En generación de reporte
 sections.push({
@@ -832,19 +841,22 @@ sections.push({
 })
 ```
 
-**Output:**
-- Tabla profesional de competencia
-- Badges de colores según métricas
-- Sorting y visual claro
+**Resultado esperado:**
+- Tabla con top 10 competidores
+- Badges de colores según métricas (MAO, ventas)
+- Sorting integrado
 
 ---
 
-#### 🟠 DÍA 6-7: Template Reporte Mejorado (2 días)
-**Tiempo:** 2 días
+#### 🟠 Tarea 8: Template de Reportes Completo
 **Impacto:** ⭐⭐⭐⭐ (Alto)
 **Esfuerzo:** ⚡⚡⚡ (Medio)
 
-**Objetivo:** Reporte "Contexto de Mercado" completo
+**Justificación técnica:**
+- Sistema de generación de reportes multi-sección
+- Integración de LLM para resúmenes
+- Queries complejas agregando datos históricos
+- Componente renderer modular
 
 ```typescript
 // frontend/src/app/api/brain/reports/generate/route.ts (8h)
@@ -1002,32 +1014,35 @@ export function ReportRenderer({ sections }: { sections: ReportSection[] }) {
 }
 ```
 
-**Output:**
-- Reporte completo de 7 secciones
-- Resumen ejecutivo generado por IA
-- Todas las visualizaciones integradas
+**Resultado esperado:**
+- Template de reporte "Contexto de Mercado" con 7 secciones
+- Resumen ejecutivo generado por LLM
+- Integración de todos los componentes visuales
 
 ---
 
-### **RESUMEN SEMANA 2:**
-| Día | Tarea | Tiempo | Impacto |
-|-----|-------|--------|---------|
-| 1-2 | Exportación PDF Simple | 2d | ⭐⭐⭐⭐ |
-| 3-4 | Filtros UI Esenciales | 2d | ⭐⭐⭐⭐ |
-| 5 | Tabla Competencia | 1d | ⭐⭐⭐ |
-| 6-7 | Template Reporte Completo | 2d | ⭐⭐⭐⭐ |
-| **TOTAL** | | **7 días** | **Alto** |
+### **RESUMEN FASE 2:**
+| # | Tarea | Impacto | Esfuerzo |
+|---|-------|---------|----------|
+| 5 | Exportación PDF | ⭐⭐⭐⭐ | ⚡⚡ |
+| 6 | Filtros UI Esenciales | ⭐⭐⭐⭐ | ⚡⚡ |
+| 7 | Tabla Competencia | ⭐⭐⭐ | ⚡ |
+| 8 | Template Reporte Completo | ⭐⭐⭐⭐ | ⚡⚡⚡ |
 
 **Avance:** 82% → **90%** (+8%)
 
 ---
 
-## **SEMANA 3: POLISH + SEGURIDAD** (5 días)
+## **FASE 3: SEGURIDAD + TESTING**
 
-#### 🔒 DÍA 1-2: Completar RLS + Testing (2 días)
-**Tiempo:** 2 días
-**Impacto:** ⭐⭐⭐ (Medio - Seguridad)
+#### 🔒 Tarea 9: Row Level Security (RLS) Completo
+**Impacto:** ⭐⭐⭐ (Medio-Alto - Seguridad)
 **Esfuerzo:** ⚡⚡ (Bajo)
+
+**Justificación técnica:**
+- Implementación de políticas de seguridad en base de datos
+- Aislamiento de datos por usuario
+- Prevención de acceso no autorizado
 
 **Migration SQL (4h):**
 ```sql
@@ -1047,15 +1062,23 @@ CREATE POLICY "users_update_own_reports"
   USING (auth.uid() = user_id OR is_admin());
 ```
 
-**Testing (4h):**
-- Crear 2 usuarios de prueba
-- Verificar que Usuario A no ve reportes de Usuario B
-- Verificar que Admin ve todos
-- Testing de cada política
+**Testing necesario:**
+- Crear múltiples usuarios de prueba
+- Verificar aislamiento de datos entre usuarios
+- Verificar permisos de admin
+- Validar todas las políticas RLS
 
 ---
 
-#### 🧪 DÍA 3: Testing Funcional Completo (1 día)
+#### 🧪 Tarea 10: Testing Funcional Completo
+**Impacto:** ⭐⭐⭐⭐ (Alto)
+**Esfuerzo:** ⚡⚡ (Bajo)
+
+**Justificación técnica:**
+- Validación de todas las funcionalidades implementadas
+- Testing end-to-end de flujos principales
+- Verificación de integridad de datos
+
 **Checklist de testing:**
 
 **Reportería:**
@@ -1083,35 +1106,49 @@ CREATE POLICY "users_update_own_reports"
 
 ---
 
-#### 🐛 DÍA 4: Bug Fixing + Optimización (1 día)
-- Fix de issues encontrados
-- Optimización de queries lentas
-- Error handling mejorado
-- Loading states
+#### 🐛 Tarea 11: Bug Fixing + Optimización
+**Impacto:** ⭐⭐⭐ (Medio-Alto)
+**Esfuerzo:** ⚡⚡ (Bajo-Medio)
+
+**Justificación técnica:**
+- Resolución de issues encontrados en testing
+- Optimización de queries de base de datos
+- Mejora de error handling
+- Implementación de loading states
+
+**Áreas a revisar:**
+- Queries N+1
+- Manejo de errores en llamadas API
+- Estados de carga en UI
+- Validación de inputs
 
 ---
 
-#### 📚 DÍA 5: Documentación + Demo Prep (1 día)
-**Documentación:**
+#### 📚 Tarea 12: Documentación Técnica
+**Impacto:** ⭐⭐⭐ (Medio)
+**Esfuerzo:** ⚡⚡ (Bajo)
+
+**Justificación técnica:**
+- Documentación de arquitectura
+- Guías de setup y deployment
+- Documentación de API endpoints
 - README actualizado
-- Guía de usuario con screenshots
-- Documentación de API
 
-**Demo Preparation:**
-- Datos de prueba limpios
-- Scenarios de demo preparados
-- Scripts de presentación
+**Documentos a actualizar:**
+- `README.md` con instrucciones de setup
+- `docs/ARCHITECTURE.md` con diagrama de sistema
+- `docs/API.md` con endpoints disponibles
+- Comentarios en código complejo
 
 ---
 
-### **RESUMEN SEMANA 3:**
-| Día | Tarea | Tiempo | Impacto |
-|-----|-------|--------|---------|
-| 1-2 | RLS + Testing Seguridad | 2d | ⭐⭐⭐ |
-| 3 | Testing Funcional | 1d | ⭐⭐⭐ |
-| 4 | Bug Fixing | 1d | ⭐⭐⭐ |
-| 5 | Documentación | 1d | ⭐⭐ |
-| **TOTAL** | | **5 días** | **Medio** |
+### **RESUMEN FASE 3:**
+| # | Tarea | Impacto | Esfuerzo |
+|---|-------|---------|----------|
+| 9 | RLS Completo | ⭐⭐⭐ | ⚡⚡ |
+| 10 | Testing Funcional | ⭐⭐⭐⭐ | ⚡⚡ |
+| 11 | Bug Fixing | ⭐⭐⭐ | ⚡⚡ |
+| 12 | Documentación | ⭐⭐⭐ | ⚡⚡ |
 
 **Avance:** 90% → **95%** (+5%)
 
@@ -1119,147 +1156,157 @@ CREATE POLICY "users_update_own_reports"
 
 ## 📊 RESUMEN TOTAL DEL PLAN
 
-### Timeline Optimizado
-| Semana | Foco | Días | Avance |
-|--------|------|------|--------|
-| **Semana 1** | Quick Wins Visual + IA | 6.5d | 74% → 82% |
-| **Semana 2** | Reportería + Export | 7d | 82% → 90% |
-| **Semana 3** | Polish + Seguridad | 5d | 90% → 95% |
-| **TOTAL** | | **18.5 días** | **+21%** |
+### Progresión por Fases
+| Fase | Foco | Tareas | Avance |
+|------|------|--------|--------|
+| **Fase 1** | Quick Wins + UI/UX | 4 | 74% → 82% |
+| **Fase 2** | Reportería + Filtros | 4 | 82% → 90% |
+| **Fase 3** | Seguridad + Testing | 4 | 90% → 95% |
+| **TOTAL** | | **12 tareas** | **+21%** |
 
-### Comparación con Plan Original
-| Métrica | Plan Original | Plan Optimizado | Mejora |
-|---------|---------------|-----------------|---------|
-| **Duración** | 6 semanas (28d) | 3 semanas (18.5d) | **-34%** |
-| **Avance final** | 95% | 95% | Igual |
-| **Quick wins** | 0 | 5 | +5 |
-| **Impacto demos** | Medio | Alto | +50% |
+### Distribución por Impacto/Esfuerzo
+| Categoría | Cantidad | Impacto Promedio | Esfuerzo Promedio |
+|-----------|----------|------------------|-------------------|
+| Quick Wins (🟢) | 4 | ⭐⭐⭐⭐⭐ | ⚡⚡ |
+| Medio Esfuerzo (🟡🔵) | 4 | ⭐⭐⭐⭐ | ⚡⚡ |
+| Major Projects (🟠🔒) | 4 | ⭐⭐⭐ | ⚡⚡⚡ |
 
 ---
 
-## 🎯 IMPACTO EN OBJETIVOS DEL PROYECTO
+## 🎯 HITOS TÉCNICOS
 
-### Después de Semana 1 (82%):
-✅ **LISTO PARA DEMOS**
-- Look premium (Tremor UI)
-- IA con contexto real
-- Alertas proactivas
-- Gráficos profesionales
+### Después de Fase 1 (82%):
+✅ **UI/UX MEJORADA**
+- Librería Tremor UI integrada
+- Sistema RAG funcional
+- Alertas automáticas
+- Visualizaciones avanzadas
 
-### Después de Semana 2 (90%):
-✅ **LISTO PARA CLIENTES BETA**
-- Reportes completos
+### Después de Fase 2 (90%):
+✅ **FUNCIONALIDAD COMPLETA**
+- Sistema de reportes multi-sección
 - Exportación PDF
 - Filtros avanzados
-- Funcionalidad completa
+- Análisis competitivo
 
-### Después de Semana 3 (95%):
-✅ **LISTO PARA LANZAMIENTO**
-- Seguridad completa
-- Testing exhaustivo
-- Documentación
-- Demos preparados
-
----
-
-## 💡 VENTAJAS DE ESTE PLAN
-
-### 1. Time-to-Value Rápido
-- **Semana 1:** Ya puedes hacer demos impresionantes
-- **Semana 2:** Clientes beta pueden usar el producto
-- **Semana 3:** Lanzamiento público
-
-### 2. Riesgo Minimizado
-- Solo features de bajo riesgo técnico
-- Sin refactors grandes
-- Sin integraciones complejas (CBR, scraping quedan Fase 2)
-
-### 3. ROI Máximo
-- Cada tarea tiene impacto visible inmediato
-- No hay "thankless tasks"
-- Ratio impacto/esfuerzo optimizado
-
-### 4. Momentum del Equipo
-- Wins rápidos motivan
-- Progreso visible diario
-- Feedback loop corto
+### Después de Fase 3 (95%):
+✅ **PRODUCCIÓN READY**
+- RLS implementado
+- Testing completo
+- Bugs resueltos
+- Documentación actualizada
 
 ---
 
-## 🚫 LO QUE DEJAMOS PARA FASE 2
+## 💡 VENTAJAS TÉCNICAS DEL PLAN
 
-**Integraciones complejas (3-4 semanas c/u):**
-- ❌ CBR - Conservador Bienes Raíces
-- ❌ Scraping Portal Inmobiliario / Toc Toc
+### 1. Bajo Riesgo Técnico
+- Sin refactors grandes de arquitectura
+- Dependencias probadas y estables
+- Sin integraciones de terceros complejas
+
+### 2. Incremental y Modular
+- Cada fase es independiente
+- Rollback sencillo si hay problemas
+- Testing continuo
+
+### 3. Optimización de Recursos
+- Priorización por impacto/esfuerzo
+- Paralelización donde sea posible
+- Reutilización de componentes
+
+---
+
+## 🚫 BACKLOG - FASE 2 (Futuro)
+
+**Integraciones de terceros:**
+- ❌ CBR - Conservador Bienes Raíces API
+- ❌ Web scraping Portal Inmobiliario / Toc Toc
 - ❌ Roles de Avalúo SII
-- ❌ INE Segmentación
+- ❌ INE Segmentación demográfica
 
-**Features avanzadas (1-2 semanas c/u):**
-- ❌ Informe de Proyecto Específico
-- ❌ Informe de Oportunidad de Terreno
-- ❌ Heatmap en mapa
-- ❌ Sistema de planes por suscripción
+**Features avanzadas:**
+- ❌ Template: Informe de Proyecto Específico
+- ❌ Template: Informe de Oportunidad de Terreno
+- ❌ Heatmap interactivo en mapa
+- ❌ Sistema multi-tenant con planes
 
-**Justificación:**
-- No son bloqueantes para MVP
-- Alto esfuerzo, impacto diferido
-- Mejor validar producto primero con clientes
-
----
-
-## 📋 CHECKLIST DE EJECUCIÓN
-
-### Pre-requisitos
-- [ ] Equipo disponible 100% (no multitasking)
-- [ ] Entorno de desarrollo listo
-- [ ] Acceso a todas las cuentas (Supabase, OpenAI, etc.)
-- [ ] Branch creado: `feature/quick-wins-sprint`
-
-### Durante Ejecución
-- [ ] Daily standup 10 min (9:00 AM)
-- [ ] Commits diarios al branch
-- [ ] Testing inmediato de cada feature
-- [ ] Documentar decisiones importantes
-
-### Post-Ejecución
-- [ ] Pull Request con changelog completo
-- [ ] Demo interno (stakeholders)
-- [ ] Preparar primeras demos a clientes
-- [ ] Planificar Fase 2
+**Justificación técnica:**
+- Alto esfuerzo de integración
+- Dependencias externas con riesgo
+- Complejidad de mantenimiento
+- No bloqueantes para funcionalidad core
 
 ---
 
-## 🎬 PRÓXIMO PASO
+## 📋 CHECKLIST TÉCNICO DE EJECUCIÓN
 
-**AHORA MISMO:**
+### Pre-requisitos Técnicos
+- [ ] Entorno de desarrollo configurado
+- [ ] Variables de entorno (.env) configuradas
+- [ ] Acceso a servicios: Supabase, OpenAI API
+- [ ] Node.js y npm actualizados
+- [ ] Git branch creado: `feature/mvp-improvements`
+
+### Durante Desarrollo
+- [ ] Tests unitarios para lógica de negocio
+- [ ] Testing manual de cada feature
+- [ ] Code review antes de merge
+- [ ] Commits atómicos con mensajes descriptivos
+- [ ] Documentar decisiones de arquitectura
+
+### Post-Implementación
+- [ ] Pull Request con changelog detallado
+- [ ] Migrations de DB ejecutadas
+- [ ] Testing end-to-end completo
+- [ ] Documentación actualizada
+- [ ] Plan de rollback definido
+
+---
+
+## 🔧 STACK TÉCNICO
+
+### Frontend
+- Next.js 14 (App Router)
+- React 18
+- TypeScript
+- Tailwind CSS
+- Tremor UI (nuevo)
+- Recharts → Tremor Charts
+- jsPDF + html2canvas
+
+### Backend
+- Supabase (PostgreSQL + Auth)
+- Row Level Security (RLS)
+- Supabase Edge Functions
+
+### IA/ML
+- OpenAI API (GPT-4o-mini)
+- text-embedding-3-small
+- Vector search (pgvector)
+
+### DevOps
+- Vercel (deployment)
+- GitHub (version control)
+
+---
+
+## 🚀 INICIO RÁPIDO
+
 ```bash
-# 1. Crear branch
-git checkout -b feature/quick-wins-sprint
+# 1. Crear branch de trabajo
+git checkout -b feature/mvp-improvements
 
-# 2. Comenzar DÍA 1
+# 2. Instalar nueva dependencia (Fase 1, Tarea 1)
+cd frontend
 npm install @tremor/react
 
-# 3. Actualizar tailwind.config.ts
-# ... (seguir checklist Día 1)
+# 3. Seguir implementación según plan
+# Ver sección "FASE 1: QUICK WINS + MEJORAS VISUALES"
 ```
-
-**ESTIMACIÓN REALISTA:**
-- Con 1 developer full-time: **3 semanas**
-- Con 2 developers: **2 semanas**
-- Con 3 developers (paralelo): **1.5 semanas**
-
----
-
-**¿Comenzamos con el Día 1?**
-
-Puedo ayudarte a:
-1. Implementar Tremor UI ahora mismo
-2. Preparar contenido para Knowledge Base
-3. Crear cualquiera de los componentes
-4. Revisar/ajustar el plan según recursos
 
 ---
 
 **Documento creado por:** Claude Code (Sonnet 4.5)
 **Fecha:** 11 de Febrero 2026
-**Versión:** 1.0 - Plan Optimizado
+**Versión:** 2.0 - Plan Técnico Optimizado
