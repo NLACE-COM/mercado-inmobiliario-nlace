@@ -1,283 +1,486 @@
 # Gap Analysis: Proyecto Actual vs Documento Maestro
 
-**Fecha:** 2026-02-10 (Actualizado - v4 / Post-migracion a Next.js API Routes)
+**Fecha:** 2026-02-11 (v5 - Revision exhaustiva completa)
 **Comparacion:** Codigo en produccion vs "WebApp Inmobiliaria NLACE - Documento Maestro"
 
 ---
 
 ## Resumen Ejecutivo
 
-El proyecto esta **en produccion en Vercel** y ha pasado por un cambio arquitectural importante: la logica de IA se movio completamente del backend Python (FastAPI) a **Next.js API Routes** en el frontend. Esto simplifica la infraestructura (todo corre en Vercel) pero tiene implicancias en las herramientas del agente IA que se redujeron de 5 a 2.
+El proyecto esta **en produccion en Vercel** con Next.js 16. La logica de IA se ejecuta 100% en Next.js API Routes (TypeScript + OpenAI SDK). El backend Python (FastAPI + LangChain) **existe en el repositorio pero NO se ejecuta en produccion** (vercel.json solo configura `"framework": "nextjs"`).
 
-**Estado general: ~65% del MVP**
+**Estado general: ~68% del MVP Fase 1**
 
-| Seccion del Documento | Completitud | Cambio vs v3 |
-|----------------------|-------------|--------------|
-| 2. Arquitectura de Datos | **~60%** | = (mismos 3,511 proyectos) |
-| 3. Cerebro IA | **~45%** | ↓ Regresion: de 5 tools a 2 tools |
-| 4. Outputs y Reporteria | **~55%** | ↑ Reportes generan con datos reales |
-| 5. Navegacion y Segmentacion | **~55%** | = |
-| 7. Arquitectura Tecnica | **~70%** | ↑ Todo unificado en Vercel |
-| 8. Roadmap Fase 1 MVP | **~60%** | Mixto (mejoras + regresiones) |
-
----
-
-## Cambio Arquitectural Principal
-
-### Antes: Frontend → Backend Python (FastAPI) → OpenAI + Supabase
-### Ahora: Frontend → Next.js API Routes → OpenAI + Supabase
-
-| Aspecto | Antes (FastAPI) | Ahora (Next.js API Routes) |
-|---------|----------------|--------------------------|
-| Chat IA | `/brain/ask` (Python) | `/api/brain/chat` (TypeScript) |
-| Reportes | `/brain/reports/*` (Python) | `/api/brain/reports/*` (TypeScript) |
-| Admin | `/brain/admin/*` (Python) | `/api/brain/admin/*` (TypeScript) |
-| Agente | LangChain (Python) con 5 tools | OpenAI SDK (TypeScript) con 2 tools |
-| Modelo | GPT-4 Turbo | GPT-4o-mini |
-| RAG | pgvector + similarity_search | **NO FUNCIONAL** (embeddings = null) |
-| Backend | Core de la app | **Codigo muerto** (existe pero no se usa) |
-| Deploy | Vercel (FE) + Railway/Render (BE) | **Solo Vercel** (todo unificado) |
+| Seccion del Documento Maestro | Completitud | Cambio vs v4 | Detalle |
+|-------------------------------|-------------|--------------|---------|
+| 2. Arquitectura de Datos | **~60%** | = | 3,511 proyectos, tipologias incompletas |
+| 3. Cerebro IA | **~40%** | ↓ Nota corregida | 2 tools, RAG roto, sin auth |
+| 4. Outputs y Reporteria | **~65%** | ↑ Confirmado funcional | 3 tipos reporte + IA + export |
+| 5. Navegacion y Segmentacion | **~75%** | ↑ Revision detallada | 8 paginas completas, 7/15 filtros |
+| 7. Arquitectura Tecnica | **~70%** | = | Stack completo en Vercel |
+| 8. Roadmap Fase 1 MVP | **~65%** | ↑ Ajustado | Frontend mas avanzado de lo estimado |
 
 ---
 
-## 1. ARQUITECTURA DE DATOS (Seccion 2) - ~60%
+## Arquitectura Actual en Produccion
+
+```
+Usuario → Vercel (Next.js 16) → Supabase Cloud (PostgreSQL + PostGIS + pgvector)
+                              → OpenAI API (GPT-4o-mini)
+                              → Mapbox GL JS
+```
+
+### Que se ejecuta en produccion
+
+| Componente | Tecnologia | Estado |
+|-----------|-----------|--------|
+| Frontend SSR | Next.js 16 App Router | EN PRODUCCION |
+| API Routes IA | Next.js `/api/brain/*` | EN PRODUCCION (sin auth) |
+| Base de datos | Supabase Cloud | EN PRODUCCION |
+| Mapa | Mapbox GL JS | EN PRODUCCION |
+| Auth | Supabase Auth SSR | EN PRODUCCION |
+| Backend Python | FastAPI + LangChain | **CODIGO MUERTO** (no se ejecuta) |
+
+### Backend Python: muerto pero valioso
+
+El backend Python en `backend/` tiene una implementacion **mas completa** que la version TypeScript:
+- **5 tools** vs 2 en TypeScript (compare_regions, top_sales, market_summary perdidos)
+- **RAG funcional** con pgvector + OpenAI embeddings (1536 dim) vs embeddings=null en TS
+- **GPT-4 Turbo** vs GPT-4o-mini en TypeScript
+- **Cache en memoria** con TTL vs sin cache en TypeScript
+
+Esto significa que la migracion a TypeScript fue una **regresion funcional** del agente IA.
+
+---
+
+## 1. ARQUITECTURA DE DATOS (Seccion 2 del Maestro) - ~60%
 
 ### Base de Datos en Produccion
 
-| Tabla | Registros | Estado |
-|-------|-----------|--------|
-| `projects` | 3,511 | Datos reales TINSA (50 columnas) |
-| `project_typologies` | 325 | **Incompleto** (deberian ser ~10,000+) |
-| `generated_reports` | 17 | Reportes generados con IA |
-| `knowledge_docs` | 12 | Base de conocimiento RAG |
-| `system_prompts` | 1 | Prompt activo |
+| Tabla | Registros | Estado | Nota |
+|-------|-----------|--------|------|
+| `projects` | 3,511 | COMPLETA | 55 columnas, datos TINSA reales |
+| `project_typologies` | 325 | **INCOMPLETA** | Deberian ser ~10,000+ (2-4 por proyecto) |
+| `project_metrics_history` | 0 | **VACIA** | Sin snapshots historicos |
+| `market_insights` | 0 | **VACIA** | Sin insights generados |
+| `generated_reports` | 17+ | ACTIVA | Reportes IA generados |
+| `knowledge_docs` | 12 | **MINIMA** | Sin embeddings reales |
+| `system_prompts` | 1 | OK | Prompt activo |
+| `profiles` | ~1 | OK | Con trigger auth.users |
+
+### Migraciones SQL (13 archivos)
+
+| Migracion | Contenido | Estado |
+|-----------|-----------|--------|
+| `initial_schema.sql` | 4 tablas core + RLS + indexes | APLICADA |
+| `enable_vector.sql` | pgvector + knowledge_docs + match_documents() | APLICADA |
+| `create_profiles.sql` | profiles + is_admin() + trigger | APLICADA |
+| `admin_brain.sql` | system_prompts + seed data | APLICADA |
+| `add_tinsa_columns.sql` | 24 columnas TINSA adicionales | APLICADA |
+| `optimize_performance.sql` | 10+ indexes compuestos + trigram | APLICADA |
+| `enable_vector_store.sql` | Recreacion knowledge_docs + IVFFlat index | APLICADA |
+| `reporting_engine.sql` | generated_reports + triggers | APLICADA |
+| `reporting_functions.sql` | get_market_matrix() + get_project_benchmark() | APLICADA |
+| `spatial_reports.sql` | get_projects_in_polygon() PostGIS | APLICADA |
+| `get_communes_rpc.sql` | RPC comunas distintas | APLICADA |
+| `get_projects_in_polygon_rpc.sql` | RPC busqueda espacial | APLICADA |
+| `create_ai_brain_tables.sql` | Duplicado (system_prompts/knowledge_docs) | REDUNDANTE |
 
 ### Pipeline ETL
 
-| Requisito | Estado |
-|-----------|--------|
-| Datos TINSA cargados | **SI** - 3,511 proyectos |
-| Geocoding ejecutado | **SI** - 1,686 en cache |
-| Tipologias completas | **NO** - Solo 325 para 3,511 proyectos |
-| Actualizacion periodica | **NO** - Import manual unico |
-| CBR, INE, Portales | **NO** - Fase 2/3 |
+| Herramienta | Estado | Nota |
+|-------------|--------|------|
+| `import_tinsa.py` | EJECUTADO | Importo 3,511 proyectos |
+| `tinsa_importer.py` | DISPONIBLE | Version mejorada con tipologias (no ejecutado) |
+| `geocode_projects.py` | EJECUTADO | 1,686 coordenadas en cache |
+| `mock_data.py` | DISPONIBLE | Generador de datos de prueba |
+| `csv_to_supabase.py` | TEMPLATE | Importador generico |
+| `bigquery_to_supabase.py` | NO USADO | Requiere credenciales GCP |
 
-### Pendiente critico: Importar CSV Norte/Sur + RM
-Los 2 archivos TINSA (35MB + 100MB) aun no se han importado. El importador `tinsa_importer.py` esta listo pero requiere ejecucion local.
+### Fuentes de datos segun Documento Maestro
 
----
-
-## 2. CEREBRO IA (Seccion 3) - ~45%
-
-### REGRESION: De 5 tools a 2 tools
-
-La migracion de Python a TypeScript perdio 3 herramientas:
-
-| Tool | Doc. Maestro | FastAPI (v3) | Next.js (v4 actual) |
-|------|-------------|-------------|---------------------|
-| `search_projects` | SI | SI | **SI** |
-| `get_market_stats` | SI | SI | **SI** |
-| `compare_regions` | SI | SI | **NO - PERDIDA** |
-| `top_sales` | SI | SI | **NO - PERDIDA** |
-| `market_summary` | SI | SI | **NO - PERDIDA** |
-
-### RAG: NO FUNCIONAL
-
-| Componente | Estado |
-|-----------|--------|
-| `vector-store.ts` | Existe pero **embeddings = null** al ingestar |
-| `searchKnowledge()` | Usa `textSearch()` en vez de pgvector similarity |
-| Knowledge docs | 12 docs en BD pero **sin embeddings** |
-| `match_documents()` | Funcion SQL existe pero no se llama |
-
-**Resultado:** El agente IA no tiene acceso a contexto historico (regulaciones, hitos, macro). Las respuestas se basan solo en los datos de la tabla `projects`.
-
-### Lo que SI funciona
-
-| Feature | Estado |
-|---------|--------|
-| Chat con OpenAI (GPT-4o-mini) | **SI** - Respuestas en tiempo real |
-| Tool calling (2 herramientas) | **SI** - Busqueda y estadisticas |
-| System prompt configurable desde admin | **SI** |
-| CRUD Knowledge Base (UI) | **SI** - Pero sin embeddings reales |
-| Markdown rendering en respuestas | **SI** |
-| Widget de chat flotante | **SI** - AIChatWidget.tsx |
+| Fuente | Estado |
+|--------|--------|
+| TINSA (proyectos inmobiliarios) | **SI** - 3,511 proyectos |
+| CBR (Conservador Bienes Raices) | **NO** - Fase 2 |
+| INE (indicadores macro) | **NO** - Fase 2 |
+| Portales inmobiliarios | **NO** - Fase 3 |
+| SII (avaluos fiscales) | **NO** - Fase 3 |
 
 ---
 
-## 3. OUTPUTS Y REPORTERIA (Seccion 4) - ~55%
+## 2. CEREBRO IA (Seccion 3 del Maestro) - ~40%
 
-### Generacion de Reportes: FUNCIONAL CON DATOS REALES
+### Herramientas del Agente
 
-| Tipo de Reporte | Estado | Datos |
-|----------------|--------|-------|
-| Contexto de Mercado por Comuna | **SI** | Proyectos reales de Supabase |
-| Benchmark de Proyecto | **SI** | Comparativa real |
-| Area por Poligono | **SI** | PostGIS `get_projects_in_polygon()` |
+| Tool | Doc. Maestro | Python (existe) | TypeScript (produccion) |
+|------|-------------|-----------------|------------------------|
+| `search_projects` | SI | SI | **SI** - Busqueda por comuna/precio |
+| `get_market_stats` | SI | SI | **SI** - Stats agregadas |
+| `compare_regions` | SI | SI | **NO** - PERDIDA en migracion |
+| `top_sales` | SI | SI | **NO** - PERDIDA en migracion |
+| `market_summary` | SI | SI | **NO** - PERDIDA en migracion |
 
-### Contenido del Reporte (estructura real)
+**En produccion: 2 de 5 tools (40%)**
 
-| Seccion | Estado |
-|---------|--------|
-| `kpi_grid` (5 KPIs) | **SI** - proyectos, precio, velocidad, stock, MAO |
-| `analysis_text` (IA) | **SI** - GPT-4o-mini genera analisis |
-| `chart_bar` (stock por estado) | **SI** - Recharts BarChart |
-| `chart_scatter` (precio vs velocidad) | **SI** - Recharts ScatterChart |
-| `project_table` (top 20) | **SI** - Tabla de proyectos |
+### RAG (Retrieval Augmented Generation)
+
+| Componente | Estado en Produccion |
+|-----------|---------------------|
+| Tabla `knowledge_docs` | Existe con 12 documentos |
+| Campo `embedding` (vector 1536) | **NULL en todos los registros** |
+| Funcion `match_documents()` SQL | Existe pero **nunca se llama** |
+| `searchKnowledge()` en vector-store.ts | Usa `textSearch()` (no pgvector) |
+| Integracion en brain-agent.ts | **NO EXISTE** - queryBrainWithRAG no usa RAG |
+
+**Resultado:** El nombre `queryBrainWithRAG` es engañoso. El agente NO consulta la knowledge base. No hay contexto historico en las respuestas IA. Esto es un **gap critico** vs el Documento Maestro que define RAG como diferenciador del producto.
+
+### Lo que SI funciona del Cerebro IA
+
+| Feature | Estado | Detalles |
+|---------|--------|----------|
+| Chat con OpenAI | **SI** | GPT-4o-mini, respuestas en español |
+| Tool calling (2 tools) | **SI** | get_market_stats + search_projects |
+| Datos reales en respuestas | **SI** | Consulta tabla projects via Supabase |
+| System prompt configurable | **SI** | CRUD desde admin + fallback hardcoded |
+| CRUD Knowledge Base (UI) | **SI** | Pero docs se guardan sin embeddings |
+| Widget chat flotante | **SI** | AIChatWidget.tsx en todas las paginas |
+| Chat dedicado | **SI** | BrainChat.tsx con historial |
+| Markdown en respuestas | **SI** | Basico (bold, listas, headers) |
+
+---
+
+## 3. OUTPUTS Y REPORTERIA (Seccion 4 del Maestro) - ~65%
+
+### Generacion de Reportes
+
+| Tipo de Reporte | Funciona | Datos | IA |
+|----------------|----------|-------|-----|
+| Contexto de Mercado por Comuna | **SI** | Proyectos reales via ilike | GPT-4o-mini |
+| Area por Poligono | **SI** | PostGIS `get_projects_in_polygon()` | GPT-4o-mini |
+| Benchmark de Proyecto | **SI** | `get_project_benchmark()` RPC | GPT-4o-mini |
+
+### Secciones del Reporte (estructura real generada)
+
+| Seccion | Implementada | Tipo |
+|---------|-------------|------|
+| KPI Grid (6 metricas) | **SI** | total_projects, avg_price, avg_price_m2, total_stock, avg_sales_speed, avg_mao |
+| Analisis texto IA | **SI** | 3 parrafos GPT-4o-mini con datos reales |
+| Chart bar (estado de obra) | **SI** | Recharts BarChart |
+| Chart scatter (precio vs velocidad) | **SI** | Recharts ScatterChart |
+| Tabla proyectos (top 20) | **SI** | Con nombre, developer, stock, precio, MAO |
 
 ### Exportacion
 
-| Formato | Estado |
-|---------|--------|
-| CSV | **SI** |
-| PDF (print) | **SI** |
-| Excel (.xlsx) | **NO** |
-| PPT | **NO** |
+| Formato | Estado | Nota |
+|---------|--------|------|
+| CSV | **SI** | Export desde tabla proyectos |
+| PDF (impresion) | **SI** | Print CSS + window.print() |
+| Excel (.xlsx) | **NO** | No implementado |
+| PowerPoint | **NO** | No implementado |
+
+### Auto-refresh mientras genera
+
+- **SI** - Polling cada 3 segundos mientras status='generating'
 
 ---
 
-## 4. NAVEGACION Y SEGMENTACION (Seccion 5) - ~55%
+## 4. NAVEGACION Y SEGMENTACION (Seccion 5 del Maestro) - ~75%
 
-### Vistas del Sistema
+### Paginas del Sistema
 
-| Vista | Estado |
-|-------|--------|
-| Dashboard | **SI** - KPIs + mapa + chart |
-| Proyectos (lista) | **SI** - Tabla + filtros + paginacion |
-| Proyecto (detalle) | **SI** - Metricas completas |
-| Mapa | **SI** - Markers color-coded por sell-through |
-| Analista IA | **SI** - Chat + admin (prompts + knowledge) |
-| Analytics | **SI** - Charts Recharts reales |
-| Reportes (lista) | **SI** - Status + crear nuevo |
-| Reporte (detalle) | **SI** - Charts + tabla + IA + export |
+| Pagina | Ruta | Datos | Completitud |
+|--------|------|-------|-------------|
+| Landing | `/` | Estatica | 60% - Hero + features + CTA |
+| Login | `/login` | Real (Supabase Auth) | 70% - Login + signup, falta reset password |
+| Dashboard | `/dashboard` | Real (3,511 proyectos) | 85% - 4 KPIs + mapa + chart regiones |
+| Proyectos (lista) | `/dashboard/projects` | Real + filtros + paginacion | 90% - Tabla + busqueda + filtro region |
+| Proyecto (detalle) | `/dashboard/projects/[id]` | Real (50+ campos) | 95% - Metricas completas |
+| Mapa | `/dashboard/map` | Real (coordenadas) | 85% - Markers color-coded por sell-through |
+| Analista IA | `/dashboard/brain` | Redirect a settings | 50% - Solo redirect |
+| Brain Admin | `/dashboard/brain/settings` | Real | 70% - Prompts + Knowledge Base |
+| Analytics | `/dashboard/analytics` | Real (client-side) | 90% - KPIs + charts + tabla regiones |
+| Reportes (lista) | `/dashboard/reports` | Real | 75% - Status + crear nuevo |
+| Reporte (detalle) | `/dashboard/reports/[id]` | Real (IA generada) | 85% - Charts + tabla + export |
 
-### Filtros: 7 de 15
+**Total: 11 rutas, todas con datos reales excepto landing**
 
-| Filtro | Estado |
-|--------|--------|
-| Busqueda texto | **SI** |
-| Filtro por Comuna | **SI** |
-| Filtro por Region | **SI** |
-| Ordenamiento | **SI** |
-| Paginacion | **SI** |
-| Poligono en mapa | **SI** |
-| Status proyecto | **SI** (badges) |
-| Rango precio UF | **NO** |
-| Tipologia (1D-1B) | **NO** |
-| Estado obra | **NO** |
-| MAO / Absorcion | **NO** |
-| Radio desde punto | **NO** |
-| Desarrollador | **NO** |
-| Periodo | **NO** |
-| Superficie m2 | **NO** |
+### Filtros Implementados: 7 de 15
+
+| Filtro | Estado | Ubicacion |
+|--------|--------|-----------|
+| Busqueda por texto | **SI** | Proyectos, tabla |
+| Filtro por comuna | **SI** | Proyectos, reportes |
+| Filtro por region | **SI** | Proyectos, analytics |
+| Ordenamiento (velocidad venta) | **SI** | Dashboard, tablas |
+| Paginacion (50/pagina) | **SI** | Proyectos |
+| Poligono en mapa | **SI** | Reportes (Mapbox Draw) |
+| Status proyecto (badges) | **SI** | Tablas, detalle |
+| Rango precio UF | **NO** | - |
+| Tipologia (1D-1B) | **NO** | - |
+| Estado obra | **NO** | - |
+| MAO / Absorcion | **NO** | - |
+| Radio desde punto | **NO** | - |
+| Desarrollador | **NO** | - |
+| Periodo temporal | **NO** | - |
+| Superficie m2 | **NO** | - |
+
+### Componentes UI Clave
+
+| Componente | Tipo | Estado |
+|-----------|------|--------|
+| `MapboxMap.tsx` | Mapa interactivo | 90% - Markers + popups + color-coded |
+| `ProjectsTable.tsx` | Tabla paginada | 85% - Search + filter + pagination |
+| `KPICard.tsx` | Tarjeta metrica | 80% - Formatos: number, UF, % |
+| `MarketOverviewChart.tsx` | BarChart regiones | 85% - Recharts, 3 series |
+| `PriceDistributionChart.tsx` | PieChart precios | 80% - 6 rangos |
+| `SalesTrendsChart.tsx` | LineChart tendencias | 85% - Dual-axis |
+| `CreateReportDialog.tsx` | Dialog crear reporte | 75% - 3 tipos + mapa poligono |
+| `ReportView.tsx` | Renderizador reportes | 85% - 6 tipos seccion + auto-refresh |
+| `AIChatWidget.tsx` | Chat flotante | 85% - Markdown + sources |
+| `BrainChat.tsx` | Chat dedicado | 80% - Historial + error handling |
+| `MarkdownRenderer.tsx` | Parser MD | 70% - Basico (bold, listas, headers) |
 
 ---
 
-## 5. ARQUITECTURA TECNICA (Seccion 7) - ~70%
+## 5. ARQUITECTURA TECNICA (Seccion 7 del Maestro) - ~70%
 
-### Stack en Produccion
+### Stack Tecnologico
 
-| Tecnologia | Estado |
-|-----------|--------|
-| Supabase (PostgreSQL + PostGIS + pgvector) | **SI** |
-| Next.js 16 App Router | **SI** - En Vercel |
-| Next.js API Routes (reemplazo de FastAPI) | **SI** |
-| Shadcn/UI + Radix | **SI** |
-| Recharts | **SI** - 5 tipos de charts |
-| Mapbox GL JS | **SI** - Markers + polygon draw |
-| TailwindCSS | **SI** |
-| TanStack Query | **SI** |
-| OpenAI SDK (TypeScript) | **SI** - GPT-4o-mini |
-| PostGIS spatial queries | **SI** - RPC functions |
-| Vercel (deploy unificado) | **SI** |
-| FastAPI backend | **MUERTO** - Existe pero no se usa |
+| Tecnologia | Requerido | Implementado |
+|-----------|-----------|-------------|
+| Next.js App Router | SI | **SI** - v16.1.6 |
+| React | SI | **SI** - v19.2.3 |
+| Supabase (PostgreSQL) | SI | **SI** - Cloud |
+| PostGIS | SI | **SI** - Funciones RPC espaciales |
+| pgvector | SI | **PARCIAL** - Tabla existe, embeddings null |
+| Shadcn/UI + Radix | SI | **SI** - 15+ componentes |
+| TailwindCSS | SI | **SI** - v4 |
+| Recharts | SI | **SI** - Bar, Line, Pie, Scatter |
+| Mapbox GL JS | SI | **SI** - Markers + Draw |
+| TanStack Query | SI | **SI** - QueryProvider |
+| OpenAI SDK | SI | **SI** - GPT-4o-mini |
+| LangChain | SI | **NO** - Reemplazado por OpenAI SDK directo |
+| Vercel | SI | **SI** - Deploy unificado |
 
 ### Seguridad
 
-| Requisito | Estado | Impacto |
-|-----------|--------|---------|
-| Auth en API routes IA | **NO** | **CRITICO** - OpenAI costos expuestos |
-| CORS | **N/A** | API routes son same-origin (mejora vs antes) |
-| RLS Supabase | **PARCIAL** | Lectura publica |
-| Rate limiting | **NO** | Riesgo de abuso |
-| Error details | **EXPUESTOS** | str(e) en 500 responses |
+| Requisito | Estado | Severidad |
+|-----------|--------|-----------|
+| Auth en paginas (middleware) | **SI** | OK - Protege /dashboard/* |
+| Auth en API routes IA | **NO** | **CRITICO** - Todos los /api/brain/* publicos |
+| Rate limiting API | **NO** | **CRITICO** - Sin limite de llamadas OpenAI |
+| RLS Supabase | **PARCIAL** | MEDIO - Lectura publica habilitada |
+| CORS | **N/A** | OK - API Routes son same-origin |
+| Error details | **EXPUESTOS** | BAJO - error.message en 500 responses |
+| Ownership (reportes) | **NO** | ALTO - Cualquiera ve reportes de otros |
+| Admin routes | **PUBLICAS** | **CRITICO** - /api/brain/admin/* sin auth |
+| Debug endpoint | **PUBLICO** | BAJO - Solo muestra timestamp |
+
+### Deploy
+
+| Aspecto | Estado |
+|---------|--------|
+| vercel.json | `{ "framework": "nextjs" }` |
+| Frontend SSR | Desplegado en Vercel |
+| API Routes | Desplegadas como Serverless Functions |
+| maxDuration | 60s (requiere Pro plan, Hobby=10s) |
+| Backend Python | **NO desplegado** (codigo muerto en repo) |
 
 ---
 
-## 6. BUGS Y PROBLEMAS
+## 6. INVENTARIO DE BUGS Y PROBLEMAS
 
-### Resueltos en esta version
-- ~~Backend URL hardcodeada~~ → **RESUELTO** - Config usa `/api` (same-origin)
-- ~~CORS abierto~~ → **RESUELTO** - API Routes son same-origin, no necesitan CORS
-- ~~Logout roto~~ → **RESUELTO** desde v3
+### CRITICOS (seguridad en produccion)
 
-### Persisten
-1. **API routes sin auth** - `/api/brain/*` publicos (costos OpenAI)
-2. **RAG no funcional** - vector-store.ts guarda embeddings como null
-3. **Solo 2 tools** en agente (habia 5 en version Python)
-4. **Backend Python muerto** - Codigo existe pero no se invoca
-5. **Metadata layout** - Sigue diciendo `"Create Next App"`
-6. **Brain page KPIs hardcodeados** - Valores falsos
-7. **Solo 325 tipologias** para 3,511 proyectos
-8. **Knowledge docs sin embeddings** - RAG no puede buscar por similitud
-9. **Error details expuestos** en 500 responses
-10. **Codigo duplicado** - MarkdownRenderer existe en 2 lugares
-11. **default-prompt.txt** no se importa (se usa hardcoded en brain-agent.ts)
+| # | Bug | Archivo | Impacto |
+|---|-----|---------|---------|
+| 1 | **API routes sin auth** | Todos los `/api/brain/*` | Cualquiera puede usar IA, generar reportes, administrar knowledge base. Exposicion de costos OpenAI |
+| 2 | **Admin routes publicas** | `/api/brain/admin/*` | Cualquiera puede modificar prompts del sistema y borrar knowledge docs |
+| 3 | **Sin rate limiting** | Todos los endpoints IA | DDoS + costos OpenAI ilimitados |
+| 4 | **Sin ownership en reportes** | `/api/brain/reports/*` | Un usuario puede ver reportes de otro |
+
+### ALTOS (funcionalidad core rota)
+
+| # | Bug | Archivo | Impacto |
+|---|-----|---------|---------|
+| 5 | **RAG no funcional** | `vector-store.ts:27` | `embedding: null` al ingestar. Knowledge base inutil |
+| 6 | **3 tools perdidas** | `brain-agent.ts` | Solo 2 de 5 tools implementadas (40%) |
+| 7 | **queryBrainWithRAG no usa RAG** | `brain-agent.ts:129` | Nombre engañoso. No llama searchKnowledge() |
+| 8 | **Solo 325 tipologias** | DB | 3,511 proyectos deberian tener ~10,000+ tipologias |
+| 9 | **project_metrics_history vacia** | DB | Sin datos historicos para trends |
+| 10 | **maxDuration=60s en Hobby** | `generate/route.ts:6` | Vercel Hobby plan limita a 10s. Reportes pueden fallar |
+
+### MEDIOS (UX y calidad)
+
+| # | Bug | Archivo | Impacto |
+|---|-----|---------|---------|
+| 11 | **Metadata "Create Next App"** | `layout.tsx:16` | Titulo/descripcion genericos en produccion |
+| 12 | **Brain page solo redirect** | `brain/page.tsx` | Ruta /dashboard/brain no tiene contenido propio |
+| 13 | **Error details expuestos** | `chat/route.ts:46` | `details: error.message` en response 500 |
+| 14 | **MarkdownRenderer duplicado** | `shared/` + `ReportView.tsx` | Dos implementaciones diferentes |
+| 15 | **fs/path imports muertos** | `admin/prompts/route.ts` | Imports no usados |
+| 16 | **CreateReportDialog URL fragil** | `CreateReportDialog.tsx` | Chequea localhost/127.0.0.1 en string |
+| 17 | **Sin loading skeletons** | Multiples paginas | No hay feedback visual durante carga |
+| 18 | **Boton notificaciones inerte** | `dashboard/layout.tsx` | Campana sin onClick handler |
+| 19 | **"Nuevo Proyecto" inerte** | `projects/page.tsx` | Boton sin handler |
+| 20 | **Sin navegacion mobile** | `dashboard/layout.tsx` | Sidebar oculto en mobile sin menu hamburger |
+
+### BAJOS (mejoras deseables)
+
+| # | Bug | Archivo | Impacto |
+|---|-----|---------|---------|
+| 21 | **Markdown limitado en chat** | `MarkdownRenderer.tsx` | Solo bold, listas, headers. Falta code blocks, links |
+| 22 | **Sin sort en tablas** | `ProjectsTable.tsx` | No se puede ordenar por columna |
+| 23 | **Sin cluster en mapa** | `MapboxMap.tsx` | Performance con muchos markers |
+| 24 | **QueryProvider sin config** | `QueryProvider.tsx` | Sin retry, stale time, error handling custom |
+| 25 | **Popup mapa 400px fijo** | `MapboxMap.tsx` | Width hardcoded |
+| 26 | **Colores hardcoded** | Charts varios | Sin tema configurable |
 
 ---
 
 ## 7. COMPLIANCE FASE 1 MVP
 
-| Entregable MVP | Estado | Completitud |
-|---------------|--------|-------------|
-| Integracion TINSA completa | 3,511 proyectos (faltan CSVs nuevos) | **~70%** |
-| Dashboard con filtros | KPIs + charts + mapa + 7 filtros | **~70%** |
-| Generador informe "Contexto de Mercado" | 3 tipos + IA + export CSV/PDF | **~65%** |
-| IA basica (explicacion tendencias) | Chat funcional pero sin RAG ni 3 tools | **~45%** |
+El Documento Maestro define 4 entregables para Fase 1 MVP:
+
+### Entregable 1: Integracion TINSA completa - ~70%
+
+| Requisito | Estado |
+|-----------|--------|
+| Datos TINSA cargados | **SI** - 3,511 proyectos |
+| Geocoding | **SI** - Coordenadas en BD |
+| Tipologias por proyecto | **PARCIAL** - 325 de ~10,000+ esperados |
+| Historico (metrics_history) | **NO** - Tabla vacia |
+| Actualizacion periodica | **NO** - Import manual unico |
+
+### Entregable 2: Dashboard con filtros - ~75%
+
+| Requisito | Estado |
+|-----------|--------|
+| 4 KPIs principales | **SI** - Proyectos, stock, velocidad, ventas |
+| Mapa interactivo | **SI** - Mapbox con color-coding |
+| Charts de mercado | **SI** - 3 tipos (bar, pie, line) |
+| Tabla proyectos con paginacion | **SI** - 50/pagina + search |
+| Filtros basicos (comuna, region, texto) | **SI** - 7 implementados |
+| Filtros avanzados (precio, tipologia, MAO) | **NO** - 8 filtros pendientes |
+| Vista detalle proyecto | **SI** - 50+ campos |
+| Vista analytics | **SI** - KPIs + charts + tabla |
+
+### Entregable 3: Generador informe "Contexto de Mercado" - ~70%
+
+| Requisito | Estado |
+|-----------|--------|
+| Reporte por comuna | **SI** - Con datos reales |
+| Reporte por area (poligono) | **SI** - PostGIS |
+| Reporte benchmark | **SI** - Comparativa |
+| KPIs en reporte | **SI** - 6 metricas |
+| Analisis IA narrativo | **SI** - GPT-4o-mini |
+| Charts en reporte | **SI** - Bar + Scatter |
+| Tabla proyectos en reporte | **SI** - Top 20 |
+| Export CSV | **SI** |
+| Export PDF (print) | **SI** |
+| Export Excel | **NO** |
+| Auto-refresh durante generacion | **SI** |
+
+### Entregable 4: IA basica (explicacion tendencias) - ~40%
+
+| Requisito | Estado |
+|-----------|--------|
+| Chat con agente IA | **SI** - GPT-4o-mini |
+| Busqueda de proyectos | **SI** - tool search_projects |
+| Estadisticas de mercado | **SI** - tool get_market_stats |
+| Comparacion regiones | **NO** - Tool perdida |
+| Top ventas | **NO** - Tool perdida |
+| Resumen mercado | **NO** - Tool perdida |
+| RAG con contexto historico | **NO** - Embeddings null |
+| RAG con regulaciones | **NO** - Knowledge base minima |
+| Sources en respuestas | **NO** - Siempre array vacio |
+| Auth en endpoints | **NO** - Publicos |
 
 ---
 
 ## 8. TRABAJO PENDIENTE (Priorizado)
 
-### CRITICO (seguridad + funcionalidad core)
-- [ ] Agregar auth a API routes `/api/brain/*` (verificar session Supabase)
-- [ ] Arreglar RAG: generar embeddings reales con OpenAI en vector-store.ts
-- [ ] Restaurar 3 tools perdidas (compare_regions, top_sales, market_summary)
-- [ ] Importar CSVs TINSA (Norte/Sur 35MB + RM 100MB)
+### CRITICO - Seguridad (hacer ANTES de seguir desarrollando)
 
-### ALTA PRIORIDAD
-- [ ] Limpiar backend Python muerto (o decidir si se mantiene)
-- [ ] Completar tipologias (325 → deberian ser miles)
-- [ ] Expandir knowledge base con contenido real (leyes, macro, hitos)
-- [ ] KPIs dinamicos en pagina Brain
-- [ ] Actualizar metadata layout a "NLACE Intelligence"
+- [ ] **Agregar auth a todos los `/api/brain/*`** - Verificar session Supabase en cada request
+- [ ] **Proteger rutas admin** - `/api/brain/admin/*` solo para usuarios con is_admin()
+- [ ] **Rate limiting** - Minimo: X requests/minuto por usuario autenticado
+- [ ] **Ownership en reportes** - Asociar reportes a user_id, filtrar en queries
 
-### MEDIA PRIORIDAD
-- [ ] Filtros: rango precio, tipologia, estado obra, MAO
-- [ ] Eliminar MarkdownRenderer duplicado
-- [ ] Importar default-prompt.txt en vez de hardcodear
-- [ ] Export Excel (.xlsx)
-- [ ] Rate limiting en API routes
-- [ ] Streaming responses en chat
+### ALTA PRIORIDAD - Funcionalidad core del MVP
+
+- [ ] **Arreglar RAG** - Generar embeddings reales con OpenAI al ingestar en vector-store.ts
+- [ ] **Integrar RAG en agente** - queryBrainWithRAG debe llamar searchKnowledge() y pasar contexto
+- [ ] **Restaurar 3 tools** - Portar compare_regions, top_sales, market_summary de Python a TypeScript
+- [ ] **Completar tipologias** - Re-importar con tinsa_importer.py que extrae tipologias
+- [ ] **Importar metricas historicas** - Poblar project_metrics_history
+- [ ] **Expandir knowledge base** - Leyes, regulaciones, hitos macro (con embeddings reales)
+
+### MEDIA PRIORIDAD - Completar MVP
+
+- [ ] **8 filtros faltantes** - Precio, tipologia, estado obra, MAO, radio, desarrollador, periodo, m2
+- [ ] **Metadata layout** - Cambiar "Create Next App" a "NLACE Intelligence"
+- [ ] **Pagina Brain dedicada** - Reemplazar redirect con interfaz de chat completa
+- [ ] **Export Excel** - Agregar export .xlsx en reportes
+- [ ] **Loading skeletons** - Feedback visual en todas las paginas
+- [ ] **Navegacion mobile** - Menu hamburger para sidebar
+- [ ] **Limpiar MarkdownRenderer duplicado** - Una sola implementacion
+- [ ] **Limpiar backend Python** - Decidir: eliminar o documentar como referencia
+
+### BAJA PRIORIDAD - Polish
+
+- [ ] **Cluster en mapa** - Agrupar markers cercanos para performance
+- [ ] **Sort en tablas** - Ordenar por columna al hacer click
+- [ ] **QueryProvider config** - Retry, stale time, error boundaries
+- [ ] **Validacion env vars** - Verificar MAPBOX_TOKEN, OPENAI_API_KEY al inicio
+- [ ] **Markdown mejorado** - Soporte code blocks, links, tables en chat
 
 ---
 
-## 9. CONCLUSIONES
+## 9. COMPARATIVA BACKEND PYTHON vs TYPESCRIPT
 
-### Estado: ~65% MVP, en produccion, pero con regresiones
+Esta tabla documenta la regresion para facilitar la restauracion:
 
-**Lo positivo:**
-- Toda la app corre en Vercel (infraestructura simplificada)
-- Reportes generan con datos reales y IA
-- 17 reportes ya generados exitosamente
-- Chat funciona con OpenAI tool calling
-- 8 paginas completas y funcionales
-- Export CSV/PDF funcional
+| Feature | Python (backend/) | TypeScript (frontend/src/) |
+|---------|-------------------|---------------------------|
+| Tools | 5 (search, stats, compare, top, summary) | 2 (search, stats) |
+| Modelo IA | GPT-4 Turbo | GPT-4o-mini |
+| RAG | pgvector + OpenAI embeddings (funcional) | textSearch (no semantico, embeddings null) |
+| Cache | In-memory con ~10min TTL | Sin cache |
+| Framework | LangChain Agent Executor (5 iterations) | OpenAI SDK directo |
+| Agent loop | Automatico (LangChain decide) | Manual (1 ronda de tool calls) |
+| Knowledge upload | CSV, Excel, DOCX, TXT | Solo texto plano |
+| Report types | commune, polygon, benchmark | commune, polygon, benchmark |
+| Report AI | GPT-4 Turbo JSON output | GPT-4o-mini texto libre |
+| File processing | Pandas para CSV/Excel | No aplica |
 
-**Lo preocupante:**
-- **RAG roto** - El diferenciador clave (explicar contexto historico) no funciona porque los embeddings son null
-- **3 tools perdidas** en la migracion Python → TypeScript
-- **Sin auth** en API routes que llaman a OpenAI
-- **Backend muerto** genera confusion y potencial costo
+**Recomendacion:** Portar la logica de Python a TypeScript (tools + RAG + cache), no reactivar el backend Python.
 
-**Prioridad #1:** Arreglar RAG (embeddings) y restaurar los 3 tools perdidos. Sin esto, el agente IA es un chatbot basico que solo consulta la tabla projects, sin la capacidad de correlacionar con contexto historico que es el diferenciador del producto segun el documento maestro.
+---
+
+## 10. CONCLUSIONES
+
+### Estado: ~68% MVP Fase 1, en produccion con riesgos criticos
+
+**Lo positivo (avances reales):**
+- 11 rutas funcionales con datos reales de 3,511 proyectos
+- Reportes IA generan con datos reales + PostGIS + GPT-4o-mini
+- 17+ reportes generados exitosamente
+- Chat IA funciona con tool calling (2 tools reales)
+- Mapa interactivo con color-coding por sell-through rate
+- 5 tipos de charts con Recharts (bar, line, pie, scatter, stacked)
+- Auth middleware protege paginas del dashboard
+- Deploy unificado en Vercel (infraestructura simplificada)
+- Pipeline ETL completo (TINSA + geocoding)
+- Schema SQL robusto (13 migraciones, PostGIS, pgvector, RPC functions)
+
+**Lo critico (riesgos en produccion):**
+- **Endpoints IA sin auth** = costos OpenAI expuestos a cualquier persona
+- **Admin routes publicas** = cualquiera puede alterar el sistema
+- **RAG roto** = el diferenciador clave del producto no funciona
+- **Solo 2 de 5 tools** = agente IA es un chatbot basico
+
+**Prioridad #1: Seguridad.** Los endpoints sin auth son un riesgo financiero real (costos OpenAI). Esto debe resolverse antes de cualquier otra mejora funcional.
+
+**Prioridad #2: RAG + Tools.** Sin RAG ni las 3 tools perdidas, el "Cerebro IA" es un wrapper de GPT-4o-mini que solo consulta una tabla SQL. El Documento Maestro define la IA como el diferenciador del producto - correlacion de datos con contexto historico, regulaciones, y macro.
