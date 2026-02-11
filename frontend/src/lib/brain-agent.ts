@@ -473,11 +473,11 @@ export async function getHistoricalTrends({ commune, months = 6 }: { commune: st
         // 2. Query history only for those projects
         const { data, error } = await supabase
             .from('project_metrics_history')
-            .select('snapshot_date, project_id, avg_price_uf, available_units, sales_speed_monthly')
+            .select('recorded_at, project_id, price_avg_uf, stock, sales_monthly')
             .in('project_id', projectIds)
-            .gte('snapshot_date', startDate.toISOString())
-            .lte('snapshot_date', endDate.toISOString())
-            .order('snapshot_date', { ascending: true });
+            .gte('recorded_at', startDate.toISOString().split('T')[0])
+            .lte('recorded_at', endDate.toISOString().split('T')[0])
+            .order('recorded_at', { ascending: true });
 
         if (error) {
             console.error(`[AI Agent] Database error in getHistoricalTrends:`, error);
@@ -496,7 +496,7 @@ export async function getHistoricalTrends({ commune, months = 6 }: { commune: st
         const monthlyData: Record<string, any> = {};
 
         data.forEach(record => {
-            const month = record.snapshot_date.substring(0, 7); // YYYY-MM format
+            const month = record.recorded_at.substring(0, 7); // YYYY-MM format
 
             if (!monthlyData[month]) {
                 monthlyData[month] = {
@@ -506,9 +506,9 @@ export async function getHistoricalTrends({ commune, months = 6 }: { commune: st
                 };
             }
 
-            if (record.avg_price_uf) monthlyData[month].prices.push(record.avg_price_uf);
-            if (record.available_units) monthlyData[month].stock.push(record.available_units);
-            if (record.sales_speed_monthly) monthlyData[month].speeds.push(record.sales_speed_monthly);
+            if (record.price_avg_uf) monthlyData[month].prices.push(record.price_avg_uf);
+            if (record.stock) monthlyData[month].stock.push(record.stock);
+            if (record.sales_monthly) monthlyData[month].speeds.push(record.sales_monthly);
         });
 
         // Calculate monthly averages
@@ -575,8 +575,8 @@ export async function getTypologyAnalysis({ commune }: { commune: string }) {
             .select(`
                 bedrooms,
                 bathrooms,
-                surface_m2,
-                price_uf,
+                surface_total,
+                current_price_uf,
                 project_id,
                 projects!inner (
                     commune,
@@ -621,16 +621,16 @@ export async function getTypologyAnalysis({ commune }: { commune: string }) {
                 typologyStats[typologyKey].total_stock += record.projects.available_units;
             }
 
-            if (record.price_uf) {
-                typologyStats[typologyKey].prices.push(record.price_uf);
+            if (record.current_price_uf) {
+                typologyStats[typologyKey].prices.push(record.current_price_uf);
             }
 
             if (record.projects?.sales_speed_monthly) {
                 typologyStats[typologyKey].speeds.push(record.projects.sales_speed_monthly);
             }
 
-            if (record.surface_m2) {
-                typologyStats[typologyKey].surfaces.push(record.surface_m2);
+            if (record.surface_total) {
+                typologyStats[typologyKey].surfaces.push(record.surface_total);
             }
         });
 

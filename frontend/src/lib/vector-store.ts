@@ -81,17 +81,26 @@ export async function searchKnowledge(query: string, limit: number = 5) {
         const { data, error } = await supabase.rpc('match_documents', {
             query_embedding: queryEmbedding,
             match_threshold: 0.7,  // Minimum similarity threshold (0-1)
-            match_count: limit
+            match_count: limit,
+            filter: {} // Explicitly provide filter to avoid function overloading ambiguity
         })
 
         if (error) {
             console.error('Error in vector search:', error)
             // Fallback to text search if vector search fails
             console.log('Falling back to text search...')
+
+            // Sanitize query for text search (remove special chars that cause syntax errors)
+            const sanitizedQuery = query
+                .replace(/[?|&!><()]/g, ' ')
+                .trim()
+                .split(/\s+/)
+                .join(' & ');
+
             const { data: textData, error: textError } = await supabase
                 .from('knowledge_docs')
                 .select('*')
-                .textSearch('content', query)
+                .textSearch('content', sanitizedQuery)
                 .limit(limit)
 
             if (textError) {
