@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Grid, Card, Metric, Text, BadgeDelta, Flex, Title } from '@tremor/react'
-import { Building2, Home, TrendingUp, Users, RotateCcw, Filter, Sparkles } from 'lucide-react'
+import { Building2, Home, TrendingUp, Users, RotateCcw, Filter, Sparkles, Wand2 } from 'lucide-react'
 import MapboxMap from '@/components/MapboxMap'
 import MarketOverviewChart from '@/components/charts/MarketOverviewChart'
 import { ProductMixChart } from '@/components/charts/ProductMixChart'
 import { PriceRangeChart } from '@/components/charts/PriceRangeChart'
+import ParticipationEvolutionChart from '@/components/charts/ParticipationEvolutionChart'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
@@ -62,13 +63,29 @@ type FilterState = {
     propertyStatus: string
     projectType: string
     subsidyType: string
-    absorptionRange: string
-    maoRange: string
 }
 
 type SelectOption = {
     value: string
     label: string
+}
+
+type GeneratedSnapshot = {
+    kpis: {
+        projectCount: number
+        totalStock: number
+        avgSalesSpeed: number
+        totalSold: number
+        scopeDelta: number
+        deltaType: string
+    }
+    regionData: Array<{ region: string; projects: number; totalUnits: number; soldUnits: number; availableUnits: number }>
+    mixData: Array<{ typology: string; count: number }>
+    priceRangeData: Array<{ range: string; oferta: number; vendidas: number }>
+    evolutionData: {
+        offerSeries: any[]
+        salesSeries: any[]
+    }
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -83,8 +100,6 @@ const DEFAULT_FILTERS: FilterState = {
     propertyStatus: 'all',
     projectType: 'all',
     subsidyType: 'all',
-    absorptionRange: 'all',
-    maoRange: 'all',
 }
 
 const PRICE_RANGES = [
@@ -96,27 +111,21 @@ const PRICE_RANGES = [
     { key: '7000+', label: '7.000+ UF', min: 7000, max: Number.MAX_SAFE_INTEGER },
 ]
 
+const EVOLUTION_PRICE_RANGES = [
+    { key: 'r1000_2000', min: 1000, max: 2000 },
+    { key: 'r2000_3000', min: 2000, max: 3000 },
+    { key: 'r3000_4000', min: 3000, max: 4000 },
+    { key: 'r4000_5000', min: 4000, max: 5000 },
+    { key: 'r5000_7000', min: 5000, max: 7000 },
+    { key: 'r7000_plus', min: 7000, max: Number.MAX_SAFE_INTEGER },
+]
+
 const QUARTER_TO_PERIOD: Record<string, string> = {
     q1: '1P',
     q2: '1P',
     q3: '2P',
     q4: '2P',
 }
-
-const ABSORPTION_RANGES = [
-    { key: '0-20', label: '0% - 20%', min: 0, max: 20 },
-    { key: '20-40', label: '20% - 40%', min: 20, max: 40 },
-    { key: '40-60', label: '40% - 60%', min: 40, max: 60 },
-    { key: '60-80', label: '60% - 80%', min: 60, max: 80 },
-    { key: '80-100', label: '80% - 100%', min: 80, max: 101 },
-]
-
-const MAO_RANGES = [
-    { key: '0-6', label: '0 - 6 meses', min: 0, max: 6 },
-    { key: '6-12', label: '6 - 12 meses', min: 6, max: 12 },
-    { key: '12-24', label: '12 - 24 meses', min: 12, max: 24 },
-    { key: '24+', label: '24+ meses', min: 24, max: Number.MAX_SAFE_INTEGER },
-]
 
 const normalize = (value?: string | null) =>
     (value || '')
@@ -172,30 +181,6 @@ const projectMatchesTicket = (project: DashboardProject, ticketRange: string) =>
     return price >= range.min && price < range.max
 }
 
-const getAbsorptionPct = (project: DashboardProject) => {
-    const total = project.total_units || 0
-    const sold = project.sold_units || 0
-    if (total <= 0) return 0
-    return (sold / total) * 100
-}
-
-const getMao = (project: DashboardProject) => {
-    const speed = project.sales_speed_monthly || 0
-    const stock = project.available_units || 0
-    if (speed > 0) return stock / speed
-    return Number.MAX_SAFE_INTEGER
-}
-
-const inRange = (
-    value: number,
-    ranges: Array<{ key: string; min: number; max: number }>,
-    selected: string
-) => {
-    const range = ranges.find((r) => r.key === selected)
-    if (!range) return true
-    return value >= range.min && value < range.max
-}
-
 const isSubsidized = (project: DashboardProject) => {
     const subsidy = normalize(project.subsidy_type)
     const category = normalize(project.category)
@@ -212,6 +197,9 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
     const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS)
     const [visibleProjectIds, setVisibleProjectIds] = useState<string[] | null>(null)
     const [useViewportOnly, setUseViewportOnly] = useState(true)
+    const [hasGenerated, setHasGenerated] = useState(false)
+    const [generatedAt, setGeneratedAt] = useState<string | null>(null)
+    const [generatedSnapshot, setGeneratedSnapshot] = useState<GeneratedSnapshot | null>(null)
     const [aiAnalysis, setAiAnalysis] = useState<string>('')
     const [analysisLoading, setAnalysisLoading] = useState(false)
     const [analysisError, setAnalysisError] = useState<string | null>(null)
@@ -219,6 +207,10 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
     useEffect(() => {
         setVisibleProjectIds(null)
     }, [filters])
+
+    useEffect(() => {
+        setHasGenerated(false)
+    }, [filters, useViewportOnly, visibleProjectIds])
 
     const years = useMemo(() => {
         return Array.from(new Set(projects.map((p) => p.year).filter((y): y is number => typeof y === 'number')))
@@ -285,8 +277,6 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
             if (filters.typology !== 'all' && !projectMatchesTypology(project, filters.typology)) return false
 
             if (filters.ticketRange !== 'all' && !projectMatchesTicket(project, filters.ticketRange)) return false
-            if (filters.absorptionRange !== 'all' && !inRange(getAbsorptionPct(project), ABSORPTION_RANGES, filters.absorptionRange)) return false
-            if (filters.maoRange !== 'all' && !inRange(getMao(project), MAO_RANGES, filters.maoRange)) return false
 
             if (filters.propertyStatus !== 'all') {
                 const statusA = normalize(project.project_status)
@@ -390,6 +380,88 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
         })
     }, [analysisProjects])
 
+    const evolutionData = useMemo(() => {
+        type Bucket = {
+            period: string
+            totalOffer: number
+            totalSales: number
+            offerByRange: Record<string, number>
+            salesByRange: Record<string, number>
+        }
+
+        const buckets = new Map<string, Bucket>()
+
+        analysisProjects.forEach((project) => {
+            if (!project.year) return
+            const period = `${project.year}-${project.period || 'NA'}`
+            if (!buckets.has(period)) {
+                buckets.set(period, {
+                    period,
+                    totalOffer: 0,
+                    totalSales: 0,
+                    offerByRange: {
+                        r1000_2000: 0,
+                        r2000_3000: 0,
+                        r3000_4000: 0,
+                        r4000_5000: 0,
+                        r5000_7000: 0,
+                        r7000_plus: 0,
+                    },
+                    salesByRange: {
+                        r1000_2000: 0,
+                        r2000_3000: 0,
+                        r3000_4000: 0,
+                        r4000_5000: 0,
+                        r5000_7000: 0,
+                        r7000_plus: 0,
+                    },
+                })
+            }
+
+            const bucket = buckets.get(period)!
+            const price = project.avg_price_uf || 0
+            const offer = project.available_units || 0
+            const sales = project.sold_units || 0
+
+            bucket.totalOffer += offer
+            bucket.totalSales += sales
+
+            const range = EVOLUTION_PRICE_RANGES.find((r) => price >= r.min && price < r.max)
+            if (!range) return
+
+            bucket.offerByRange[range.key] += offer
+            bucket.salesByRange[range.key] += sales
+        })
+
+        const sorted = Array.from(buckets.values()).sort((a, b) => a.period.localeCompare(b.period))
+
+        const toParticipation = (value: number, total: number) => (total > 0 ? (value / total) * 100 : 0)
+
+        const offerSeries = sorted.map((bucket) => ({
+            period: bucket.period,
+            total_units: bucket.totalOffer,
+            r1000_2000: toParticipation(bucket.offerByRange.r1000_2000, bucket.totalOffer),
+            r2000_3000: toParticipation(bucket.offerByRange.r2000_3000, bucket.totalOffer),
+            r3000_4000: toParticipation(bucket.offerByRange.r3000_4000, bucket.totalOffer),
+            r4000_5000: toParticipation(bucket.offerByRange.r4000_5000, bucket.totalOffer),
+            r5000_7000: toParticipation(bucket.offerByRange.r5000_7000, bucket.totalOffer),
+            r7000_plus: toParticipation(bucket.offerByRange.r7000_plus, bucket.totalOffer),
+        }))
+
+        const salesSeries = sorted.map((bucket) => ({
+            period: bucket.period,
+            total_units: bucket.totalSales,
+            r1000_2000: toParticipation(bucket.salesByRange.r1000_2000, bucket.totalSales),
+            r2000_3000: toParticipation(bucket.salesByRange.r2000_3000, bucket.totalSales),
+            r3000_4000: toParticipation(bucket.salesByRange.r3000_4000, bucket.totalSales),
+            r4000_5000: toParticipation(bucket.salesByRange.r4000_5000, bucket.totalSales),
+            r5000_7000: toParticipation(bucket.salesByRange.r5000_7000, bucket.totalSales),
+            r7000_plus: toParticipation(bucket.salesByRange.r7000_plus, bucket.totalSales),
+        }))
+
+        return { offerSeries, salesSeries }
+    }, [analysisProjects])
+
     const updateFilter = (key: keyof FilterState, value: string) => {
         setFilters((prev) => {
             const next = { ...prev, [key]: value }
@@ -431,72 +503,67 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
             .slice(0, 5)
     }, [analysisProjects])
 
-    useEffect(() => {
-        const controller = new AbortController()
-        const timer = setTimeout(async () => {
-            if (analysisProjects.length === 0) {
-                setAiAnalysis('No hay datos en el alcance actual para generar análisis IA.')
-                setAnalysisError(null)
-                return
-            }
-
-            setAnalysisLoading(true)
-            setAnalysisError(null)
-            try {
-                const response = await fetch('/api/brain/dashboard-analysis', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        filters,
-                        scope: {
-                            mode: useViewportOnly ? 'viewport+filters' : 'filters-only',
-                            geo: geoScopeLabel,
-                            time: timeScopeLabel,
-                        },
-                        kpis,
-                        regionData,
-                        mixData,
-                        priceRangeData,
-                        topCommunes,
-                    }),
-                    signal: controller.signal,
-                })
-
-                if (!response.ok) {
-                    throw new Error('No se pudo generar análisis IA')
-                }
-
-                const data = await response.json()
-                setAiAnalysis(data.analysis || 'Sin contenido de análisis.')
-            } catch (error: any) {
-                if (error.name === 'AbortError') return
-                setAnalysisError(error.message || 'Error generando análisis IA')
-            } finally {
-                setAnalysisLoading(false)
-            }
-        }, 900)
-
-        return () => {
-            clearTimeout(timer)
-            controller.abort()
+    const handleGenerateCharts = async () => {
+        const snapshot: GeneratedSnapshot = {
+            kpis,
+            regionData,
+            mixData,
+            priceRangeData,
+            evolutionData,
         }
-    }, [
-        filters,
-        useViewportOnly,
-        geoScopeLabel,
-        timeScopeLabel,
-        kpis,
-        regionData,
-        mixData,
-        priceRangeData,
-        topCommunes,
-        analysisProjects.length,
-    ])
+
+        setGeneratedSnapshot(snapshot)
+
+        if (analysisProjects.length === 0) {
+            setAiAnalysis('No hay datos en el alcance actual para generar análisis IA.')
+            setAnalysisError(null)
+            setHasGenerated(true)
+            setGeneratedAt(new Date().toISOString())
+            return
+        }
+
+        setAnalysisLoading(true)
+        setAnalysisError(null)
+        setHasGenerated(true)
+        setGeneratedAt(new Date().toISOString())
+
+        try {
+            const response = await fetch('/api/brain/dashboard-analysis', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    filters,
+                    scope: {
+                        mode: useViewportOnly ? 'viewport+filters' : 'filters-only',
+                        geo: geoScopeLabel,
+                        time: timeScopeLabel,
+                    },
+                    kpis: snapshot.kpis,
+                    regionData: snapshot.regionData,
+                    mixData: snapshot.mixData,
+                    priceRangeData: snapshot.priceRangeData,
+                    topCommunes,
+                    evolutionData: snapshot.evolutionData,
+                }),
+            })
+
+            if (!response.ok) {
+                throw new Error('No se pudo generar análisis IA')
+            }
+
+            const data = await response.json()
+            setAiAnalysis(data.analysis || 'Sin contenido de análisis.')
+        } catch (error: any) {
+            setAnalysisError(error.message || 'Error generando análisis IA')
+        } finally {
+            setAnalysisLoading(false)
+        }
+    }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             <Grid numItemsSm={2} numItemsLg={4} className="gap-6">
-                <Card decoration="top" decorationColor="blue">
+                <Card className="rounded-2xl border border-slate-200/80 shadow-sm" decoration="top" decorationColor="blue">
                     <Flex alignItems="start">
                         <div className="truncate">
                             <Text>Proyectos Filtrados</Text>
@@ -512,7 +579,7 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                     </Flex>
                 </Card>
 
-                <Card decoration="top" decorationColor="amber">
+                <Card className="rounded-2xl border border-slate-200/80 shadow-sm" decoration="top" decorationColor="amber">
                     <Flex alignItems="start">
                         <div className="truncate">
                             <Text>Stock Disponible</Text>
@@ -526,7 +593,7 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                     </Flex>
                 </Card>
 
-                <Card decoration="top" decorationColor="blue">
+                <Card className="rounded-2xl border border-slate-200/80 shadow-sm" decoration="top" decorationColor="blue">
                     <Flex alignItems="start">
                         <div className="truncate">
                             <Text>Velocidad Venta</Text>
@@ -540,7 +607,7 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                     </Flex>
                 </Card>
 
-                <Card decoration="top" decorationColor="blue">
+                <Card className="rounded-2xl border border-slate-200/80 shadow-sm" decoration="top" decorationColor="blue">
                     <Flex alignItems="start">
                         <div className="truncate">
                             <Text>Ventas Totales</Text>
@@ -555,45 +622,17 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                 </Card>
             </Grid>
 
-            <Card className="p-5">
-                <Flex alignItems="start">
-                    <div>
-                        <Title className="text-lg">Análisis IA Automático</Title>
-                        <Text className="text-xs text-slate-500 mt-1">
-                            Se actualiza automáticamente con filtros, tiempo y alcance geográfico.
-                        </Text>
-                    </div>
-                    <Sparkles className="h-5 w-5 text-blue-500" />
-                </Flex>
-
-                <div className="mt-4 rounded-lg border bg-slate-50/70 p-4">
-                    {analysisLoading && (
-                        <Text className="text-sm text-slate-500">Generando lectura ejecutiva...</Text>
-                    )}
-
-                    {!analysisLoading && analysisError && (
-                        <Text className="text-sm text-red-600">{analysisError}</Text>
-                    )}
-
-                    {!analysisLoading && !analysisError && (
-                        <div className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                            {aiAnalysis || 'Ajusta filtros para generar insights.'}
-                        </div>
-                    )}
-                </div>
-            </Card>
-
             <div className="space-y-6 mt-6">
-                <Card className="h-[740px] flex flex-col p-0 overflow-hidden">
+                <Card className="h-[760px] flex flex-col p-0 overflow-hidden rounded-2xl border border-slate-200/80 shadow-sm">
                     <div className="p-6 border-b">
-                        <Title>Mapa de Actividad Inmobiliaria</Title>
-                        <Text className="text-xs text-slate-500 mt-1">
+                        <Title className="text-[22px]">Mapa de Actividad Inmobiliaria</Title>
+                        <Text className="text-sm text-slate-500 mt-1">
                             {geoScopeLabel} · {timeScopeLabel}
                         </Text>
                     </div>
 
                     <div className="flex-1 relative">
-                        <div className="absolute z-20 left-3 right-3 top-3 rounded-xl border bg-white/95 backdrop-blur-sm shadow-lg p-4">
+                        <div className="absolute z-20 left-3 right-3 top-3 rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-sm shadow-xl p-4">
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
                                     <Filter className="h-4 w-4 text-slate-600" />
@@ -620,36 +659,14 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                         <RotateCcw className="h-3 w-3 mr-2" />
                                         Limpiar
                                     </Button>
+                                    <Button size="sm" onClick={handleGenerateCharts}>
+                                        <Wand2 className="h-3.5 w-3.5 mr-2" />
+                                        Generar gráficos
+                                    </Button>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-                                <div className="space-y-1">
-                                    <Label className="text-xs">Absorción</Label>
-                                    <Select value={filters.absorptionRange} onValueChange={(v) => updateFilter('absorptionRange', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todos</SelectItem>
-                                            {ABSORPTION_RANGES.map((range) => (
-                                                <SelectItem key={range.key} value={range.key}>{range.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-xs">Meses para Agotar</Label>
-                                    <Select value={filters.maoRange} onValueChange={(v) => updateFilter('maoRange', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todos</SelectItem>
-                                            {MAO_RANGES.map((range) => (
-                                                <SelectItem key={range.key} value={range.key}>{range.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3">
                                 <div className="space-y-1">
                                     <Label className="text-xs">Año</Label>
                                     <Select value={filters.year} onValueChange={(v) => updateFilter('year', v)}>
@@ -795,11 +812,59 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                     </div>
                 </Card>
 
-                <Grid numItemsLg={3} className="gap-6">
-                    <MarketOverviewChart data={regionData} />
-                    <ProductMixChart data={mixData} />
-                    <PriceRangeChart data={priceRangeData} />
-                </Grid>
+                {!hasGenerated && (
+                    <Card className="p-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50/60">
+                        <div className="text-center py-3">
+                            <Title className="text-lg">Panel de Gráficos IA</Title>
+                            <Text className="text-sm text-slate-500 mt-1">
+                                Muévete por el mapa, aplica filtros y presiona <strong>Generar gráficos</strong>.
+                            </Text>
+                        </div>
+                    </Card>
+                )}
+
+                {hasGenerated && (
+                    <>
+                        <Card className="p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                            <Flex alignItems="start">
+                                <div>
+                                    <Title className="text-lg">Análisis IA del Escenario Filtrado</Title>
+                                    <Text className="text-xs text-slate-500 mt-1">
+                                        {generatedAt ? `Generado: ${new Date(generatedAt).toLocaleString('es-CL')}` : ''}
+                                    </Text>
+                                </div>
+                                <Sparkles className="h-5 w-5 text-blue-500" />
+                            </Flex>
+
+                            <div className="mt-4 rounded-lg border bg-slate-50/70 p-4 max-h-[260px] overflow-y-auto">
+                                {analysisLoading && (
+                                    <Text className="text-sm text-slate-500">Generando lectura ejecutiva...</Text>
+                                )}
+
+                                {!analysisLoading && analysisError && (
+                                    <Text className="text-sm text-red-600">{analysisError}</Text>
+                                )}
+
+                                {!analysisLoading && !analysisError && (
+                                    <div className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                                        {aiAnalysis || 'Sin contenido de análisis.'}
+                                    </div>
+                                )}
+                            </div>
+                        </Card>
+
+                        <Grid numItemsLg={2} className="gap-6">
+                            <ParticipationEvolutionChart data={generatedSnapshot?.evolutionData.salesSeries || []} metricLabel="venta" />
+                            <ParticipationEvolutionChart data={generatedSnapshot?.evolutionData.offerSeries || []} metricLabel="oferta" />
+                        </Grid>
+
+                        <Grid numItemsLg={3} className="gap-6">
+                            <MarketOverviewChart data={generatedSnapshot?.regionData || []} />
+                            <ProductMixChart data={generatedSnapshot?.mixData || []} />
+                            <PriceRangeChart data={generatedSnapshot?.priceRangeData || []} />
+                        </Grid>
+                    </>
+                )}
             </div>
         </div>
     )

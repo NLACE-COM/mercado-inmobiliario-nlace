@@ -23,6 +23,7 @@ import {
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { signOut } from "@/app/actions/auth"
+import { MarketAlerts } from "@/components/MarketAlerts"
 
 const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -68,10 +69,23 @@ export default async function DashboardLayout({
                     </nav>
 
                     <div className="ml-auto flex items-center gap-2">
-                        <Button className="h-8 w-8" size="icon" variant="outline">
-                            <Bell className="h-4 w-4" />
-                            <span className="sr-only">Toggle notifications</span>
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button className="h-8 w-8" size="icon" variant="outline">
+                                    <Bell className="h-4 w-4" />
+                                    <span className="sr-only">Alertas de mercado</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-[420px] p-0">
+                                <div className="p-3 border-b">
+                                    <p className="text-sm font-semibold">Alertas de Mercado</p>
+                                    <p className="text-xs text-muted-foreground">Actualización automática</p>
+                                </div>
+                                <div className="max-h-[420px] overflow-y-auto p-3">
+                                    <MarketAlerts />
+                                </div>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>

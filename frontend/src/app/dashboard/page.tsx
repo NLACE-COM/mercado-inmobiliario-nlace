@@ -1,7 +1,5 @@
 import { createClient } from "@/utils/supabase/server"
-import { MarketAlerts } from "@/components/MarketAlerts"
 import DashboardMapFilters from "@/components/DashboardMapFilters"
-import { Title } from "@tremor/react"
 
 export const dynamic = 'force-dynamic'
 
@@ -88,12 +86,7 @@ export default async function DashboardPage() {
     const projects = await getDashboardData()
 
     return (
-        <div className="space-y-8">
-            <div>
-                <Title className="text-2xl font-bold mb-4">🚨 Alertas de Mercado</Title>
-                <MarketAlerts />
-            </div>
-
+        <div>
             <DashboardMapFilters projects={projects as any[]} />
         </div>
     )
