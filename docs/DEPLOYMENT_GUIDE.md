@@ -8,9 +8,11 @@ El backend en `backend/` es legacy y no es necesario para el deploy actual.
 1. Importa el repositorio en Vercel.
 2. En **Root Directory**, selecciona `frontend`.
 3. Framework: `Next.js` (auto detectado).
-4. Build command: `npm run build`.
-5. Install command: `npm install`.
+4. Build command: usa el default de Vercel (`npm run build`) o explícito `npm run build`.
+5. Install command: usa el default de Vercel (`npm install`) o explícito `npm install`.
 6. Deploy.
+
+Importante: no uses comandos con `cd frontend` si el Root Directory ya es `frontend`.
 
 ## Variables de entorno requeridas
 Configúralas en Vercel para los ambientes que uses (Preview/Production):
