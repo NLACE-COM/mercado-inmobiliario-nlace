@@ -62,7 +62,6 @@ type FilterState = {
     propertyStatus: string
     projectType: string
     subsidyType: string
-    speedRange: string
     absorptionRange: string
     maoRange: string
 }
@@ -84,7 +83,6 @@ const DEFAULT_FILTERS: FilterState = {
     propertyStatus: 'all',
     projectType: 'all',
     subsidyType: 'all',
-    speedRange: 'all',
     absorptionRange: 'all',
     maoRange: 'all',
 }
@@ -104,13 +102,6 @@ const QUARTER_TO_PERIOD: Record<string, string> = {
     q3: '2P',
     q4: '2P',
 }
-
-const SPEED_RANGES = [
-    { key: '0-1', label: '0 - 1 u/mes', min: 0, max: 1 },
-    { key: '1-2', label: '1 - 2 u/mes', min: 1, max: 2 },
-    { key: '2-4', label: '2 - 4 u/mes', min: 2, max: 4 },
-    { key: '4+', label: '4+ u/mes', min: 4, max: Number.MAX_SAFE_INTEGER },
-]
 
 const ABSORPTION_RANGES = [
     { key: '0-20', label: '0% - 20%', min: 0, max: 20 },
@@ -294,7 +285,6 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
             if (filters.typology !== 'all' && !projectMatchesTypology(project, filters.typology)) return false
 
             if (filters.ticketRange !== 'all' && !projectMatchesTicket(project, filters.ticketRange)) return false
-            if (filters.speedRange !== 'all' && !inRange(project.sales_speed_monthly || 0, SPEED_RANGES, filters.speedRange)) return false
             if (filters.absorptionRange !== 'all' && !inRange(getAbsorptionPct(project), ABSORPTION_RANGES, filters.absorptionRange)) return false
             if (filters.maoRange !== 'all' && !inRange(getMao(project), MAO_RANGES, filters.maoRange)) return false
 
@@ -634,19 +624,6 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-                                <div className="space-y-1">
-                                    <Label className="text-xs">Velocidad de Venta</Label>
-                                    <Select value={filters.speedRange} onValueChange={(v) => updateFilter('speedRange', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todos</SelectItem>
-                                            {SPEED_RANGES.map((range) => (
-                                                <SelectItem key={range.key} value={range.key}>{range.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
                                 <div className="space-y-1">
                                     <Label className="text-xs">Absorción</Label>
                                     <Select value={filters.absorptionRange} onValueChange={(v) => updateFilter('absorptionRange', v)}>
