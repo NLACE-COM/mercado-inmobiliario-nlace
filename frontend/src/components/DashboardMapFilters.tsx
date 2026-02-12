@@ -10,6 +10,7 @@ import { PriceRangeChart } from '@/components/charts/PriceRangeChart'
 import ParticipationEvolutionChart from '@/components/charts/ParticipationEvolutionChart'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import MarkdownRenderer from '@/components/shared/MarkdownRenderer'
 import {
     Select,
     SelectContent,
@@ -111,14 +112,14 @@ const PRICE_RANGES = [
     { key: '7000+', label: '7.000+ UF', min: 7000, max: Number.MAX_SAFE_INTEGER },
 ]
 
-const EVOLUTION_PRICE_RANGES = [
-    { key: 'r1000_2000', min: 1000, max: 2000 },
-    { key: 'r2000_3000', min: 2000, max: 3000 },
-    { key: 'r3000_4000', min: 3000, max: 4000 },
-    { key: 'r4000_5000', min: 4000, max: 5000 },
-    { key: 'r5000_7000', min: 5000, max: 7000 },
-    { key: 'r7000_plus', min: 7000, max: Number.MAX_SAFE_INTEGER },
-]
+const getEvolutionRangeKey = (priceValue: number) => {
+    if (priceValue < 2000) return 'r1000_2000'
+    if (priceValue < 3000) return 'r2000_3000'
+    if (priceValue < 4000) return 'r3000_4000'
+    if (priceValue < 5000) return 'r4000_5000'
+    if (priceValue < 7000) return 'r5000_7000'
+    return 'r7000_plus'
+}
 
 const QUARTER_TO_PERIOD: Record<string, string> = {
     q1: '1P',
@@ -391,9 +392,13 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
 
         const buckets = new Map<string, Bucket>()
 
+        const fallbackPeriod =
+            filters.year !== 'all'
+                ? `${filters.year}-${filters.semester !== 'all' ? filters.semester : 'ACT'}`
+                : 'ACTUAL'
+
         analysisProjects.forEach((project) => {
-            if (!project.year) return
-            const period = `${project.year}-${project.period || 'NA'}`
+            const period = project.year ? `${project.year}-${project.period || 'NA'}` : fallbackPeriod
             if (!buckets.has(period)) {
                 buckets.set(period, {
                     period,
@@ -419,18 +424,17 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
             }
 
             const bucket = buckets.get(period)!
-            const price = project.avg_price_uf || 0
+            const price =
+                Number(project.avg_price_uf ?? project.min_price_uf ?? project.max_price_uf ?? 0)
             const offer = project.available_units || 0
             const sales = project.sold_units || 0
 
             bucket.totalOffer += offer
             bucket.totalSales += sales
 
-            const range = EVOLUTION_PRICE_RANGES.find((r) => price >= r.min && price < r.max)
-            if (!range) return
-
-            bucket.offerByRange[range.key] += offer
-            bucket.salesByRange[range.key] += sales
+            const key = getEvolutionRangeKey(price)
+            bucket.offerByRange[key] += offer
+            bucket.salesByRange[key] += sales
         })
 
         const sorted = Array.from(buckets.values()).sort((a, b) => a.period.localeCompare(b.period))
@@ -460,7 +464,7 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
         }))
 
         return { offerSeries, salesSeries }
-    }, [analysisProjects])
+    }, [analysisProjects, filters.year, filters.semester])
 
     const updateFilter = (key: keyof FilterState, value: string) => {
         setFilters((prev) => {
@@ -846,8 +850,8 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                 )}
 
                                 {!analysisLoading && !analysisError && (
-                                    <div className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                                        {aiAnalysis || 'Sin contenido de análisis.'}
+                                    <div className="text-sm leading-6 text-slate-700">
+                                        <MarkdownRenderer content={aiAnalysis || 'Sin contenido de análisis.'} />
                                     </div>
                                 )}
                             </div>

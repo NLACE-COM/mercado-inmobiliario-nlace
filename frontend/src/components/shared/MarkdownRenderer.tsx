@@ -5,46 +5,77 @@ import React from 'react';
 export default function MarkdownRenderer({ content, className = '' }: { content: string, className?: string }) {
     if (!content) return null;
 
-    // Split by paragraphs (double newline)
-    const paragraphs = content.split('\n\n');
+    const lines = content.split('\n');
+    const blocks: React.ReactNode[] = [];
+    let listItems: string[] = [];
+
+    const flushList = (keyPrefix: string) => {
+        if (listItems.length === 0) return;
+        blocks.push(
+            <ul key={`${keyPrefix}-list`} className="list-disc pl-5 space-y-1 my-2">
+                {listItems.map((item, i) => (
+                    <li key={`${keyPrefix}-${i}`} className="pl-1">
+                        <FormattedText text={item} />
+                    </li>
+                ))}
+            </ul>
+        );
+        listItems = [];
+    };
 
     return (
         <div className={`space-y-3 ${className}`}>
-            {paragraphs.map((paragraph, idx) => {
-                const trimmed = paragraph.trim();
+            {(() => {
+                lines.forEach((line, idx) => {
+                    const trimmed = line.trim();
 
-                // Handle Headers (#)
-                if (trimmed.startsWith('# ')) {
-                    return <h1 key={idx} className="text-xl font-bold mt-4 mb-2 text-slate-900 border-b pb-1"><FormattedText text={trimmed.replace(/^# /, '')} /></h1>
-                }
-                if (trimmed.startsWith('## ')) {
-                    return <h2 key={idx} className="text-lg font-bold mt-3 mb-1.5 text-slate-800"><FormattedText text={trimmed.replace(/^## /, '')} /></h2>
-                }
-                if (trimmed.startsWith('### ')) {
-                    return <h3 key={idx} className="text-md font-bold mt-2 mb-1 text-slate-800"><FormattedText text={trimmed.replace(/^### /, '')} /></h3>
-                }
+                    if (!trimmed) {
+                        flushList(`empty-${idx}`);
+                        return;
+                    }
 
-                // Handle Lists (- or *)
-                if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-                    const items = trimmed.split('\n').filter(l => l.trim().length > 0);
-                    return (
-                        <ul key={idx} className="list-disc pl-5 space-y-1 my-2">
-                            {items.map((item, i) => (
-                                <li key={i} className="pl-1">
-                                    <FormattedText text={item.replace(/^[-*] \s*/, '')} />
-                                </li>
-                            ))}
-                        </ul>
+                    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+                        listItems.push(trimmed.replace(/^[-*]\s*/, ''));
+                        return;
+                    }
+
+                    flushList(`line-${idx}`);
+
+                    if (trimmed.startsWith('# ')) {
+                        blocks.push(
+                            <h1 key={`h1-${idx}`} className="text-xl font-bold mt-4 mb-2 text-slate-900 border-b pb-1">
+                                <FormattedText text={trimmed.replace(/^# /, '')} />
+                            </h1>
+                        );
+                        return;
+                    }
+                    if (trimmed.startsWith('## ')) {
+                        blocks.push(
+                            <h2 key={`h2-${idx}`} className="text-lg font-bold mt-3 mb-1.5 text-slate-800">
+                                <FormattedText text={trimmed.replace(/^## /, '')} />
+                            </h2>
+                        );
+                        return;
+                    }
+                    if (trimmed.startsWith('### ')) {
+                        blocks.push(
+                            <h3 key={`h3-${idx}`} className="text-md font-bold mt-2 mb-1 text-slate-800">
+                                <FormattedText text={trimmed.replace(/^### /, '')} />
+                            </h3>
+                        );
+                        return;
+                    }
+
+                    blocks.push(
+                        <p key={`p-${idx}`} className="text-slate-700 leading-relaxed mb-1">
+                            <FormattedText text={trimmed} />
+                        </p>
                     );
-                }
+                });
 
-                // Regular paragraph
-                return (
-                    <p key={idx} className="text-slate-700 leading-relaxed mb-3">
-                        <FormattedText text={paragraph} />
-                    </p>
-                )
-            })}
+                flushList('final');
+                return blocks;
+            })()}
         </div>
     );
 }
