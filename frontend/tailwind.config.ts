@@ -1,6 +1,3 @@
-
-import colors from "tailwindcss/colors";
-
 const config = {
     darkMode: "class",
     content: [
@@ -36,6 +33,18 @@ const config = {
                 destructive: {
                     DEFAULT: "hsl(var(--destructive))",
                     foreground: "hsl(var(--destructive-foreground))",
+                },
+                success: {
+                    DEFAULT: "hsl(var(--success))",
+                    foreground: "hsl(var(--primary-foreground))",
+                },
+                warning: {
+                    DEFAULT: "hsl(var(--warning))",
+                    foreground: "hsl(var(--primary-foreground))",
+                },
+                info: {
+                    DEFAULT: "hsl(var(--info))",
+                    foreground: "hsl(var(--primary-foreground))",
                 },
                 muted: {
                     DEFAULT: "hsl(var(--muted))",
@@ -118,12 +127,18 @@ const config = {
                 lg: "var(--radius)",
                 md: "calc(var(--radius) - 2px)",
                 sm: "calc(var(--radius) - 4px)",
+                card: "var(--radius-card)",
                 // Tremor 
                 "tremor-small": "0.375rem",
                 "tremor-default": "0.5rem",
                 "tremor-full": "9999px",
             },
+            fontFamily: {
+                sans: ["var(--font-inter)", "sans-serif"],
+                display: ["var(--font-sora)", "sans-serif"],
+            },
             boxShadow: {
+                soft: "var(--shadow-soft)",
                 // Tremor
                 "tremor-input": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
                 "tremor-card": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",

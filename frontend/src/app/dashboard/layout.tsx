@@ -41,7 +41,7 @@ export default async function DashboardLayout({
     return (
         <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
             {/* Sidebar */}
-            <div className="hidden border-r bg-slate-100/40 lg:block dark:bg-slate-800/40">
+            <div className="hidden border-r bg-card lg:block">
                 <div className="flex h-full max-h-screen flex-col gap-2">
                     <div className="flex h-14 items-center border-b px-6">
                         <Link className="flex items-center gap-2 font-semibold" href="/dashboard">
@@ -56,42 +56,42 @@ export default async function DashboardLayout({
                     <div className="flex-1 overflow-auto py-2">
                         <nav className="grid items-start px-4 text-sm font-medium">
                             <Link
-                                className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-900 bg-slate-100 transition-all hover:text-slate-900 dark:bg-slate-800 dark:text-slate-50 dark:hover:text-slate-50"
+                                className="flex items-center gap-3 rounded-[12px] px-3 py-2 text-foreground bg-primary/10 transition-all hover:bg-primary/15"
                                 href="/dashboard"
                             >
                                 <LayoutDashboard className="h-4 w-4" />
                                 Dashboard
                             </Link>
                             <Link
-                                className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-500 transition-all hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50"
+                                className="flex items-center gap-3 rounded-[12px] px-3 py-2 text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
                                 href="/dashboard/projects"
                             >
                                 <Home className="h-4 w-4" />
                                 Proyectos
                             </Link>
                             <Link
-                                className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-500 transition-all hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50"
+                                className="flex items-center gap-3 rounded-[12px] px-3 py-2 text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
                                 href="/dashboard/map"
                             >
                                 <Map className="h-4 w-4" />
                                 Mapa
                             </Link>
                             <Link
-                                className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-500 transition-all hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50"
+                                className="flex items-center gap-3 rounded-[12px] px-3 py-2 text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
                                 href="/dashboard/brain/settings"
                             >
                                 <Settings className="h-4 w-4" />
                                 Cerebro IA
                             </Link>
                             <Link
-                                className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-500 transition-all hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50"
+                                className="flex items-center gap-3 rounded-[12px] px-3 py-2 text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
                                 href="/dashboard/analytics"
                             >
                                 <BarChart3 className="h-4 w-4" />
                                 Analytics
                             </Link>
                             <Link
-                                className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-500 transition-all hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50"
+                                className="flex items-center gap-3 rounded-[12px] px-3 py-2 text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
                                 href="/dashboard/reports"
                             >
                                 <FileText className="h-4 w-4" />
@@ -104,21 +104,21 @@ export default async function DashboardLayout({
 
             {/* Main Content Area */}
             <div className="flex flex-col">
-                <header className="flex h-14 items-center gap-4 border-b bg-slate-100/40 px-6 lg:h-[60px] dark:bg-slate-800/40">
+                <header className="flex h-14 items-center gap-4 border-b bg-card px-6 lg:h-[60px]">
                     <div className="w-full flex-1">
-                        <h1 className="text-lg font-semibold">Dashboard</h1>
+                        <h1 className="font-display text-lg font-semibold">Dashboard</h1>
                     </div>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
-                                className="rounded-full border border-gray-200 w-8 h-8 dark:border-gray-800"
+                                className="rounded-full border border-input w-8 h-8"
                                 size="icon"
                                 variant="ghost"
                             >
                                 <span className="sr-only">Toggle user menu</span>
-                                <div className="h-8 w-8 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center">
+                                <div className="h-8 w-8 rounded-full bg-muted overflow-hidden flex items-center justify-center">
                                     {/* Placeholder Avatar */}
-                                    <span className="text-xs font-bold text-slate-600">
+                                    <span className="text-xs font-bold text-muted-foreground">
                                         {user.email?.slice(0, 2).toUpperCase()}
                                     </span>
                                 </div>
@@ -142,7 +142,7 @@ export default async function DashboardLayout({
                     </DropdownMenu>
                 </header>
 
-                <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 bg-slate-50 dark:bg-slate-950 relative">
+                <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 bg-background relative">
                     {children}
                 </main>
             </div>

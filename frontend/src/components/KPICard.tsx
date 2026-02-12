@@ -38,16 +38,16 @@ export default function KPICard({
     }
 
     const getTrendColor = () => {
-        if (change === undefined || change === 0) return 'text-gray-500'
-        return change > 0 ? 'text-green-600' : 'text-red-600'
+        if (change === undefined || change === 0) return 'text-muted-foreground'
+        return change > 0 ? 'text-success' : 'text-destructive'
     }
 
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+        <div className="bg-card rounded-card shadow-soft border border-input p-6 transition-shadow">
             <div className="flex items-start justify-between">
                 <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-                    <div className="text-3xl font-bold text-gray-900 mb-2">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
+                    <div className="font-display text-3xl font-semibold text-foreground mb-2">
                         {formatValue(value)}
                     </div>
                     {change !== undefined && (
@@ -57,14 +57,14 @@ export default function KPICard({
                                 {Math.abs(change).toFixed(1)}%
                             </span>
                             {changeLabel && (
-                                <span className="text-gray-500 ml-1">{changeLabel}</span>
+                                <span className="text-muted-foreground ml-1">{changeLabel}</span>
                             )}
                         </div>
                     )}
                 </div>
                 {icon && (
-                    <div className="flex-shrink-0 p-3 bg-blue-50 rounded-lg">
-                        <div className="text-blue-600">
+                    <div className="flex-shrink-0 p-3 bg-primary/10 rounded-[12px]">
+                        <div className="text-primary">
                             {icon}
                         </div>
                     </div>

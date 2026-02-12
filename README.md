@@ -53,6 +53,11 @@ npm run dev
 
 Abrir [http://localhost:3000](http://localhost:3000)
 
+### 4. Deploy en Vercel
+- Selecciona `frontend` como **Root Directory**.
+- Configura variables según `frontend/.env.example`.
+- Guía completa: `docs/DEPLOYMENT_GUIDE.md`.
+
 ---
 
 ## 📦 Estructura del Proyecto

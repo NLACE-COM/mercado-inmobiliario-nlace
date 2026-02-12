@@ -5,121 +5,123 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 220 20% 97%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 220 100% 54%;
+    --primary-foreground: 0 0% 100%;
+    --primary-600: 221 88% 46%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 221 39% 15%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 14% 42%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 221 39% 15%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 220 16% 90%;
+    --input: 220 16% 90%;
+    --ring: 220 100% 54%;
 
-    --radius: 0.5rem;
+    --success: 150 74% 35%;
+    --warning: 35 92% 46%;
+    --info: 210 79% 46%;
+
+    --radius: 12px;
+    --radius-card: 20px;
+
+    --shadow-soft: 0 10px 30px rgba(16, 24, 40, 0.08);
 
     /* Tremor Colors */
-    --tremor-brand-faint: 210 40% 96.1%;
-    --tremor-brand-muted: 214.3 31.8% 91.4%;
-    --tremor-brand-subtle: 215.4 16.3% 46.9%;
-    --tremor-brand-default: 222.2 47.4% 11.2%;
-    --tremor-brand-emphasis: 222.2 84% 4.9%;
+    --tremor-brand-faint: 220 100% 97%;
+    --tremor-brand-muted: 216 96% 89%;
+    --tremor-brand-subtle: 220 100% 74%;
+    --tremor-brand-default: 220 100% 54%;
+    --tremor-brand-emphasis: 221 88% 46%;
     --tremor-brand-inverted: 0 0% 100%;
 
-    --tremor-background-muted: 210 40% 96.1%;
-    --tremor-background-subtle: 210 40% 96.1%;
+    --tremor-background-muted: 220 20% 97%;
+    --tremor-background-subtle: 220 14% 96%;
     --tremor-background-default: 0 0% 100%;
-    --tremor-background-emphasis: 222.2 47.4% 11.2%;
+    --tremor-background-emphasis: 221 39% 15%;
 
-    --tremor-border-default: 214.3 31.8% 91.4%;
-    --tremor-ring-default: 214.3 31.8% 91.4%;
+    --tremor-border-default: 220 16% 90%;
+    --tremor-ring-default: 220 16% 90%;
 
-    --tremor-content-subtle: 215.4 16.3% 46.9%;
-    --tremor-content-default: 215.4 16.3% 46.9%;
-    --tremor-content-emphasis: 222.2 47.4% 11.2%;
-    --tremor-content-strong: 222.2 84% 4.9%;
+    --tremor-content-subtle: 215 14% 42%;
+    --tremor-content-default: 215 14% 42%;
+    --tremor-content-emphasis: 221 39% 15%;
+    --tremor-content-strong: 222 47% 11%;
     --tremor-content-inverted: 0 0% 100%;
   }
 
   @theme {
-    --color-tremor-brand-faint: var(--color-blue-50);
-    --color-tremor-brand-muted: var(--color-blue-200);
-    --color-tremor-brand-subtle: var(--color-blue-400);
-    --color-tremor-brand-default: var(--color-blue-500);
-    --color-tremor-brand-emphasis: var(--color-blue-700);
-    --color-tremor-brand-inverted: var(--color-white);
+    --color-tremor-brand-faint: hsl(var(--tremor-brand-faint));
+    --color-tremor-brand-muted: hsl(var(--tremor-brand-muted));
+    --color-tremor-brand-subtle: hsl(var(--tremor-brand-subtle));
+    --color-tremor-brand-default: hsl(var(--tremor-brand-default));
+    --color-tremor-brand-emphasis: hsl(var(--tremor-brand-emphasis));
+    --color-tremor-brand-inverted: hsl(var(--tremor-brand-inverted));
 
-    --color-tremor-background-muted: var(--color-gray-50);
-    --color-tremor-background-subtle: var(--color-gray-100);
-    --color-tremor-background-default: var(--color-white);
-    --color-tremor-background-emphasis: var(--color-gray-700);
+    --color-tremor-background-muted: hsl(var(--tremor-background-muted));
+    --color-tremor-background-subtle: hsl(var(--tremor-background-subtle));
+    --color-tremor-background-default: hsl(var(--tremor-background-default));
+    --color-tremor-background-emphasis: hsl(var(--tremor-background-emphasis));
 
-    --color-tremor-border-default: var(--color-gray-200);
-    --color-tremor-ring-default: var(--color-gray-200);
+    --color-tremor-border-default: hsl(var(--tremor-border-default));
+    --color-tremor-ring-default: hsl(var(--tremor-ring-default));
 
-    --color-tremor-content-subtle: var(--color-gray-400);
-    --color-tremor-content-default: var(--color-gray-500);
-    --color-tremor-content-emphasis: var(--color-gray-700);
-    --color-tremor-content-strong: var(--color-gray-900);
-    --color-tremor-content-inverted: var(--color-white);
+    --color-tremor-content-subtle: hsl(var(--tremor-content-subtle));
+    --color-tremor-content-default: hsl(var(--tremor-content-default));
+    --color-tremor-content-emphasis: hsl(var(--tremor-content-emphasis));
+    --color-tremor-content-strong: hsl(var(--tremor-content-strong));
+    --color-tremor-content-inverted: hsl(var(--tremor-content-inverted));
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-  }
-}
-
-@layer base {
   * {
     border-color: hsl(var(--border));
+  }
+
+  html,
+  body {
+    min-height: 100%;
   }
 
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-family: var(--font-inter), sans-serif;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-sora), sans-serif;
+    color: hsl(var(--foreground));
+  }
+}
+
+@layer components {
+  .surface-panel {
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius-card);
+    background: hsl(var(--card));
+    box-shadow: var(--shadow-soft);
   }
 }
 

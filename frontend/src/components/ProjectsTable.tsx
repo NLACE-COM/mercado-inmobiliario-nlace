@@ -67,15 +67,15 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
     const getStatusBadge = (status: string | null) => {
         if (!status) return null
 
-        const statusColors: Record<string, string> = {
-            'EN VENTA': 'bg-green-100 text-green-800',
-            'VENDIDO': 'bg-gray-100 text-gray-800',
-            'EN CONSTRUCCION': 'bg-blue-100 text-blue-800',
-            'TERMINADO': 'bg-purple-100 text-purple-800',
+        const statusVariants: Record<string, 'success' | 'secondary' | 'info' | 'warning'> = {
+            'EN VENTA': 'success',
+            'VENDIDO': 'secondary',
+            'EN CONSTRUCCION': 'info',
+            'TERMINADO': 'warning',
         }
 
         return (
-            <Badge className={statusColors[status] || 'bg-gray-100 text-gray-800'}>
+            <Badge variant={statusVariants[status] || 'secondary'}>
                 {status}
             </Badge>
         )
@@ -91,7 +91,7 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
             {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-4">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Buscar por nombre, desarrollador o comuna..."
                         value={search}
@@ -108,7 +108,7 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
                         setRegionFilter(e.target.value)
                         setCurrentPage(1) // Reset to first page on filter
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="h-10 rounded-[12px] border border-input bg-background px-4 py-2 text-sm text-foreground transition-all focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary"
                 >
                     <option value="all">Todas las regiones</option>
                     {regions.sort().map(region => (
@@ -120,7 +120,7 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
             </div>
 
             {/* Results count */}
-            <div className="flex justify-between items-center text-sm text-gray-600">
+            <div className="flex justify-between items-center text-sm text-muted-foreground">
                 <div>
                     Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredProjects.length)} de {filteredProjects.length} proyectos
                     {filteredProjects.length !== projects.length && ` (filtrados de ${projects.length} totales)`}
@@ -149,7 +149,7 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
             </div>
 
             {/* Table */}
-            <div className="rounded-md border bg-white">
+            <div className="rounded-card border bg-card shadow-soft">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -166,7 +166,7 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
                     <TableBody>
                         {paginatedProjects.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                                     No se encontraron proyectos
                                 </TableCell>
                             </TableRow>
@@ -175,28 +175,28 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
                                 const sellThrough = getSellThroughRate(project.sold_units, project.total_units)
 
                                 return (
-                                    <TableRow key={project.id} className="hover:bg-gray-50">
+                                    <TableRow key={project.id}>
                                         <TableCell className="font-medium">
                                             <div>
-                                                <div className="font-semibold text-gray-900">{project.name}</div>
+                                                <div className="font-semibold text-foreground">{project.name}</div>
                                                 {project.property_type && (
-                                                    <div className="text-xs text-gray-500 mt-1">
+                                                    <div className="text-xs text-muted-foreground mt-1">
                                                         {project.property_type}
                                                     </div>
                                                 )}
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="text-sm text-gray-600">
+                                            <div className="text-sm text-muted-foreground">
                                                 {project.developer || '-'}
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-1 text-sm">
-                                                <MapPin className="h-3 w-3 text-gray-400" />
+                                                <MapPin className="h-3 w-3 text-muted-foreground" />
                                                 <span>{project.commune || '-'}</span>
                                                 {project.region && (
-                                                    <span className="text-gray-400">({project.region})</span>
+                                                    <span className="text-muted-foreground">({project.region})</span>
                                                 )}
                                             </div>
                                         </TableCell>
@@ -205,12 +205,12 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
                                                 <div className="text-sm font-medium">
                                                     {project.total_units?.toLocaleString() || '-'}
                                                 </div>
-                                                <div className="text-xs text-gray-500">
+                                                <div className="text-xs text-muted-foreground">
                                                     {project.sold_units || 0} vendidas
                                                 </div>
-                                                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                                <div className="w-full bg-muted rounded-full h-1.5">
                                                     <div
-                                                        className="bg-blue-600 h-1.5 rounded-full"
+                                                        className="bg-primary h-1.5 rounded-full"
                                                         style={{ width: `${sellThrough}%` }}
                                                     />
                                                 </div>
@@ -260,7 +260,7 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
                 >
                     Anterior
                 </Button>
-                <span className="flex items-center px-2 text-sm text-gray-600">
+                <span className="flex items-center px-2 text-sm text-muted-foreground">
                     Página {currentPage} de {totalPages || 1}
                 </span>
                 <Button
