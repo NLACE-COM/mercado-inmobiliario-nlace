@@ -66,9 +66,9 @@ export default function ParticipationEvolutionChart({ data, metricLabel }: Parti
                             tick={{ fontSize: 11 }}
                         />
                         <Tooltip
-                            formatter={(value: any, name: string) => {
-                                if (name === 'total_units') return [unitsFormatter(value), 'Total unidades']
-                                return [`${Number(value).toFixed(1)}%`, name]
+                            formatter={(value, name) => {
+                                if (name === 'total_units') return [unitsFormatter(Number(value)), 'Total unidades']
+                                return [`${Number(value).toFixed(1)}%`, String(name)]
                             }}
                             labelFormatter={(label) => `Período: ${label}`}
                         />
@@ -107,4 +107,3 @@ export default function ParticipationEvolutionChart({ data, metricLabel }: Parti
         </Card>
     )
 }
-
