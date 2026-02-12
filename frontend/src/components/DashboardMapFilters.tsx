@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Grid, Card, Metric, Text, BadgeDelta, Flex, Title } from '@tremor/react'
-import { Building2, Home, TrendingUp, Users, RotateCcw, Filter, Sparkles, Wand2 } from 'lucide-react'
+import { Grid, Card, Text, BadgeDelta, Flex, Title } from '@tremor/react'
+import { RotateCcw, Filter, Sparkles, Wand2, SlidersHorizontal, X, BarChart3 } from 'lucide-react'
 import MapboxMap from '@/components/MapboxMap'
 import MarketOverviewChart from '@/components/charts/MarketOverviewChart'
 import { ProductMixChart } from '@/components/charts/ProductMixChart'
@@ -204,6 +204,7 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
     const [aiAnalysis, setAiAnalysis] = useState<string>('')
     const [analysisLoading, setAnalysisLoading] = useState(false)
     const [analysisError, setAnalysisError] = useState<string | null>(null)
+    const [showFiltersPanel, setShowFiltersPanel] = useState(true)
 
     useEffect(() => {
         setVisibleProjectIds(null)
@@ -565,82 +566,20 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
     }
 
     return (
-        <div className="space-y-5">
-            <Grid numItemsSm={2} numItemsLg={4} className="gap-6">
-                <Card className="rounded-2xl border border-slate-200/80 shadow-sm" decoration="top" decorationColor="blue">
-                    <Flex alignItems="start">
-                        <div className="truncate">
-                            <Text>Proyectos Filtrados</Text>
-                            <Metric>{kpis.projectCount.toLocaleString()}</Metric>
-                        </div>
-                        <BadgeDelta deltaType={kpis.deltaType as any}>
-                            {`${Math.abs(kpis.scopeDelta)}%`}
-                        </BadgeDelta>
-                    </Flex>
-                    <Flex className="mt-4 space-x-2">
-                        <Building2 className="h-4 w-4 text-slate-400" />
-                        <Text className="truncate text-slate-500">{useViewportOnly ? 'Viewport + filtros' : 'Solo filtros'}</Text>
-                    </Flex>
-                </Card>
+        <div className="space-y-6">
+            <Card className="h-[78vh] min-h-[680px] rounded-2xl border border-slate-200/80 shadow-sm p-0 overflow-hidden">
+                <div className="relative h-full">
+                    <MapboxMap
+                        projects={mapProjects as any[]}
+                        onVisibleProjectIdsChange={setVisibleProjectIds}
+                    />
 
-                <Card className="rounded-2xl border border-slate-200/80 shadow-sm" decoration="top" decorationColor="amber">
-                    <Flex alignItems="start">
-                        <div className="truncate">
-                            <Text>Stock Disponible</Text>
-                            <Metric>{kpis.totalStock.toLocaleString()}</Metric>
-                        </div>
-                        <BadgeDelta deltaType="moderateDecrease">filtro activo</BadgeDelta>
-                    </Flex>
-                    <Flex className="mt-4 space-x-2">
-                        <Home className="h-4 w-4 text-slate-400" />
-                        <Text className="truncate text-slate-500">Unidades en venta</Text>
-                    </Flex>
-                </Card>
-
-                <Card className="rounded-2xl border border-slate-200/80 shadow-sm" decoration="top" decorationColor="blue">
-                    <Flex alignItems="start">
-                        <div className="truncate">
-                            <Text>Velocidad Venta</Text>
-                            <Metric>{kpis.avgSalesSpeed}</Metric>
-                        </div>
-                        <BadgeDelta deltaType="increase">u/mes</BadgeDelta>
-                    </Flex>
-                    <Flex className="mt-4 space-x-2">
-                        <TrendingUp className="h-4 w-4 text-slate-400" />
-                        <Text className="truncate text-slate-500">Promedio ponderado</Text>
-                    </Flex>
-                </Card>
-
-                <Card className="rounded-2xl border border-slate-200/80 shadow-sm" decoration="top" decorationColor="blue">
-                    <Flex alignItems="start">
-                        <div className="truncate">
-                            <Text>Ventas Totales</Text>
-                            <Metric>{kpis.totalSold.toLocaleString()}</Metric>
-                        </div>
-                        <BadgeDelta deltaType="increase">histórico</BadgeDelta>
-                    </Flex>
-                    <Flex className="mt-4 space-x-2">
-                        <Users className="h-4 w-4 text-slate-400" />
-                        <Text className="truncate text-slate-500">Unidades vendidas</Text>
-                    </Flex>
-                </Card>
-            </Grid>
-
-            <div className="space-y-6 mt-6">
-                <Card className="h-[760px] flex flex-col p-0 overflow-hidden rounded-2xl border border-slate-200/80 shadow-sm">
-                    <div className="p-6 border-b">
-                        <Title className="text-[22px]">Mapa de Actividad Inmobiliaria</Title>
-                        <Text className="text-sm text-slate-500 mt-1">
-                            {geoScopeLabel} · {timeScopeLabel}
-                        </Text>
-                    </div>
-
-                    <div className="flex-1 relative">
-                        <div className="absolute z-20 left-3 right-3 top-3 rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-sm shadow-xl p-4">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                    <Filter className="h-4 w-4 text-slate-600" />
-                                    <p className="font-semibold text-slate-800 text-sm">Filtros sobre el mapa</p>
+                    <div className="absolute top-3 left-3 right-3 z-30">
+                        <div className="rounded-2xl border border-slate-200 bg-white/95 backdrop-blur shadow-xl p-3">
+                            <div className="flex flex-wrap items-center gap-2 justify-between">
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-900">NLACE Maps</p>
+                                    <p className="text-xs text-slate-500">{geoScopeLabel} · {timeScopeLabel}</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div className="inline-flex rounded-md border bg-muted/30 p-1">
@@ -659,8 +598,12 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                             Solo filtros
                                         </button>
                                     </div>
+                                    <Button variant="outline" size="sm" onClick={() => setShowFiltersPanel((v) => !v)}>
+                                        {showFiltersPanel ? <X className="h-3.5 w-3.5 mr-2" /> : <SlidersHorizontal className="h-3.5 w-3.5 mr-2" />}
+                                        {showFiltersPanel ? 'Ocultar filtros' : 'Mostrar filtros'}
+                                    </Button>
                                     <Button variant="outline" size="sm" onClick={resetFilters}>
-                                        <RotateCcw className="h-3 w-3 mr-2" />
+                                        <RotateCcw className="h-3.5 w-3.5 mr-2" />
                                         Limpiar
                                     </Button>
                                     <Button size="sm" onClick={handleGenerateCharts}>
@@ -669,207 +612,232 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                     </Button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-                                <div className="space-y-1">
-                                    <Label className="text-xs">Año</Label>
-                                    <Select value={filters.year} onValueChange={(v) => updateFilter('year', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todos</SelectItem>
-                                            {years.map((year) => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
+                    {showFiltersPanel && (
+                        <div className="absolute left-3 top-24 z-30 w-[380px] max-w-[calc(100%-24px)]">
+                            <div className="rounded-2xl border border-slate-200 bg-white/95 backdrop-blur shadow-xl p-3 max-h-[58vh] overflow-y-auto">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Filter className="h-4 w-4 text-slate-600" />
+                                    <p className="font-semibold text-slate-800 text-sm">Filtros del mapa</p>
                                 </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-xs">Semestre</Label>
-                                    <Select value={filters.semester} onValueChange={(v) => updateFilter('semester', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todos</SelectItem>
-                                            <SelectItem value="1P">1P</SelectItem>
-                                            <SelectItem value="2P">2P</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-xs">Trimestre</Label>
-                                    <Select value={filters.quarter} onValueChange={(v) => updateFilter('quarter', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todos</SelectItem>
-                                            <SelectItem value="q1">Q1</SelectItem>
-                                            <SelectItem value="q2">Q2</SelectItem>
-                                            <SelectItem value="q3">Q3</SelectItem>
-                                            <SelectItem value="q4">Q4</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-xs">Región</Label>
-                                    <Select value={filters.region} onValueChange={(v) => updateFilter('region', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todas</SelectItem>
-                                            {regionOptions.map((region) => (
-                                                <SelectItem key={region.value} value={region.value}>{region.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-xs">Comuna</Label>
-                                    <Select value={filters.commune} onValueChange={(v) => updateFilter('commune', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todas</SelectItem>
-                                            {communeOptions.map((commune) => (
-                                                <SelectItem key={commune.value} value={commune.value}>{commune.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-xs">Producto</Label>
-                                    <Select value={filters.product} onValueChange={(v) => updateFilter('product', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todos</SelectItem>
-                                            {productOptions.map((product) => (
-                                                <SelectItem key={product.value} value={product.value}>{product.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-xs">Tipología</Label>
-                                    <Select value={filters.typology} onValueChange={(v) => updateFilter('typology', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todas</SelectItem>
-                                            {typologies.map((typology) => <SelectItem key={typology} value={typology}>{typology}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-xs">Ticket UF</Label>
-                                    <Select value={filters.ticketRange} onValueChange={(v) => updateFilter('ticketRange', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todos</SelectItem>
-                                            {PRICE_RANGES.map((range) => <SelectItem key={range.key} value={range.key}>{range.label}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-xs">Estado propiedad</Label>
-                                    <Select value={filters.propertyStatus} onValueChange={(v) => updateFilter('propertyStatus', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todos</SelectItem>
-                                            {statusOptions.map((status) => (
-                                                <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-xs">Tipo de Proyecto</Label>
-                                    <Select value={filters.projectType} onValueChange={(v) => updateFilter('projectType', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todos</SelectItem>
-                                            <SelectItem value="sin_subsidio">Sin Subsidio</SelectItem>
-                                            <SelectItem value="con_subsidio">Con Subsidio</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label className="text-xs">Tipo de Subsidio</Label>
-                                    <Select value={filters.subsidyType} onValueChange={(v) => updateFilter('subsidyType', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todos</SelectItem>
-                                            {subsidyTypeOptions.map((type) => (
-                                                <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Año</Label>
+                                        <Select value={filters.year} onValueChange={(v) => updateFilter('year', v)}>
+                                            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Todos</SelectItem>
+                                                {years.map((year) => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Semestre</Label>
+                                        <Select value={filters.semester} onValueChange={(v) => updateFilter('semester', v)}>
+                                            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Todos</SelectItem>
+                                                <SelectItem value="1P">1P</SelectItem>
+                                                <SelectItem value="2P">2P</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Trimestre</Label>
+                                        <Select value={filters.quarter} onValueChange={(v) => updateFilter('quarter', v)}>
+                                            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Todos</SelectItem>
+                                                <SelectItem value="q1">Q1</SelectItem>
+                                                <SelectItem value="q2">Q2</SelectItem>
+                                                <SelectItem value="q3">Q3</SelectItem>
+                                                <SelectItem value="q4">Q4</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Región</Label>
+                                        <Select value={filters.region} onValueChange={(v) => updateFilter('region', v)}>
+                                            <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Todas</SelectItem>
+                                                {regionOptions.map((region) => (
+                                                    <SelectItem key={region.value} value={region.value}>{region.label}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Comuna</Label>
+                                        <Select value={filters.commune} onValueChange={(v) => updateFilter('commune', v)}>
+                                            <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Todas</SelectItem>
+                                                {communeOptions.map((commune) => (
+                                                    <SelectItem key={commune.value} value={commune.value}>{commune.label}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Producto</Label>
+                                        <Select value={filters.product} onValueChange={(v) => updateFilter('product', v)}>
+                                            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Todos</SelectItem>
+                                                {productOptions.map((product) => (
+                                                    <SelectItem key={product.value} value={product.value}>{product.label}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Tipología</Label>
+                                        <Select value={filters.typology} onValueChange={(v) => updateFilter('typology', v)}>
+                                            <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Todas</SelectItem>
+                                                {typologies.map((typology) => <SelectItem key={typology} value={typology}>{typology}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Ticket UF</Label>
+                                        <Select value={filters.ticketRange} onValueChange={(v) => updateFilter('ticketRange', v)}>
+                                            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Todos</SelectItem>
+                                                {PRICE_RANGES.map((range) => <SelectItem key={range.key} value={range.key}>{range.label}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Estado propiedad</Label>
+                                        <Select value={filters.propertyStatus} onValueChange={(v) => updateFilter('propertyStatus', v)}>
+                                            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Todos</SelectItem>
+                                                {statusOptions.map((status) => (
+                                                    <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Tipo de Proyecto</Label>
+                                        <Select value={filters.projectType} onValueChange={(v) => updateFilter('projectType', v)}>
+                                            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Todos</SelectItem>
+                                                <SelectItem value="sin_subsidio">Sin Subsidio</SelectItem>
+                                                <SelectItem value="con_subsidio">Con Subsidio</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Tipo de Subsidio</Label>
+                                        <Select value={filters.subsidyType} onValueChange={(v) => updateFilter('subsidyType', v)}>
+                                            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Todos</SelectItem>
+                                                {subsidyTypeOptions.map((type) => (
+                                                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                    )}
 
-                        <MapboxMap
-                            projects={mapProjects as any[]}
-                            onVisibleProjectIdsChange={setVisibleProjectIds}
-                        />
+                    <div className="absolute bottom-3 left-3 right-3 z-30">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <div className="rounded-xl border border-slate-200 bg-white/95 backdrop-blur px-3 py-2 shadow">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-[11px] text-slate-500">Proyectos</p>
+                                    <BadgeDelta deltaType={kpis.deltaType as any}>{`${Math.abs(kpis.scopeDelta)}%`}</BadgeDelta>
+                                </div>
+                                <p className="text-lg font-semibold">{kpis.projectCount.toLocaleString()}</p>
+                            </div>
+                            <div className="rounded-xl border border-slate-200 bg-white/95 backdrop-blur px-3 py-2 shadow">
+                                <p className="text-[11px] text-slate-500">Stock Disponible</p>
+                                <p className="text-lg font-semibold">{kpis.totalStock.toLocaleString()}</p>
+                            </div>
+                            <div className="rounded-xl border border-slate-200 bg-white/95 backdrop-blur px-3 py-2 shadow">
+                                <p className="text-[11px] text-slate-500">Velocidad Venta</p>
+                                <p className="text-lg font-semibold">{kpis.avgSalesSpeed} <span className="text-xs text-slate-500">u/mes</span></p>
+                            </div>
+                            <div className="rounded-xl border border-slate-200 bg-white/95 backdrop-blur px-3 py-2 shadow">
+                                <p className="text-[11px] text-slate-500">Ventas Totales</p>
+                                <p className="text-lg font-semibold">{kpis.totalSold.toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Card>
+
+            {!hasGenerated && (
+                <Card className="p-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50/60">
+                    <div className="text-center py-3">
+                        <Title className="text-lg">Panel de Gráficos IA</Title>
+                        <Text className="text-sm text-slate-500 mt-1">
+                            Muévete por el mapa, aplica filtros y presiona <strong>Generar gráficos</strong> para construir el panel analítico.
+                        </Text>
                     </div>
                 </Card>
+            )}
 
-                {!hasGenerated && (
-                    <Card className="p-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50/60">
-                        <div className="text-center py-3">
-                            <Title className="text-lg">Panel de Gráficos IA</Title>
-                            <Text className="text-sm text-slate-500 mt-1">
-                                Muévete por el mapa, aplica filtros y presiona <strong>Generar gráficos</strong>.
-                            </Text>
+            {hasGenerated && (
+                <>
+                    <Card className="p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                        <Flex alignItems="start">
+                            <div>
+                                <Title className="text-lg">Análisis IA del Escenario Filtrado</Title>
+                                <Text className="text-xs text-slate-500 mt-1">
+                                    {generatedAt ? `Generado: ${new Date(generatedAt).toLocaleString('es-CL')}` : ''}
+                                </Text>
+                            </div>
+                            <Sparkles className="h-5 w-5 text-blue-500" />
+                        </Flex>
+
+                        <div className="mt-4 rounded-lg border bg-slate-50/70 p-4 max-h-[260px] overflow-y-auto">
+                            {analysisLoading && (
+                                <Text className="text-sm text-slate-500">Generando lectura ejecutiva...</Text>
+                            )}
+
+                            {!analysisLoading && analysisError && (
+                                <Text className="text-sm text-red-600">{analysisError}</Text>
+                            )}
+
+                            {!analysisLoading && !analysisError && (
+                                <div className="text-sm leading-6 text-slate-700">
+                                    <MarkdownRenderer content={aiAnalysis || 'Sin contenido de análisis.'} />
+                                </div>
+                            )}
                         </div>
                     </Card>
-                )}
 
-                {hasGenerated && (
-                    <>
-                        <Card className="p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-                            <Flex alignItems="start">
-                                <div>
-                                    <Title className="text-lg">Análisis IA del Escenario Filtrado</Title>
-                                    <Text className="text-xs text-slate-500 mt-1">
-                                        {generatedAt ? `Generado: ${new Date(generatedAt).toLocaleString('es-CL')}` : ''}
-                                    </Text>
-                                </div>
-                                <Sparkles className="h-5 w-5 text-blue-500" />
-                            </Flex>
+                    <Grid numItemsLg={2} className="gap-6">
+                        <ParticipationEvolutionChart data={generatedSnapshot?.evolutionData.salesSeries || []} metricLabel="venta" />
+                        <ParticipationEvolutionChart data={generatedSnapshot?.evolutionData.offerSeries || []} metricLabel="oferta" />
+                    </Grid>
 
-                            <div className="mt-4 rounded-lg border bg-slate-50/70 p-4 max-h-[260px] overflow-y-auto">
-                                {analysisLoading && (
-                                    <Text className="text-sm text-slate-500">Generando lectura ejecutiva...</Text>
-                                )}
-
-                                {!analysisLoading && analysisError && (
-                                    <Text className="text-sm text-red-600">{analysisError}</Text>
-                                )}
-
-                                {!analysisLoading && !analysisError && (
-                                    <div className="text-sm leading-6 text-slate-700">
-                                        <MarkdownRenderer content={aiAnalysis || 'Sin contenido de análisis.'} />
-                                    </div>
-                                )}
-                            </div>
-                        </Card>
-
-                        <Grid numItemsLg={2} className="gap-6">
-                            <ParticipationEvolutionChart data={generatedSnapshot?.evolutionData.salesSeries || []} metricLabel="venta" />
-                            <ParticipationEvolutionChart data={generatedSnapshot?.evolutionData.offerSeries || []} metricLabel="oferta" />
-                        </Grid>
-
+                    <Card className="rounded-2xl border border-slate-200/80 shadow-sm p-5">
+                        <div className="flex items-center gap-2 mb-4">
+                            <BarChart3 className="h-4 w-4 text-slate-600" />
+                            <p className="text-sm font-semibold text-slate-800">Panel de soporte</p>
+                        </div>
                         <Grid numItemsLg={3} className="gap-6">
                             <MarketOverviewChart data={generatedSnapshot?.regionData || []} />
                             <ProductMixChart data={generatedSnapshot?.mixData || []} />
                             <PriceRangeChart data={generatedSnapshot?.priceRangeData || []} />
                         </Grid>
-                    </>
-                )}
-            </div>
+                    </Card>
+                </>
+            )}
         </div>
     )
 }
