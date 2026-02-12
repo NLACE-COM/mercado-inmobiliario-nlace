@@ -32,11 +32,26 @@ type Project = {
 interface MapboxMapProps {
     projects: Project[]
     highlightedProjectId?: string
+    onVisibleProjectIdsChange?: (projectIds: string[]) => void
 }
 
-export default function MapboxMap({ projects, highlightedProjectId }: MapboxMapProps) {
+export default function MapboxMap({ projects, highlightedProjectId, onVisibleProjectIdsChange }: MapboxMapProps) {
     const [selectedProject, setSelectedProject] = React.useState<Project | null>(null)
     const mapRef = React.useRef<any>(null)
+
+    const emitVisibleProjectIds = React.useCallback(() => {
+        if (!onVisibleProjectIdsChange || !mapRef.current) return
+
+        const mapInstance = mapRef.current?.getMap?.() || mapRef.current
+        const bounds = mapInstance?.getBounds?.()
+        if (!bounds) return
+
+        const visibleIds = projects
+            .filter((project) => bounds.contains([project.longitude, project.latitude]))
+            .map((project) => project.id)
+
+        onVisibleProjectIdsChange(visibleIds)
+    }, [onVisibleProjectIdsChange, projects])
 
     // Fit bounds to projects on load and update
     React.useEffect(() => {
@@ -72,7 +87,10 @@ export default function MapboxMap({ projects, highlightedProjectId }: MapboxMapP
                 })
             }
         }
-    }, [projects])
+        if (projects.length === 0 && onVisibleProjectIdsChange) {
+            onVisibleProjectIdsChange([])
+        }
+    }, [projects, onVisibleProjectIdsChange])
 
     // Highlight specific project if provided overrides automatic fit
     React.useEffect(() => {
@@ -117,6 +135,8 @@ export default function MapboxMap({ projects, highlightedProjectId }: MapboxMapP
                 style={{ width: '100%', height: '100%' }}
                 mapStyle="mapbox://styles/mapbox/light-v11"
                 attributionControl={false}
+                onLoad={emitVisibleProjectIds}
+                onMoveEnd={emitVisibleProjectIds}
             >
                 <NavigationControl position="top-right" />
                 <FullscreenControl position="top-right" />
