@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Grid, Card, Text, BadgeDelta, Flex, Title } from '@tremor/react'
-import { RotateCcw, Filter, Sparkles, Wand2, SlidersHorizontal, X, BarChart3 } from 'lucide-react'
+import { Filter, Sparkles, Wand2, BarChart3 } from 'lucide-react'
 import MapboxMap from '@/components/MapboxMap'
 import MarketOverviewChart from '@/components/charts/MarketOverviewChart'
 import { ProductMixChart } from '@/components/charts/ProductMixChart'
@@ -223,14 +223,12 @@ interface DashboardMapFiltersProps {
 export default function DashboardMapFilters({ projects }: DashboardMapFiltersProps) {
     const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS)
     const [visibleProjectIds, setVisibleProjectIds] = useState<string[] | null>(null)
-    const [useViewportOnly, setUseViewportOnly] = useState(true)
     const [hasGenerated, setHasGenerated] = useState(false)
     const [generatedAt, setGeneratedAt] = useState<string | null>(null)
     const [generatedSnapshot, setGeneratedSnapshot] = useState<GeneratedSnapshot | null>(null)
     const [aiAnalysis, setAiAnalysis] = useState<string>('')
     const [analysisLoading, setAnalysisLoading] = useState(false)
     const [analysisError, setAnalysisError] = useState<string | null>(null)
-    const [showFiltersPanel, setShowFiltersPanel] = useState(true)
 
     useEffect(() => {
         setVisibleProjectIds(null)
@@ -238,7 +236,7 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
 
     useEffect(() => {
         setHasGenerated(false)
-    }, [filters, useViewportOnly, visibleProjectIds])
+    }, [filters, visibleProjectIds])
 
     const years = useMemo(() => {
         return Array.from(new Set(projects.map((p) => p.year).filter((y): y is number => typeof y === 'number')))
@@ -327,10 +325,7 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
         const visibleSet = new Set(visibleProjectIds)
         return filteredProjects.filter((project) => visibleSet.has(project.id))
     }, [filteredProjects, visibleProjectIds])
-    const analysisProjects = useMemo(
-        () => (useViewportOnly ? mapScopedProjects : filteredProjects),
-        [useViewportOnly, mapScopedProjects, filteredProjects]
-    )
+    const analysisProjects = useMemo(() => mapScopedProjects, [mapScopedProjects])
 
     const kpis = useMemo(() => {
         const totalStock = analysisProjects.reduce((acc, p) => acc + (p.available_units || 0), 0)
@@ -610,8 +605,6 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
         })
     }
 
-    const resetFilters = () => setFilters(DEFAULT_FILTERS)
-
     const geoScopeLabel = useMemo(() => {
         if (filters.commune !== 'all') {
             const selected = communeOptions.find((c) => c.value === filters.commune)
@@ -675,7 +668,7 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                 body: JSON.stringify({
                     filters,
                     scope: {
-                        mode: useViewportOnly ? 'viewport+filters' : 'filters-only',
+                        mode: 'viewport+filters',
                         geo: geoScopeLabel,
                         time: timeScopeLabel,
                     },
@@ -709,52 +702,17 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                     <MapboxMap
                         projects={mapProjects as any[]}
                         onVisibleProjectIdsChange={setVisibleProjectIds}
+                        controlsPosition="bottom-right"
+                        showLegend={false}
                     />
 
-                    <div className="absolute top-3 left-3 right-3 z-30">
-                        <div className="rounded-2xl border border-slate-200 bg-white/95 backdrop-blur shadow-xl p-3">
-                            <div className="flex flex-wrap items-center gap-2 justify-between">
-                                <div>
-                                    <p className="text-sm font-semibold text-slate-900">NLACE Maps</p>
-                                    <p className="text-xs text-slate-500">{geoScopeLabel} · {timeScopeLabel}</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="inline-flex rounded-md border bg-muted/30 p-1">
-                                        <button
-                                            type="button"
-                                            className={`px-2.5 py-1 text-xs rounded ${useViewportOnly ? 'bg-white shadow text-slate-900' : 'text-slate-600'}`}
-                                            onClick={() => setUseViewportOnly(true)}
-                                        >
-                                            Viewport + filtros
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className={`px-2.5 py-1 text-xs rounded ${!useViewportOnly ? 'bg-white shadow text-slate-900' : 'text-slate-600'}`}
-                                            onClick={() => setUseViewportOnly(false)}
-                                        >
-                                            Solo filtros
-                                        </button>
-                                    </div>
-                                    <Button variant="outline" size="sm" onClick={() => setShowFiltersPanel((v) => !v)}>
-                                        {showFiltersPanel ? <X className="h-3.5 w-3.5 mr-2" /> : <SlidersHorizontal className="h-3.5 w-3.5 mr-2" />}
-                                        {showFiltersPanel ? 'Ocultar filtros' : 'Mostrar filtros'}
-                                    </Button>
-                                    <Button variant="outline" size="sm" onClick={resetFilters}>
-                                        <RotateCcw className="h-3.5 w-3.5 mr-2" />
-                                        Limpiar
-                                    </Button>
-                                    <Button size="sm" onClick={handleGenerateCharts}>
-                                        <Wand2 className="h-3.5 w-3.5 mr-2" />
-                                        Generar gráficos
-                                    </Button>
-                                </div>
+                    <div className="absolute left-3 top-3 z-30 w-[380px] max-w-[calc(100%-24px)]">
+                        <div className="rounded-2xl border border-slate-200 bg-white/95 backdrop-blur shadow-xl p-3 max-h-[66vh] overflow-y-auto">
+                            <div className="mb-3">
+                                <p className="text-sm font-semibold text-slate-900">NLACE Maps</p>
+                                <p className="text-xs text-slate-500">{geoScopeLabel} · {timeScopeLabel}</p>
                             </div>
-                        </div>
-                    </div>
-
-                    {showFiltersPanel && (
-                        <div className="absolute left-3 top-24 z-30 w-[380px] max-w-[calc(100%-24px)]">
-                            <div className="rounded-2xl border border-slate-200 bg-white/95 backdrop-blur shadow-xl p-3 max-h-[58vh] overflow-y-auto">
+                            <div className="rounded-xl border border-slate-200 p-3">
                                 <div className="flex items-center gap-2 mb-3">
                                     <Filter className="h-4 w-4 text-slate-600" />
                                     <p className="font-semibold text-slate-800 text-sm">Filtros del mapa</p>
@@ -887,17 +845,21 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                     </div>
                                 </div>
                             </div>
+                            <Button className="w-full mt-3" onClick={handleGenerateCharts}>
+                                <Wand2 className="h-3.5 w-3.5 mr-2" />
+                                Generar Informe
+                            </Button>
                         </div>
-                    )}
+                    </div>
 
-                    <div className="absolute bottom-3 left-3 right-3 z-30">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <div className="absolute right-3 top-3 z-30 w-[220px]">
+                        <div className="grid grid-cols-1 gap-2">
                             <div className="rounded-xl border border-slate-200 bg-white/95 backdrop-blur px-3 py-2 shadow">
                                 <div className="flex items-center justify-between">
                                     <p className="text-[11px] text-slate-500">Proyectos</p>
                                     <BadgeDelta deltaType={kpis.deltaType as any}>{`${Math.abs(kpis.scopeDelta)}%`}</BadgeDelta>
                                 </div>
-                                <p className="text-lg font-semibold">{kpis.projectCount.toLocaleString()}</p>
+                                <p className="text-xl font-semibold">{kpis.projectCount.toLocaleString()}</p>
                             </div>
                             <div className="rounded-xl border border-slate-200 bg-white/95 backdrop-blur px-3 py-2 shadow">
                                 <p className="text-[11px] text-slate-500">Stock Disponible</p>
@@ -921,7 +883,7 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                     <div className="text-center py-3">
                         <Title className="text-lg">Panel de Gráficos IA</Title>
                         <Text className="text-sm text-slate-500 mt-1">
-                            Muévete por el mapa, aplica filtros y presiona <strong>Generar gráficos</strong> para construir el panel analítico.
+                            Muévete por el mapa, aplica filtros y presiona <strong>Generar Informe</strong> para construir el panel analítico.
                         </Text>
                     </div>
                 </Card>

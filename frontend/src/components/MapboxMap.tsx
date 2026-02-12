@@ -33,9 +33,17 @@ interface MapboxMapProps {
     projects: Project[]
     highlightedProjectId?: string
     onVisibleProjectIdsChange?: (projectIds: string[]) => void
+    controlsPosition?: 'top-right' | 'bottom-right'
+    showLegend?: boolean
 }
 
-export default function MapboxMap({ projects, highlightedProjectId, onVisibleProjectIdsChange }: MapboxMapProps) {
+export default function MapboxMap({
+    projects,
+    highlightedProjectId,
+    onVisibleProjectIdsChange,
+    controlsPosition = 'top-right',
+    showLegend = true,
+}: MapboxMapProps) {
     const [selectedProject, setSelectedProject] = React.useState<Project | null>(null)
     const mapRef = React.useRef<any>(null)
 
@@ -138,8 +146,8 @@ export default function MapboxMap({ projects, highlightedProjectId, onVisiblePro
                 onLoad={emitVisibleProjectIds}
                 onMoveEnd={emitVisibleProjectIds}
             >
-                <NavigationControl position="top-right" />
-                <FullscreenControl position="top-right" />
+                <NavigationControl position={controlsPosition} />
+                <FullscreenControl position={controlsPosition} />
 
                 {projects.map((project) => (
                     <Marker
@@ -283,28 +291,29 @@ export default function MapboxMap({ projects, highlightedProjectId, onVisiblePro
                 )}
             </Map>
 
-            {/* Legend */}
-            <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 text-xs">
-                <div className="font-semibold mb-2">Tasa de Venta</div>
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-green-600 fill-current" />
-                        <span>≥ 80%</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-blue-600 fill-current" />
-                        <span>50-79%</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-orange-600 fill-current" />
-                        <span>20-49%</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-red-600 fill-current" />
-                        <span>&lt; 20%</span>
+            {showLegend && (
+                <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 text-xs">
+                    <div className="font-semibold mb-2">Tasa de Venta</div>
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-green-600 fill-current" />
+                            <span>≥ 80%</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-blue-600 fill-current" />
+                            <span>50-79%</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-orange-600 fill-current" />
+                            <span>20-49%</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-red-600 fill-current" />
+                            <span>&lt; 20%</span>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
         </div>
     )
 }
