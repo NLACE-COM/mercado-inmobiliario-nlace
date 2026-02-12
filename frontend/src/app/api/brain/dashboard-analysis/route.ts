@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
             mixData,
             priceRangeData,
             topCommunes,
+            typologyCompetition,
         } = body || {}
 
         const completion = await openai.chat.completions.create({
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
                     role: 'system',
                     content: `Eres un analista inmobiliario senior en Chile.
 Genera un análisis corto en español, accionable y específico a los datos filtrados.
+Prioriza siempre la comparación entre OFERTA y VENTA por TIPOLOGÍA.
 Estructura estricta:
 1) "Lectura Ejecutiva" (2-3 frases)
 2) "Insights Clave" (3 bullets)
@@ -56,6 +58,7 @@ No inventes datos; usa solo los datos entregados.`,
                         mixData,
                         priceRangeData,
                         topCommunes,
+                        typologyCompetition,
                     }),
                 },
             ],
@@ -75,4 +78,3 @@ No inventes datos; usa solo los datos entregados.`,
         )
     }
 }
-

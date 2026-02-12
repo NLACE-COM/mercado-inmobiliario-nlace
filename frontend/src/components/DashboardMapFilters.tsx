@@ -8,6 +8,7 @@ import MarketOverviewChart from '@/components/charts/MarketOverviewChart'
 import { ProductMixChart } from '@/components/charts/ProductMixChart'
 import { PriceRangeChart } from '@/components/charts/PriceRangeChart'
 import ParticipationEvolutionChart from '@/components/charts/ParticipationEvolutionChart'
+import TypologyCompetitionChart from '@/components/charts/TypologyCompetitionChart'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer'
@@ -23,6 +24,10 @@ type ProjectTypology = {
     bedrooms: number | null
     bathrooms: number | null
     typology_code: string | null
+    stock?: number | null
+    total_units?: number | null
+    current_price_uf?: number | null
+    price_per_m2_uf?: number | null
 }
 
 type DashboardProject = {
@@ -87,6 +92,25 @@ type GeneratedSnapshot = {
         offerSeries: any[]
         salesSeries: any[]
     }
+    typologyCompetition: {
+        metrics: Array<{
+            key: string
+            title: string
+            baseLabel: string
+            baseValue: number
+            items: Array<{
+                typology: string
+                value: number
+                percent: number
+                color: string
+            }>
+        }>
+        priceData: Array<{
+            typology: string
+            avg_price_uf: number
+            avg_price_m2: number
+        }>
+    }
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -120,6 +144,8 @@ const getEvolutionRangeKey = (priceValue: number) => {
     if (priceValue < 7000) return 'r5000_7000'
     return 'r7000_plus'
 }
+
+const TYPOLOGY_COLORS = ['#0EA5E9', '#B91C1C', '#FBBF24', '#1E3A8A', '#64748B', '#8B5CF6']
 
 const QUARTER_TO_PERIOD: Record<string, string> = {
     q1: '1P',
@@ -467,6 +493,115 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
         return { offerSeries, salesSeries }
     }, [analysisProjects, filters.year, filters.semester])
 
+    const typologyCompetition = useMemo(() => {
+        type TypologyAgg = {
+            typology: string
+            initial: number
+            available: number
+            sold: number
+            monthlySales: number
+            weightedPriceUf: number
+            weightedPriceM2: number
+            weightForPrice: number
+        }
+
+        const agg = new Map<string, TypologyAgg>()
+
+        analysisProjects.forEach((project) => {
+            const typologies = project.project_typologies || []
+            if (typologies.length === 0) return
+
+            const projectTotal = project.total_units || typologies.reduce((sum, t) => sum + (t.total_units || 0), 0) || 1
+            const projectMonthlySales = project.sales_speed_monthly || 0
+
+            typologies.forEach((t) => {
+                const typology = formatTypology(t)
+                if (!typology) return
+
+                const initial = t.total_units || 0
+                const available = t.stock || 0
+                const sold = Math.max(initial - available, 0)
+                const priceUf = t.current_price_uf || 0
+                const priceM2 = t.price_per_m2_uf || 0
+                const monthlySales = initial > 0 ? (projectMonthlySales * (initial / projectTotal)) : 0
+
+                if (!agg.has(typology)) {
+                    agg.set(typology, {
+                        typology,
+                        initial: 0,
+                        available: 0,
+                        sold: 0,
+                        monthlySales: 0,
+                        weightedPriceUf: 0,
+                        weightedPriceM2: 0,
+                        weightForPrice: 0,
+                    })
+                }
+
+                const row = agg.get(typology)!
+                row.initial += initial
+                row.available += available
+                row.sold += sold
+                row.monthlySales += monthlySales
+                if (priceUf > 0) {
+                    row.weightedPriceUf += priceUf * Math.max(initial, 1)
+                }
+                if (priceM2 > 0) {
+                    row.weightedPriceM2 += priceM2 * Math.max(initial, 1)
+                }
+                row.weightForPrice += Math.max(initial, 1)
+            })
+        })
+
+        const top = Array.from(agg.values())
+            .sort((a, b) => b.initial - a.initial)
+            .slice(0, 4)
+
+        const withColor = top.map((row, index) => ({
+            ...row,
+            color: TYPOLOGY_COLORS[index % TYPOLOGY_COLORS.length],
+        }))
+
+        const buildMetric = (
+            key: string,
+            title: string,
+            baseLabel: string,
+            accessor: (row: typeof withColor[number]) => number
+        ) => {
+            const baseValue = withColor.reduce((sum, row) => sum + accessor(row), 0)
+            return {
+                key,
+                title,
+                baseLabel,
+                baseValue,
+                items: withColor.map((row) => {
+                    const value = accessor(row)
+                    return {
+                        typology: row.typology,
+                        value,
+                        percent: baseValue > 0 ? (value / baseValue) * 100 : 0,
+                        color: row.color,
+                    }
+                }),
+            }
+        }
+
+        const metrics = [
+            buildMetric('initial', 'Stock Inicial', 'Base', (row) => row.initial),
+            buildMetric('available', 'Disponible', 'Base', (row) => row.available),
+            buildMetric('sold', 'Venta Acumulada', 'Base', (row) => row.sold),
+            buildMetric('monthlySales', 'Venta / Mes', 'Base', (row) => row.monthlySales),
+        ]
+
+        const priceData = withColor.map((row) => ({
+            typology: row.typology.replace('-', ' '),
+            avg_price_uf: row.weightForPrice > 0 ? row.weightedPriceUf / row.weightForPrice : 0,
+            avg_price_m2: row.weightForPrice > 0 ? row.weightedPriceM2 / row.weightForPrice : 0,
+        }))
+
+        return { metrics, priceData }
+    }, [analysisProjects])
+
     const updateFilter = (key: keyof FilterState, value: string) => {
         setFilters((prev) => {
             const next = { ...prev, [key]: value }
@@ -515,6 +650,7 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
             mixData,
             priceRangeData,
             evolutionData,
+            typologyCompetition,
         }
 
         setGeneratedSnapshot(snapshot)
@@ -549,6 +685,7 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                     priceRangeData: snapshot.priceRangeData,
                     topCommunes,
                     evolutionData: snapshot.evolutionData,
+                    typologyCompetition: snapshot.typologyCompetition,
                 }),
             })
 
@@ -824,6 +961,11 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                         <ParticipationEvolutionChart data={generatedSnapshot?.evolutionData.salesSeries || []} metricLabel="venta" />
                         <ParticipationEvolutionChart data={generatedSnapshot?.evolutionData.offerSeries || []} metricLabel="oferta" />
                     </Grid>
+
+                    <TypologyCompetitionChart
+                        metrics={generatedSnapshot?.typologyCompetition.metrics || []}
+                        priceData={generatedSnapshot?.typologyCompetition.priceData || []}
+                    />
 
                     <Card className="rounded-2xl border border-slate-200/80 shadow-sm p-5">
                         <div className="flex items-center gap-2 mb-4">

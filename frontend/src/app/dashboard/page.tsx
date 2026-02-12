@@ -31,6 +31,10 @@ interface DashboardProject {
         bedrooms: number | null;
         bathrooms: number | null;
         typology_code: string | null;
+        stock: number | null;
+        total_units: number | null;
+        current_price_uf: number | null;
+        price_per_m2_uf: number | null;
     }> | null;
 }
 
@@ -56,7 +60,11 @@ async function getDashboardData() {
                 project_typologies (
                     bedrooms,
                     bathrooms,
-                    typology_code
+                    typology_code,
+                    stock,
+                    total_units,
+                    current_price_uf,
+                    price_per_m2_uf
                 )
             `)
             .order('sales_speed_monthly', { ascending: false })
