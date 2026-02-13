@@ -7,7 +7,6 @@ import {
   FileText,
   Home,
   LayoutDashboard,
-  Map,
   Settings,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -15,7 +14,6 @@ import { cn } from "@/lib/utils"
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/projects", label: "Proyectos", icon: Home },
-  { href: "/dashboard/map", label: "Mapa", icon: Map },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/reports", label: "Reportes", icon: FileText },
   { href: "/dashboard/brain/settings", label: "Cerebro IA", icon: Settings },

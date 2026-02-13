@@ -708,10 +708,6 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
 
                     <div className="absolute left-3 top-3 z-30 w-[400px] max-w-[calc(100%-24px)]">
                         <div className="glass-panel max-h-[66vh] overflow-y-auto p-4">
-                            <div className="mb-3 border-b border-border/70 pb-3">
-                                <p className="text-sm font-semibold text-foreground">NLACE Maps</p>
-                                <p className="text-xs text-muted-foreground">{geoScopeLabel} · {timeScopeLabel}</p>
-                            </div>
                             <div className="rounded-2xl border border-border/75 bg-card/85 p-3.5">
                                 <div className="flex items-center gap-2 mb-3">
                                     <Filter className="h-4 w-4 text-primary" />
