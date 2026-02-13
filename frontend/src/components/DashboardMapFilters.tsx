@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Grid, Card, Text, BadgeDelta, Title } from '@tremor/react'
-import { Filter, Sparkles, Wand2, BarChart3 } from 'lucide-react'
+import { Filter, Sparkles, Wand2, BarChart3, ChevronDown, ChevronUp } from 'lucide-react'
 import MapboxMap from '@/components/MapboxMap'
 import MarketOverviewChart from '@/components/charts/MarketOverviewChart'
 import { ProductMixChart } from '@/components/charts/ProductMixChart'
@@ -222,6 +222,7 @@ interface DashboardMapFiltersProps {
 
 export default function DashboardMapFilters({ projects }: DashboardMapFiltersProps) {
     const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS)
+    const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(false)
     const [visibleProjectIds, setVisibleProjectIds] = useState<string[] | null>(null)
     const [hasGenerated, setHasGenerated] = useState(false)
     const [generatedAt, setGeneratedAt] = useState<string | null>(null)
@@ -709,137 +710,161 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                     <div className="absolute left-3 top-3 z-30 w-[400px] max-w-[calc(100%-24px)]">
                         <div className="glass-panel max-h-[66vh] overflow-y-auto p-4">
                             <div className="rounded-2xl border border-border/75 bg-card/85 p-3.5">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <Filter className="h-4 w-4 text-primary" />
-                                    <p className="text-sm font-semibold text-foreground">Filtros del mapa</p>
+                                <div className="mb-3 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Filter className="h-4 w-4 text-primary" />
+                                        <p className="text-sm font-semibold text-foreground">Filtros del mapa</p>
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 px-2 text-xs"
+                                        onClick={() => setIsFiltersCollapsed((prev) => !prev)}
+                                        aria-expanded={!isFiltersCollapsed}
+                                    >
+                                        {isFiltersCollapsed ? (
+                                            <>
+                                                Mostrar
+                                                <ChevronDown className="h-3.5 w-3.5" />
+                                            </>
+                                        ) : (
+                                            <>
+                                                Ocultar
+                                                <ChevronUp className="h-3.5 w-3.5" />
+                                            </>
+                                        )}
+                                    </Button>
                                 </div>
-                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs font-medium text-muted-foreground">Año</Label>
-                                        <Select value={filters.year} onValueChange={(v) => updateFilter('year', v)}>
-                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">Todos</SelectItem>
-                                                {years.map((year) => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
+                                {!isFiltersCollapsed && (
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-muted-foreground">Año</Label>
+                                            <Select value={filters.year} onValueChange={(v) => updateFilter('year', v)}>
+                                                <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">Todos</SelectItem>
+                                                    {years.map((year) => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-muted-foreground">Semestre</Label>
+                                            <Select value={filters.semester} onValueChange={(v) => updateFilter('semester', v)}>
+                                                <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">Todos</SelectItem>
+                                                    <SelectItem value="1P">1P</SelectItem>
+                                                    <SelectItem value="2P">2P</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-muted-foreground">Trimestre</Label>
+                                            <Select value={filters.quarter} onValueChange={(v) => updateFilter('quarter', v)}>
+                                                <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">Todos</SelectItem>
+                                                    <SelectItem value="q1">Q1</SelectItem>
+                                                    <SelectItem value="q2">Q2</SelectItem>
+                                                    <SelectItem value="q3">Q3</SelectItem>
+                                                    <SelectItem value="q4">Q4</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-muted-foreground">Región</Label>
+                                            <Select value={filters.region} onValueChange={(v) => updateFilter('region', v)}>
+                                                <SelectTrigger className="h-10"><SelectValue placeholder="Todas" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">Todas</SelectItem>
+                                                    {regionOptions.map((region) => (
+                                                        <SelectItem key={region.value} value={region.value}>{region.label}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-muted-foreground">Comuna</Label>
+                                            <Select value={filters.commune} onValueChange={(v) => updateFilter('commune', v)}>
+                                                <SelectTrigger className="h-10"><SelectValue placeholder="Todas" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">Todas</SelectItem>
+                                                    {communeOptions.map((commune) => (
+                                                        <SelectItem key={commune.value} value={commune.value}>{commune.label}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-muted-foreground">Producto</Label>
+                                            <Select value={filters.product} onValueChange={(v) => updateFilter('product', v)}>
+                                                <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">Todos</SelectItem>
+                                                    {productOptions.map((product) => (
+                                                        <SelectItem key={product.value} value={product.value}>{product.label}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-muted-foreground">Tipología</Label>
+                                            <Select value={filters.typology} onValueChange={(v) => updateFilter('typology', v)}>
+                                                <SelectTrigger className="h-10"><SelectValue placeholder="Todas" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">Todas</SelectItem>
+                                                    {typologies.map((typology) => <SelectItem key={typology} value={typology}>{typology}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-muted-foreground">Ticket UF</Label>
+                                            <Select value={filters.ticketRange} onValueChange={(v) => updateFilter('ticketRange', v)}>
+                                                <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">Todos</SelectItem>
+                                                    {PRICE_RANGES.map((range) => <SelectItem key={range.key} value={range.key}>{range.label}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-muted-foreground">Estado propiedad</Label>
+                                            <Select value={filters.propertyStatus} onValueChange={(v) => updateFilter('propertyStatus', v)}>
+                                                <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">Todos</SelectItem>
+                                                    {statusOptions.map((status) => (
+                                                        <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-muted-foreground">Tipo de Proyecto</Label>
+                                            <Select value={filters.projectType} onValueChange={(v) => updateFilter('projectType', v)}>
+                                                <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">Todos</SelectItem>
+                                                    <SelectItem value="sin_subsidio">Sin Subsidio</SelectItem>
+                                                    <SelectItem value="con_subsidio">Con Subsidio</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-medium text-muted-foreground">Tipo de Subsidio</Label>
+                                            <Select value={filters.subsidyType} onValueChange={(v) => updateFilter('subsidyType', v)}>
+                                                <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">Todos</SelectItem>
+                                                    {subsidyTypeOptions.map((type) => (
+                                                        <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs font-medium text-muted-foreground">Semestre</Label>
-                                        <Select value={filters.semester} onValueChange={(v) => updateFilter('semester', v)}>
-                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">Todos</SelectItem>
-                                                <SelectItem value="1P">1P</SelectItem>
-                                                <SelectItem value="2P">2P</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs font-medium text-muted-foreground">Trimestre</Label>
-                                        <Select value={filters.quarter} onValueChange={(v) => updateFilter('quarter', v)}>
-                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">Todos</SelectItem>
-                                                <SelectItem value="q1">Q1</SelectItem>
-                                                <SelectItem value="q2">Q2</SelectItem>
-                                                <SelectItem value="q3">Q3</SelectItem>
-                                                <SelectItem value="q4">Q4</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs font-medium text-muted-foreground">Región</Label>
-                                        <Select value={filters.region} onValueChange={(v) => updateFilter('region', v)}>
-                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todas" /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">Todas</SelectItem>
-                                                {regionOptions.map((region) => (
-                                                    <SelectItem key={region.value} value={region.value}>{region.label}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs font-medium text-muted-foreground">Comuna</Label>
-                                        <Select value={filters.commune} onValueChange={(v) => updateFilter('commune', v)}>
-                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todas" /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">Todas</SelectItem>
-                                                {communeOptions.map((commune) => (
-                                                    <SelectItem key={commune.value} value={commune.value}>{commune.label}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs font-medium text-muted-foreground">Producto</Label>
-                                        <Select value={filters.product} onValueChange={(v) => updateFilter('product', v)}>
-                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">Todos</SelectItem>
-                                                {productOptions.map((product) => (
-                                                    <SelectItem key={product.value} value={product.value}>{product.label}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs font-medium text-muted-foreground">Tipología</Label>
-                                        <Select value={filters.typology} onValueChange={(v) => updateFilter('typology', v)}>
-                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todas" /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">Todas</SelectItem>
-                                                {typologies.map((typology) => <SelectItem key={typology} value={typology}>{typology}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs font-medium text-muted-foreground">Ticket UF</Label>
-                                        <Select value={filters.ticketRange} onValueChange={(v) => updateFilter('ticketRange', v)}>
-                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">Todos</SelectItem>
-                                                {PRICE_RANGES.map((range) => <SelectItem key={range.key} value={range.key}>{range.label}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs font-medium text-muted-foreground">Estado propiedad</Label>
-                                        <Select value={filters.propertyStatus} onValueChange={(v) => updateFilter('propertyStatus', v)}>
-                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">Todos</SelectItem>
-                                                {statusOptions.map((status) => (
-                                                    <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs font-medium text-muted-foreground">Tipo de Proyecto</Label>
-                                        <Select value={filters.projectType} onValueChange={(v) => updateFilter('projectType', v)}>
-                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">Todos</SelectItem>
-                                                <SelectItem value="sin_subsidio">Sin Subsidio</SelectItem>
-                                                <SelectItem value="con_subsidio">Con Subsidio</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-xs font-medium text-muted-foreground">Tipo de Subsidio</Label>
-                                        <Select value={filters.subsidyType} onValueChange={(v) => updateFilter('subsidyType', v)}>
-                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">Todos</SelectItem>
-                                                {subsidyTypeOptions.map((type) => (
-                                                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
+                                )}
                             </div>
                             <Button className="mt-3 h-11 w-full text-sm" onClick={handleGenerateCharts}>
                                 <Wand2 className="h-3.5 w-3.5 mr-2" />
