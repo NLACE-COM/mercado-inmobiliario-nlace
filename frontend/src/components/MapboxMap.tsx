@@ -126,12 +126,12 @@ export default function MapboxMap({
         return Math.round((sold / total) * 100)
     }
 
-    const getMarkerColor = (project: Project) => {
+    const getMarkerTone = (project: Project) => {
         const sellThrough = getSellThroughRate(project.sold_units, project.total_units)
-        if (sellThrough >= 80) return 'text-green-600'
-        if (sellThrough >= 50) return 'text-blue-600'
-        if (sellThrough >= 20) return 'text-orange-600'
-        return 'text-red-600'
+        if (sellThrough >= 80) return { color: '#059669' }
+        if (sellThrough >= 50) return { color: '#0284C7' }
+        if (sellThrough >= 20) return { color: '#EA580C' }
+        return { color: '#DC2626' }
     }
 
     return (
@@ -141,7 +141,7 @@ export default function MapboxMap({
                 mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
                 initialViewState={initialViewState}
                 style={{ width: '100%', height: '100%' }}
-                mapStyle="mapbox://styles/mapbox/light-v11"
+                mapStyle="mapbox://styles/mapbox/streets-v12"
                 attributionControl={false}
                 onLoad={emitVisibleProjectIds}
                 onMoveEnd={emitVisibleProjectIds}
@@ -160,8 +160,12 @@ export default function MapboxMap({
                             setSelectedProject(project)
                         }}
                     >
-                        <div className={`cursor-pointer transition-transform duration-200 hover:scale-110 ${getMarkerColor(project)}`}>
-                            <Building2 className="h-6 w-6 fill-current drop-shadow-lg" />
+                        <div className="cursor-pointer transition-transform duration-200 hover:scale-110">
+                            <div
+                                className="h-4 w-4 rounded-full border-2 border-white shadow-[0_2px_8px_rgba(15,23,42,0.35)]"
+                                style={{ backgroundColor: getMarkerTone(project).color }}
+                                aria-label={`Proyecto ${project.name}`}
+                            />
                         </div>
                     </Marker>
                 ))}
@@ -296,19 +300,19 @@ export default function MapboxMap({
                     <div className="mb-2 font-semibold">Tasa de Venta</div>
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4 text-green-600 fill-current" />
+                            <span className="h-3.5 w-3.5 rounded-full border border-white shadow-sm" style={{ backgroundColor: '#059669' }} />
                             <span>≥ 80%</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4 text-blue-600 fill-current" />
+                            <span className="h-3.5 w-3.5 rounded-full border border-white shadow-sm" style={{ backgroundColor: '#0284C7' }} />
                             <span>50-79%</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4 text-orange-600 fill-current" />
+                            <span className="h-3.5 w-3.5 rounded-full border border-white shadow-sm" style={{ backgroundColor: '#EA580C' }} />
                             <span>20-49%</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4 text-red-600 fill-current" />
+                            <span className="h-3.5 w-3.5 rounded-full border border-white shadow-sm" style={{ backgroundColor: '#DC2626' }} />
                             <span>&lt; 20%</span>
                         </div>
                     </div>
