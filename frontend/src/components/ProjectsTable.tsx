@@ -86,10 +86,15 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
         return Math.round((sold / total) * 100)
     }
 
+    const hasProjects = filteredProjects.length > 0
+    const startItem = hasProjects ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0
+    const endItem = hasProjects ? Math.min(currentPage * ITEMS_PER_PAGE, filteredProjects.length) : 0
+
     return (
-        <div className="space-y-4">
+        <div className="space-y-5">
             {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="surface-panel p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -108,7 +113,7 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
                         setRegionFilter(e.target.value)
                         setCurrentPage(1) // Reset to first page on filter
                     }}
-                    className="h-10 rounded-[12px] border border-input bg-background px-4 py-2 text-sm text-foreground transition-all focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary"
+                    className="h-11 rounded-[12px] border border-input/85 bg-card/90 px-4 py-2 text-sm text-foreground transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary"
                 >
                     <option value="all">Todas las regiones</option>
                     {regions.sort().map(region => (
@@ -117,12 +122,13 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
                         </option>
                     ))}
                 </select>
+                </div>
             </div>
 
             {/* Results count */}
-            <div className="flex justify-between items-center text-sm text-muted-foreground">
-                <div>
-                    Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredProjects.length)} de {filteredProjects.length} proyectos
+            <div className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-card/70 p-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                <div className="font-medium">
+                    Mostrando {startItem} - {endItem} de {filteredProjects.length} proyectos
                     {filteredProjects.length !== projects.length && ` (filtrados de ${projects.length} totales)`}
                 </div>
                 <div className="flex gap-2">
@@ -149,7 +155,6 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
             </div>
 
             {/* Table */}
-            <div className="rounded-card border bg-card shadow-soft">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -210,7 +215,7 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
                                                 </div>
                                                 <div className="w-full bg-muted rounded-full h-1.5">
                                                     <div
-                                                        className="bg-primary h-1.5 rounded-full"
+                                                        className="h-1.5 rounded-full bg-primary transition-all duration-300"
                                                         style={{ width: `${sellThrough}%` }}
                                                     />
                                                 </div>
@@ -249,7 +254,7 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
                         )}
                     </TableBody>
                 </Table>
-            </div>
+
             {/* Pagination controls at bottom too */}
             <div className="flex justify-end gap-2">
                 <Button

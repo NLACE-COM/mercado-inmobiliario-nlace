@@ -696,8 +696,8 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
     }
 
     return (
-        <div className="space-y-6">
-            <Card className="h-[78vh] min-h-[680px] rounded-2xl border border-slate-200/80 shadow-sm p-0 overflow-hidden">
+        <div className="space-y-8">
+            <Card className="h-[78vh] min-h-[680px] overflow-hidden rounded-card border-border/80 p-0">
                 <div className="relative h-full">
                     <MapboxMap
                         projects={mapProjects as any[]}
@@ -706,32 +706,32 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                         showLegend={false}
                     />
 
-                    <div className="absolute left-3 top-3 z-30 w-[380px] max-w-[calc(100%-24px)]">
-                        <div className="rounded-2xl border border-slate-200 bg-white/95 backdrop-blur shadow-xl p-3 max-h-[66vh] overflow-y-auto">
-                            <div className="mb-3">
-                                <p className="text-sm font-semibold text-slate-900">NLACE Maps</p>
-                                <p className="text-xs text-slate-500">{geoScopeLabel} · {timeScopeLabel}</p>
+                    <div className="absolute left-3 top-3 z-30 w-[400px] max-w-[calc(100%-24px)]">
+                        <div className="glass-panel max-h-[66vh] overflow-y-auto p-4">
+                            <div className="mb-3 border-b border-border/70 pb-3">
+                                <p className="text-sm font-semibold text-foreground">NLACE Maps</p>
+                                <p className="text-xs text-muted-foreground">{geoScopeLabel} · {timeScopeLabel}</p>
                             </div>
-                            <div className="rounded-xl border border-slate-200 p-3">
+                            <div className="rounded-2xl border border-border/75 bg-card/85 p-3.5">
                                 <div className="flex items-center gap-2 mb-3">
-                                    <Filter className="h-4 w-4 text-slate-600" />
-                                    <p className="font-semibold text-slate-800 text-sm">Filtros del mapa</p>
+                                    <Filter className="h-4 w-4 text-primary" />
+                                    <p className="text-sm font-semibold text-foreground">Filtros del mapa</p>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Año</Label>
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs font-medium text-muted-foreground">Año</Label>
                                         <Select value={filters.year} onValueChange={(v) => updateFilter('year', v)}>
-                                            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="all">Todos</SelectItem>
                                                 {years.map((year) => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Semestre</Label>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs font-medium text-muted-foreground">Semestre</Label>
                                         <Select value={filters.semester} onValueChange={(v) => updateFilter('semester', v)}>
-                                            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="all">Todos</SelectItem>
                                                 <SelectItem value="1P">1P</SelectItem>
@@ -739,10 +739,10 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Trimestre</Label>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs font-medium text-muted-foreground">Trimestre</Label>
                                         <Select value={filters.quarter} onValueChange={(v) => updateFilter('quarter', v)}>
-                                            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="all">Todos</SelectItem>
                                                 <SelectItem value="q1">Q1</SelectItem>
@@ -752,10 +752,10 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Región</Label>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs font-medium text-muted-foreground">Región</Label>
                                         <Select value={filters.region} onValueChange={(v) => updateFilter('region', v)}>
-                                            <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todas" /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="all">Todas</SelectItem>
                                                 {regionOptions.map((region) => (
@@ -764,10 +764,10 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Comuna</Label>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs font-medium text-muted-foreground">Comuna</Label>
                                         <Select value={filters.commune} onValueChange={(v) => updateFilter('commune', v)}>
-                                            <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todas" /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="all">Todas</SelectItem>
                                                 {communeOptions.map((commune) => (
@@ -776,10 +776,10 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Producto</Label>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs font-medium text-muted-foreground">Producto</Label>
                                         <Select value={filters.product} onValueChange={(v) => updateFilter('product', v)}>
-                                            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="all">Todos</SelectItem>
                                                 {productOptions.map((product) => (
@@ -788,30 +788,30 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Tipología</Label>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs font-medium text-muted-foreground">Tipología</Label>
                                         <Select value={filters.typology} onValueChange={(v) => updateFilter('typology', v)}>
-                                            <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todas" /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="all">Todas</SelectItem>
                                                 {typologies.map((typology) => <SelectItem key={typology} value={typology}>{typology}</SelectItem>)}
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Ticket UF</Label>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs font-medium text-muted-foreground">Ticket UF</Label>
                                         <Select value={filters.ticketRange} onValueChange={(v) => updateFilter('ticketRange', v)}>
-                                            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="all">Todos</SelectItem>
                                                 {PRICE_RANGES.map((range) => <SelectItem key={range.key} value={range.key}>{range.label}</SelectItem>)}
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Estado propiedad</Label>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs font-medium text-muted-foreground">Estado propiedad</Label>
                                         <Select value={filters.propertyStatus} onValueChange={(v) => updateFilter('propertyStatus', v)}>
-                                            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="all">Todos</SelectItem>
                                                 {statusOptions.map((status) => (
@@ -820,10 +820,10 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Tipo de Proyecto</Label>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs font-medium text-muted-foreground">Tipo de Proyecto</Label>
                                         <Select value={filters.projectType} onValueChange={(v) => updateFilter('projectType', v)}>
-                                            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="all">Todos</SelectItem>
                                                 <SelectItem value="sin_subsidio">Sin Subsidio</SelectItem>
@@ -831,10 +831,10 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Tipo de Subsidio</Label>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs font-medium text-muted-foreground">Tipo de Subsidio</Label>
                                         <Select value={filters.subsidyType} onValueChange={(v) => updateFilter('subsidyType', v)}>
-                                            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                                            <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="all">Todos</SelectItem>
                                                 {subsidyTypeOptions.map((type) => (
@@ -845,32 +845,32 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                     </div>
                                 </div>
                             </div>
-                            <Button className="w-full mt-3" onClick={handleGenerateCharts}>
+                            <Button className="mt-3 h-11 w-full text-sm" onClick={handleGenerateCharts}>
                                 <Wand2 className="h-3.5 w-3.5 mr-2" />
                                 Generar Informe
                             </Button>
                         </div>
                     </div>
 
-                    <div className="absolute right-3 top-3 z-30 w-[220px]">
+                    <div className="absolute right-3 top-3 z-30 hidden w-[220px] xl:block">
                         <div className="grid grid-cols-1 gap-2">
-                            <div className="rounded-xl border border-slate-200 bg-white/95 backdrop-blur px-3 py-2 shadow">
+                            <div className="glass-panel px-3 py-2">
                                 <div className="flex items-center justify-between">
-                                    <p className="text-[11px] text-slate-500">Proyectos</p>
+                                    <p className="text-[11px] text-muted-foreground">Proyectos</p>
                                     <BadgeDelta deltaType={kpis.deltaType as any}>{`${Math.abs(kpis.scopeDelta)}%`}</BadgeDelta>
                                 </div>
                                 <p className="text-xl font-semibold">{kpis.projectCount.toLocaleString()}</p>
                             </div>
-                            <div className="rounded-xl border border-slate-200 bg-white/95 backdrop-blur px-3 py-2 shadow">
-                                <p className="text-[11px] text-slate-500">Stock Disponible</p>
+                            <div className="glass-panel px-3 py-2">
+                                <p className="text-[11px] text-muted-foreground">Stock Disponible</p>
                                 <p className="text-lg font-semibold">{kpis.totalStock.toLocaleString()}</p>
                             </div>
-                            <div className="rounded-xl border border-slate-200 bg-white/95 backdrop-blur px-3 py-2 shadow">
-                                <p className="text-[11px] text-slate-500">Velocidad Venta</p>
-                                <p className="text-lg font-semibold">{kpis.avgSalesSpeed} <span className="text-xs text-slate-500">u/mes</span></p>
+                            <div className="glass-panel px-3 py-2">
+                                <p className="text-[11px] text-muted-foreground">Velocidad Venta</p>
+                                <p className="text-lg font-semibold">{kpis.avgSalesSpeed} <span className="text-xs text-muted-foreground">u/mes</span></p>
                             </div>
-                            <div className="rounded-xl border border-slate-200 bg-white/95 backdrop-blur px-3 py-2 shadow">
-                                <p className="text-[11px] text-slate-500">Ventas Totales</p>
+                            <div className="glass-panel px-3 py-2">
+                                <p className="text-[11px] text-muted-foreground">Ventas Totales</p>
                                 <p className="text-lg font-semibold">{kpis.totalSold.toLocaleString()}</p>
                             </div>
                         </div>
@@ -878,11 +878,33 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                 </div>
             </Card>
 
+            <div className="grid grid-cols-2 gap-3 xl:hidden">
+                <div className="surface-panel p-3">
+                    <div className="flex items-center justify-between">
+                        <p className="text-[11px] text-muted-foreground">Proyectos</p>
+                        <BadgeDelta deltaType={kpis.deltaType as any}>{`${Math.abs(kpis.scopeDelta)}%`}</BadgeDelta>
+                    </div>
+                    <p className="text-xl font-semibold">{kpis.projectCount.toLocaleString()}</p>
+                </div>
+                <div className="surface-panel p-3">
+                    <p className="text-[11px] text-muted-foreground">Stock Disponible</p>
+                    <p className="text-lg font-semibold">{kpis.totalStock.toLocaleString()}</p>
+                </div>
+                <div className="surface-panel p-3">
+                    <p className="text-[11px] text-muted-foreground">Velocidad Venta</p>
+                    <p className="text-lg font-semibold">{kpis.avgSalesSpeed} <span className="text-xs text-muted-foreground">u/mes</span></p>
+                </div>
+                <div className="surface-panel p-3">
+                    <p className="text-[11px] text-muted-foreground">Ventas Totales</p>
+                    <p className="text-lg font-semibold">{kpis.totalSold.toLocaleString()}</p>
+                </div>
+            </div>
+
             {!hasGenerated && (
-                <Card className="p-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50/60">
+                <Card className="rounded-card border-dashed border-border bg-card/65 p-6">
                     <div className="text-center py-3">
-                        <Title className="text-lg">Panel de Gráficos IA</Title>
-                        <Text className="text-sm text-slate-500 mt-1">
+                        <Title className="text-lg text-foreground">Panel de Gráficos IA</Title>
+                        <Text className="mt-1 text-sm text-muted-foreground">
                             Muévete por el mapa, aplica filtros y presiona <strong>Generar Informe</strong> para construir el panel analítico.
                         </Text>
                     </div>
@@ -891,20 +913,20 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
 
             {hasGenerated && (
                 <>
-                    <Card className="p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <Card className="rounded-card border-border/80 p-6">
                         <Flex alignItems="start">
                             <div>
-                                <Title className="text-lg">Análisis IA del Escenario Filtrado</Title>
-                                <Text className="text-xs text-slate-500 mt-1">
+                                <Title className="text-lg text-foreground">Análisis IA del Escenario Filtrado</Title>
+                                <Text className="mt-1 text-xs text-muted-foreground">
                                     {generatedAt ? `Generado: ${new Date(generatedAt).toLocaleString('es-CL')}` : ''}
                                 </Text>
                             </div>
-                            <Sparkles className="h-5 w-5 text-blue-500" />
+                            <Sparkles className="h-5 w-5 text-primary" />
                         </Flex>
 
-                        <div className="mt-4 rounded-lg border bg-slate-50/70 p-4 max-h-[260px] overflow-y-auto">
+                        <div className="mt-4 max-h-[260px] overflow-y-auto rounded-2xl border border-border/70 bg-background/55 p-4">
                             {analysisLoading && (
-                                <Text className="text-sm text-slate-500">Generando lectura ejecutiva...</Text>
+                                <Text className="text-sm text-muted-foreground">Generando lectura ejecutiva...</Text>
                             )}
 
                             {!analysisLoading && analysisError && (
@@ -912,7 +934,7 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                             )}
 
                             {!analysisLoading && !analysisError && (
-                                <div className="text-sm leading-6 text-slate-700">
+                                <div className="text-sm leading-6 text-foreground/90">
                                     <MarkdownRenderer content={aiAnalysis || 'Sin contenido de análisis.'} />
                                 </div>
                             )}
@@ -929,10 +951,10 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                         priceData={generatedSnapshot?.typologyCompetition.priceData || []}
                     />
 
-                    <Card className="rounded-2xl border border-slate-200/80 shadow-sm p-5">
+                    <Card className="rounded-card border-border/80 p-5">
                         <div className="flex items-center gap-2 mb-4">
-                            <BarChart3 className="h-4 w-4 text-slate-600" />
-                            <p className="text-sm font-semibold text-slate-800">Panel de soporte</p>
+                            <BarChart3 className="h-4 w-4 text-primary" />
+                            <p className="text-sm font-semibold text-foreground">Panel de soporte</p>
                         </div>
                         <Grid numItemsLg={3} className="gap-6">
                             <MarketOverviewChart data={generatedSnapshot?.regionData || []} />

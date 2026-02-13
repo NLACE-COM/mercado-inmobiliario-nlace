@@ -43,7 +43,7 @@ export default function KPICard({
     }
 
     return (
-        <div className="bg-card rounded-card shadow-soft border border-input p-6 transition-shadow">
+        <div className="rounded-card border border-input/80 bg-card/90 p-6 shadow-soft backdrop-blur-sm transition-shadow">
             <div className="flex items-start justify-between">
                 <div className="flex-1">
                     <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
@@ -63,7 +63,7 @@ export default function KPICard({
                     )}
                 </div>
                 {icon && (
-                    <div className="flex-shrink-0 p-3 bg-primary/10 rounded-[12px]">
+                    <div className="flex-shrink-0 rounded-[12px] bg-primary/12 p-3">
                         <div className="text-primary">
                             {icon}
                         </div>

@@ -135,7 +135,7 @@ export default function MapboxMap({
     }
 
     return (
-        <div className="w-full h-full rounded-md overflow-hidden border relative">
+        <div className="relative h-full w-full overflow-hidden rounded-card border border-border/80">
             <Map
                 ref={mapRef}
                 mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
@@ -160,7 +160,7 @@ export default function MapboxMap({
                             setSelectedProject(project)
                         }}
                     >
-                        <div className={`cursor-pointer ${getMarkerColor(project)} hover:scale-125 transition-transform`}>
+                        <div className={`cursor-pointer transition-transform duration-200 hover:scale-110 ${getMarkerColor(project)}`}>
                             <Building2 className="h-6 w-6 fill-current drop-shadow-lg" />
                         </div>
                     </Marker>
@@ -174,21 +174,21 @@ export default function MapboxMap({
                         onClose={() => setSelectedProject(null)}
                         closeOnClick={false}
                         className="z-50"
-                        maxWidth="400px"
+                        maxWidth="380px"
                     >
-                        <div className="p-3 min-w-[300px]">
+                        <div className="min-w-[260px] p-3 md:min-w-[300px]">
                             {/* Header */}
                             <div className="mb-3">
-                                <h3 className="font-bold text-base text-gray-900">{selectedProject.name}</h3>
+                                <h3 className="text-base font-bold text-foreground">{selectedProject.name}</h3>
                                 {selectedProject.developer && (
-                                    <p className="text-xs text-gray-600 mt-1">{selectedProject.developer}</p>
+                                    <p className="mt-1 text-xs text-muted-foreground">{selectedProject.developer}</p>
                                 )}
-                                <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+                                <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                                     <MapPin className="h-3 w-3" />
                                     <span>{selectedProject.commune}, Región {selectedProject.region}</span>
                                 </div>
                                 {selectedProject.address && (
-                                    <p className="text-xs text-gray-500 mt-1">{selectedProject.address}</p>
+                                    <p className="mt-1 text-xs text-muted-foreground">{selectedProject.address}</p>
                                 )}
                             </div>
 
@@ -207,62 +207,62 @@ export default function MapboxMap({
                             </div>
 
                             {/* Metrics Grid */}
-                            <div className="grid grid-cols-2 gap-3 mb-3 text-xs">
+                            <div className="mb-3 grid grid-cols-2 gap-3 text-xs">
                                 {/* Price */}
-                                <div className="bg-blue-50 p-2 rounded">
-                                    <div className="flex items-center gap-1 text-gray-600 mb-1">
+                                <div className="rounded-xl border border-info/20 bg-info/10 p-2">
+                                    <div className="mb-1 flex items-center gap-1 text-muted-foreground">
                                         <DollarSign className="h-3 w-3" />
                                         <span>Precio Promedio</span>
                                     </div>
-                                    <div className="font-bold text-blue-900">
+                                    <div className="font-bold text-foreground">
                                         {selectedProject.avg_price_uf
                                             ? `${selectedProject.avg_price_uf.toLocaleString()} UF`
                                             : 'N/A'
                                         }
                                     </div>
                                     {selectedProject.avg_price_m2_uf && (
-                                        <div className="text-xs text-gray-600 mt-1">
+                                        <div className="mt-1 text-xs text-muted-foreground">
                                             {selectedProject.avg_price_m2_uf.toLocaleString()} UF/m²
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Units */}
-                                <div className="bg-green-50 p-2 rounded">
-                                    <div className="flex items-center gap-1 text-gray-600 mb-1">
+                                <div className="rounded-xl border border-success/25 bg-success/10 p-2">
+                                    <div className="mb-1 flex items-center gap-1 text-muted-foreground">
                                         <Building2 className="h-3 w-3" />
                                         <span>Unidades</span>
                                     </div>
-                                    <div className="font-bold text-green-900">
+                                    <div className="font-bold text-foreground">
                                         {selectedProject.total_units?.toLocaleString() || 'N/A'}
                                     </div>
-                                    <div className="text-xs text-gray-600 mt-1">
+                                    <div className="mt-1 text-xs text-muted-foreground">
                                         {selectedProject.sold_units || 0} vendidas
                                     </div>
                                 </div>
 
                                 {/* Sales Speed */}
                                 {selectedProject.sales_speed_monthly && (
-                                    <div className="bg-purple-50 p-2 rounded">
-                                        <div className="flex items-center gap-1 text-gray-600 mb-1">
+                                    <div className="rounded-xl border border-primary/20 bg-primary/10 p-2">
+                                        <div className="mb-1 flex items-center gap-1 text-muted-foreground">
                                             <TrendingUp className="h-3 w-3" />
                                             <span>Velocidad</span>
                                         </div>
-                                        <div className="font-bold text-purple-900">
+                                        <div className="font-bold text-foreground">
                                             {selectedProject.sales_speed_monthly.toFixed(1)} u/mes
                                         </div>
                                     </div>
                                 )}
 
                                 {/* Sell Through */}
-                                <div className="bg-orange-50 p-2 rounded">
-                                    <div className="text-gray-600 mb-1">Avance</div>
-                                    <div className="font-bold text-orange-900">
+                                <div className="rounded-xl border border-warning/25 bg-warning/10 p-2">
+                                    <div className="mb-1 text-muted-foreground">Avance</div>
+                                    <div className="font-bold text-foreground">
                                         {getSellThroughRate(selectedProject.sold_units, selectedProject.total_units)}%
                                     </div>
-                                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                                    <div className="mt-1 h-1.5 w-full rounded-full bg-muted">
                                         <div
-                                            className="bg-orange-600 h-1.5 rounded-full"
+                                            className="h-1.5 rounded-full bg-warning"
                                             style={{
                                                 width: `${getSellThroughRate(selectedProject.sold_units, selectedProject.total_units)}%`
                                             }}
@@ -273,7 +273,7 @@ export default function MapboxMap({
 
                             {/* Price Range */}
                             {(selectedProject.min_price_uf || selectedProject.max_price_uf) && (
-                                <div className="text-xs text-gray-600 mb-3 pb-3 border-b">
+                                <div className="mb-3 border-b border-border/70 pb-3 text-xs text-muted-foreground">
                                     <span className="font-medium">Rango de precios: </span>
                                     {selectedProject.min_price_uf?.toLocaleString()} - {selectedProject.max_price_uf?.toLocaleString()} UF
                                 </div>
@@ -292,8 +292,8 @@ export default function MapboxMap({
             </Map>
 
             {showLegend && (
-                <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 text-xs">
-                    <div className="font-semibold mb-2">Tasa de Venta</div>
+                <div className="glass-panel absolute bottom-4 left-4 hidden p-3 text-xs sm:block">
+                    <div className="mb-2 font-semibold">Tasa de Venta</div>
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <Building2 className="h-4 w-4 text-green-600 fill-current" />

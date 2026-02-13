@@ -11,7 +11,7 @@ import {
     TableHeader,
     TableRow
 } from "@/components/ui/table"
-import { ArrowLeft, Download, Building2, TrendingUp, DollarSign, Loader2, FileText, BarChart3, ScatterChart as ScatterIcon } from 'lucide-react'
+import { ArrowLeft, Download, Building2, TrendingUp, Loader2, FileText } from 'lucide-react'
 import { Card as TremorCard, Metric, Text as TremorText, Grid, Title } from "@tremor/react"
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -111,22 +111,26 @@ export default function ReportView({ report }: { report: any }) {
 
     if (report.status === 'generating') {
         return (
-            <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
-                <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
+            <div className="flex h-[60vh] flex-col items-center justify-center space-y-4">
+                <div className="surface-panel p-8 text-center">
+                    <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
                 <h2 className="text-xl font-semibold">Generando reporte con IA...</h2>
                 <p className="text-muted-foreground">Analizando datos de mercado y redactando conclusiones.</p>
+                </div>
             </div>
         )
     }
 
     if (report.status === 'failed') {
         return (
-            <div className="flex flex-col items-center justify-center h-[60vh] space-y-4 text-center">
-                <h2 className="text-xl font-semibold text-red-500">Error en la generación</h2>
-                <p className="text-muted-foreground max-w-md">{report.error_message || "Ocurrió un error inesperado."}</p>
-                <Link href="/dashboard/reports">
-                    <Button variant="outline">Volver al listado</Button>
-                </Link>
+            <div className="flex h-[60vh] flex-col items-center justify-center space-y-4 text-center">
+                <div className="surface-panel max-w-xl p-8">
+                    <h2 className="text-xl font-semibold text-destructive">Error en la generación</h2>
+                    <p className="max-w-md text-muted-foreground">{report.error_message || "Ocurrió un error inesperado."}</p>
+                    <Link href="/dashboard/reports" className="mt-4 inline-block">
+                        <Button variant="outline">Volver al listado</Button>
+                    </Link>
+                </div>
             </div>
         )
     }
@@ -135,16 +139,16 @@ export default function ReportView({ report }: { report: any }) {
     if (!content) return <div>Reporte vacío</div>
 
     return (
-        <div id="report-container" className="space-y-8 pb-16 print:p-0 print:space-y-4 bg-white p-8 rounded-xl shadow-sm">
+        <div id="report-container" className="surface-panel enter-fade-up space-y-8 rounded-card bg-card/95 p-4 pb-16 md:p-8 print:space-y-4 print:bg-white print:p-0">
             {/* Header / Actions */}
-            <div className="flex justify-between items-center print:hidden">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between print:hidden">
                 <Link href="/dashboard/reports">
                     <Button variant="ghost">
                         <ArrowLeft className="h-4 w-4 mr-2" />
                         Volver
                     </Button>
                 </Link>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     <Button variant="outline" onClick={() => exportToCsv(report)}>
                         <FileText className="h-4 w-4 mr-2" />
                         Exportar CSV
@@ -166,8 +170,8 @@ export default function ReportView({ report }: { report: any }) {
 
             {/* Print Header */}
             <div className="hidden print:block border-b pb-4 mb-4">
-                <h1 className="text-3xl font-bold text-slate-900">Mercado Inmobiliario: {report.parameters.commune}</h1>
-                <p className="text-slate-500">Generado el {new Date(report.created_at).toLocaleDateString()}</p>
+                <h1 className="text-3xl font-bold text-foreground">Mercado Inmobiliario: {report.parameters.commune}</h1>
+                <p className="text-muted-foreground">Generado el {new Date(report.created_at).toLocaleDateString()}</p>
             </div>
 
             {/* Report Title */}
@@ -189,10 +193,10 @@ export default function ReportView({ report }: { report: any }) {
                     case 'summary':
                     case 'analysis_text': // Handle both text types similarly
                         return (
-                            <TremorCard key={key} className="bg-slate-50 p-6 print:break-inside-avoid">
+                            <TremorCard key={key} className="bg-card/80 p-6 print:break-inside-avoid">
                                 <div className="flex items-center gap-2 mb-4">
-                                    {section.type === 'summary' ? <Building2 className="h-5 w-5 text-blue-600" /> : <TrendingUp className="h-5 w-5 text-green-600" />}
-                                    <Title className="text-slate-900">{section.title}</Title>
+                                    {section.type === 'summary' ? <Building2 className="h-5 w-5 text-primary" /> : <TrendingUp className="h-5 w-5 text-success" />}
+                                    <Title className="text-foreground">{section.title}</Title>
                                 </div>
                                 <MarkdownRenderer content={section.content} />
                             </TremorCard>
@@ -224,7 +228,7 @@ export default function ReportView({ report }: { report: any }) {
                                     </TremorCard>
                                 </Grid>
                                 {section.data.total_projects === 0 && (
-                                    <div className="bg-amber-50 border border-amber-200 p-4 rounded-md text-amber-800 text-sm">
+                                    <div className="rounded-md border border-warning/30 bg-warning/10 p-4 text-sm text-warning">
                                         No se encontraron proyectos activos para los criterios seleccionados. Verifica que la comuna sea correcta o intenta con otra.
                                     </div>
                                 )}
@@ -302,7 +306,7 @@ export default function ReportView({ report }: { report: any }) {
                                                         <TableCell>{row.developer}</TableCell>
                                                         <TableCell className="text-right">{row.stock}</TableCell>
                                                         <TableCell className="text-right">{row.avg_price_uf?.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-right font-bold text-blue-600">
+                                                        <TableCell className="text-right font-bold text-primary">
                                                             {row.sales_speed}
                                                         </TableCell>
                                                         <TableCell className="text-right">{row.mao}</TableCell>
@@ -344,7 +348,7 @@ export default function ReportView({ report }: { report: any }) {
                                                         <TableCell className="text-right">{row.avg_price_uf?.toLocaleString()}</TableCell>
                                                         <TableCell className="text-right">{row.avg_price_m2_uf?.toLocaleString()}</TableCell>
                                                         <TableCell className="text-right">{row.total_available?.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-right font-bold text-green-600">{row.avg_sales_speed}</TableCell>
+                                                        <TableCell className="text-right font-bold text-success">{row.avg_sales_speed}</TableCell>
                                                         <TableCell className="text-right">{row.mao}</TableCell>
                                                     </TableRow>
                                                 ))}
@@ -491,9 +495,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;
         return (
-            <div className="bg-white p-4 border rounded shadow-lg">
+            <div className="rounded-lg border border-border/70 bg-card p-4 shadow-soft">
                 <p className="font-bold">{data.name}</p>
-                <p className="text-sm text-gray-600">{data.developer}</p>
+                <p className="text-sm text-muted-foreground">{data.developer}</p>
                 <div className="mt-2 text-sm">
                     <p>Precio: {data.avg_price_uf} UF</p>
                     <p>Velocidad: {data.sales_speed} un/mes</p>
@@ -513,7 +517,7 @@ function MarkdownRenderer({ content }: { content: string }) {
     const paragraphs = content.split('\n\n');
 
     return (
-        <div className="space-y-4 text-slate-700">
+        <div className="space-y-4 text-foreground/90">
             {paragraphs.map((paragraph, idx) => {
                 // Check if it's a list item
                 if (paragraph.trim().startsWith('- ') || paragraph.trim().startsWith('* ')) {
@@ -531,7 +535,7 @@ function MarkdownRenderer({ content }: { content: string }) {
 
                 // Handle Headers
                 if (paragraph.trim().startsWith('### ')) {
-                    return <h3 key={idx} className="text-lg font-bold mt-4 mb-2"><FormattedText text={paragraph.replace(/^### /, '')} /></h3>
+                    return <h3 key={idx} className="mb-2 mt-4 text-lg font-bold"><FormattedText text={paragraph.replace(/^### /, '')} /></h3>
                 }
 
                 return (
@@ -555,7 +559,7 @@ function FormattedText({ text }: { text: string }) {
         <>
             {parts.map((part, index) => {
                 if (part.startsWith('**') && part.endsWith('**')) {
-                    return <strong key={index} className="font-semibold text-slate-900">{part.slice(2, -2)}</strong>;
+                    return <strong key={index} className="font-semibold text-foreground">{part.slice(2, -2)}</strong>;
                 }
                 return <span key={index}>{part}</span>;
             })}

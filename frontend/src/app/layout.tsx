@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Inter, Sora } from "next/font/google";
+import { Lexend, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 
-const sora = Sora({
+const lexend = Lexend({
   variable: "--font-sora",
   subsets: ["latin"],
 });
 
-const inter = Inter({
+const sourceSans = Source_Sans_3({
   variable: "--font-inter",
   subsets: ["latin"],
 });
@@ -26,8 +26,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${sora.variable} ${inter.variable} antialiased`}>
+    <html lang="es">
+      <body className={`${lexend.variable} ${sourceSans.variable} antialiased`}>
         <QueryProvider>
           {children}
           <Toaster />

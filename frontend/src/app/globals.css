@@ -5,64 +5,64 @@
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
-    --foreground: 222 47% 11%;
+    --background: 173 46% 96%;
+    --foreground: 178 47% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 178 47% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 178 47% 14%;
 
-    --primary: 220 100% 54%;
+    --primary: 175 77% 26%;
     --primary-foreground: 0 0% 100%;
-    --primary-600: 221 88% 46%;
+    --primary-600: 176 85% 22%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 221 39% 15%;
+    --secondary: 173 34% 92%;
+    --secondary-foreground: 178 44% 17%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 215 14% 42%;
+    --muted: 174 29% 91%;
+    --muted-foreground: 177 18% 35%;
 
-    --accent: 220 14% 96%;
-    --accent-foreground: 221 39% 15%;
+    --accent: 189 50% 92%;
+    --accent-foreground: 178 44% 17%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 16% 90%;
-    --input: 220 16% 90%;
-    --ring: 220 100% 54%;
+    --border: 175 23% 82%;
+    --input: 175 23% 82%;
+    --ring: 199 94% 33%;
 
     --success: 150 74% 35%;
     --warning: 35 92% 46%;
     --info: 210 79% 46%;
 
-    --radius: 12px;
-    --radius-card: 20px;
+    --radius: 14px;
+    --radius-card: 24px;
 
-    --shadow-soft: 0 10px 30px rgba(16, 24, 40, 0.08);
+    --shadow-soft: 0 10px 30px rgba(7, 57, 53, 0.12);
 
     /* Tremor Colors */
-    --tremor-brand-faint: 220 100% 97%;
-    --tremor-brand-muted: 216 96% 89%;
-    --tremor-brand-subtle: 220 100% 74%;
-    --tremor-brand-default: 220 100% 54%;
-    --tremor-brand-emphasis: 221 88% 46%;
+    --tremor-brand-faint: 173 60% 94%;
+    --tremor-brand-muted: 173 45% 84%;
+    --tremor-brand-subtle: 173 40% 64%;
+    --tremor-brand-default: 175 77% 26%;
+    --tremor-brand-emphasis: 176 85% 22%;
     --tremor-brand-inverted: 0 0% 100%;
 
-    --tremor-background-muted: 220 20% 97%;
-    --tremor-background-subtle: 220 14% 96%;
+    --tremor-background-muted: 173 46% 96%;
+    --tremor-background-subtle: 174 29% 91%;
     --tremor-background-default: 0 0% 100%;
-    --tremor-background-emphasis: 221 39% 15%;
+    --tremor-background-emphasis: 178 44% 17%;
 
-    --tremor-border-default: 220 16% 90%;
-    --tremor-ring-default: 220 16% 90%;
+    --tremor-border-default: 175 23% 82%;
+    --tremor-ring-default: 175 23% 82%;
 
-    --tremor-content-subtle: 215 14% 42%;
-    --tremor-content-default: 215 14% 42%;
-    --tremor-content-emphasis: 221 39% 15%;
-    --tremor-content-strong: 222 47% 11%;
+    --tremor-content-subtle: 177 18% 35%;
+    --tremor-content-default: 177 18% 35%;
+    --tremor-content-emphasis: 178 44% 17%;
+    --tremor-content-strong: 178 47% 14%;
     --tremor-content-inverted: 0 0% 100%;
   }
 
@@ -100,9 +100,14 @@
 
   body {
     background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(circle at 12% -8%, rgba(20, 184, 166, 0.28) 0%, transparent 38%),
+      radial-gradient(circle at 88% -16%, rgba(3, 105, 161, 0.22) 0%, transparent 42%),
+      linear-gradient(180deg, #f6fffd 0%, #effaf8 55%, #edf7f6 100%);
     color: hsl(var(--foreground));
     font-family: var(--font-inter), sans-serif;
     text-rendering: optimizeLegibility;
+    line-height: 1.5;
   }
 
   h1,
@@ -113,6 +118,44 @@
   h6 {
     font-family: var(--font-sora), sans-serif;
     color: hsl(var(--foreground));
+    letter-spacing: -0.015em;
+  }
+
+  ::selection {
+    background: rgba(15, 118, 110, 0.22);
+    color: hsl(var(--foreground));
+  }
+
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(3, 105, 161, 0.18);
+  }
+
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 9999px;
+    background: rgba(15, 118, 110, 0.35);
+    background-clip: content-box;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
@@ -123,9 +166,23 @@
     background: hsl(var(--card));
     box-shadow: var(--shadow-soft);
   }
+
+  .glass-panel {
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    border-radius: calc(var(--radius-card) - 4px);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.68));
+    box-shadow:
+      0 18px 40px rgba(7, 57, 53, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(14px);
+  }
 }
 
 @layer utilities {
+  .enter-fade-up {
+    animation: enter-fade-up 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
   .fill-blue-500 {
     fill: #3b82f6 !important;
   }
@@ -168,5 +225,23 @@
 
   .recharts-rectangle {
     transition: fill 0.3s ease;
+  }
+
+  @keyframes enter-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .enter-fade-up {
+      animation: none;
+    }
   }
 }

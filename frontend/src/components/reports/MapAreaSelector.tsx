@@ -41,7 +41,7 @@ export default function MapAreaSelector({ onPolygonChange }: MapAreaSelectorProp
     }, [onPolygonChange]);
 
     return (
-        <div className="h-[400px] w-full rounded-md border border-slate-200 overflow-hidden relative shadow-inner bg-slate-50">
+        <div className="relative h-[400px] w-full overflow-hidden rounded-2xl border border-border/80 bg-card shadow-inner">
             <Map
                 ref={mapRef}
                 initialViewState={{
@@ -68,7 +68,7 @@ export default function MapAreaSelector({ onPolygonChange }: MapAreaSelectorProp
                 />
                 <NavigationControl position="bottom-right" />
             </Map>
-            <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-2 rounded shadow text-[10px] text-slate-500 max-w-[150px]">
+            <div className="glass-panel absolute right-3 top-3 max-w-[160px] p-2 text-[10px] text-muted-foreground">
                 Usa la herramienta de polígono para dibujar el área de interés en el mapa.
             </div>
         </div>

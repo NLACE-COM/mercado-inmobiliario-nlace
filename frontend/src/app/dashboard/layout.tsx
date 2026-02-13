@@ -1,17 +1,18 @@
 import {
     Bell,
     Building2,
+    BarChart3,
+    FileText,
     Home,
     LayoutDashboard,
     LogOut,
     Map,
     Settings,
-    BarChart3,
-    FileText,
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import AIChatWidget from "@/components/AIChatWidget"
+import DashboardNav from "@/components/DashboardNav"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -48,36 +49,32 @@ export default async function DashboardLayout({
 
     return (
         <div className="min-h-screen w-full bg-background">
-            <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur">
-                <div className="flex h-14 items-center gap-4 px-4 md:px-6">
-                    <Link className="flex items-center gap-2 font-semibold" href="/dashboard">
-                        <Building2 className="h-6 w-6" />
-                        <span>NLACE</span>
+            <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-xl">
+                <div className="flex h-16 items-center gap-4 px-4 md:px-6">
+                    <Link className="group flex items-center gap-3 rounded-2xl border border-border/70 bg-card/70 px-3 py-2 transition-colors hover:bg-card" href="/dashboard">
+                        <div className="grid h-8 w-8 place-items-center rounded-xl bg-primary/15 text-primary">
+                            <Building2 className="h-4 w-4" />
+                        </div>
+                        <div className="leading-tight">
+                            <span className="block text-sm font-semibold tracking-[0.02em] text-foreground">NLACE</span>
+                            <span className="block text-[11px] text-muted-foreground">Inteligencia Inmobiliaria</span>
+                        </div>
                     </Link>
 
-                    <nav className="hidden lg:flex items-center gap-1 overflow-x-auto">
-                        {navItems.map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className="flex items-center gap-2 rounded-[10px] px-3 py-2 text-sm text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
-                            >
-                                <item.icon className="h-4 w-4" />
-                                {item.label}
-                            </Link>
-                        ))}
-                    </nav>
+                    <div className="hidden lg:block">
+                        <DashboardNav items={navItems} />
+                    </div>
 
-                    <div className="ml-auto flex items-center gap-2">
+                    <div className="ml-auto flex items-center gap-2.5">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button className="h-8 w-8" size="icon" variant="outline">
+                                <Button className="h-9 w-9 rounded-xl" size="icon" variant="outline">
                                     <Bell className="h-4 w-4" />
                                     <span className="sr-only">Alertas de mercado</span>
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-[420px] p-0">
-                                <div className="p-3 border-b">
+                            <DropdownMenuContent align="end" className="w-[420px] rounded-2xl p-0">
+                                <div className="border-b p-3">
                                     <p className="text-sm font-semibold">Alertas de Mercado</p>
                                     <p className="text-xs text-muted-foreground">Actualización automática</p>
                                 </div>
@@ -90,12 +87,12 @@ export default async function DashboardLayout({
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
-                                    className="rounded-full border border-input w-8 h-8"
+                                    className="h-9 w-9 rounded-full border border-input/80"
                                     size="icon"
                                     variant="ghost"
                                 >
                                     <span className="sr-only">Toggle user menu</span>
-                                    <div className="h-8 w-8 rounded-full bg-muted overflow-hidden flex items-center justify-center">
+                                    <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-muted">
                                         <span className="text-xs font-bold text-muted-foreground">
                                             {user.email?.slice(0, 2).toUpperCase()}
                                         </span>
@@ -122,22 +119,11 @@ export default async function DashboardLayout({
                 </div>
 
                 <div className="lg:hidden border-t px-3 py-2">
-                    <div className="flex items-center gap-1 overflow-x-auto">
-                        {navItems.map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className="flex shrink-0 items-center gap-1 rounded-[10px] px-3 py-1.5 text-xs text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
-                            >
-                                <item.icon className="h-3.5 w-3.5" />
-                                {item.label}
-                            </Link>
-                        ))}
-                    </div>
+                    <DashboardNav items={navItems} compact />
                 </div>
             </header>
 
-            <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 relative">
+            <main className="relative flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-6">
                 {children}
             </main>
 

@@ -178,27 +178,27 @@ export default function DashboardPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Cargando dashboard...</p>
+            <div className="flex min-h-[60vh] items-center justify-center">
+                <div className="surface-panel p-8 text-center">
+                    <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-primary"></div>
+                    <p className="mt-4 text-muted-foreground">Cargando dashboard...</p>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
-            <div className="max-w-7xl mx-auto">
+        <div className="p-1 md:p-2">
+            <div className="mx-auto max-w-7xl">
                 {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard del Mercado Inmobiliario</h1>
-                    <p className="text-gray-600">Análisis en tiempo real del mercado inmobiliario chileno</p>
+                <div className="surface-panel enter-fade-up mb-8 p-5 md:p-6">
+                    <h1 className="mb-2 text-3xl font-bold text-foreground">Dashboard del Mercado Inmobiliario</h1>
+                    <p className="text-muted-foreground">Análisis en tiempo real del mercado inmobiliario chileno</p>
                 </div>
 
                 {/* KPIs */}
                 {stats && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
                         <KPICard
                             title="Total de Proyectos"
                             value={stats.totalProjects}
@@ -226,7 +226,7 @@ export default function DashboardPage() {
 
                 {/* Secondary KPIs */}
                 {stats && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
                         <KPICard
                             title="Unidades Vendidas"
                             value={stats.soldUnits}
@@ -244,66 +244,66 @@ export default function DashboardPage() {
                 )}
 
                 {/* Charts */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
                     <MarketOverviewChart data={regionData} />
                     <PriceDistributionChart data={priceDistribution} />
                 </div>
 
                 {/* Top Regions Table */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold mb-4 text-gray-900">Top Regiones por Número de Proyectos</h3>
+                <div className="surface-panel enter-fade-up p-6 [animation-delay:120ms]">
+                    <h3 className="mb-4 text-lg font-semibold text-foreground">Top Regiones por Número de Proyectos</h3>
                     <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+                        <table className="min-w-full divide-y divide-border/70">
+                            <thead className="bg-muted/40">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                                         Región
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                                         Proyectos
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                                         Total Unidades
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                                         Vendidas
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                                         Disponibles
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                                         Tasa de Venta
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
+                            <tbody className="divide-y divide-border/70 bg-card/40">
                                 {regionData.map((region) => {
                                     const sellThrough = region.totalUnits > 0
                                         ? (region.soldUnits / region.totalUnits) * 100
                                         : 0
 
                                     return (
-                                        <tr key={region.region} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        <tr key={region.region} className="hover:bg-accent/35">
+                                            <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-foreground">
                                                 Región {region.region}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
                                                 {region.projects.toLocaleString()}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
                                                 {region.totalUnits.toLocaleString()}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                                            <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-success">
                                                 {region.soldUnits.toLocaleString()}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-orange-600 font-medium">
+                                            <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-warning">
                                                 {region.availableUnits.toLocaleString()}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[100px]">
+                                                    <div className="h-2 max-w-[100px] flex-1 rounded-full bg-muted">
                                                         <div
-                                                            className="bg-blue-600 h-2 rounded-full"
+                                                            className="h-2 rounded-full bg-primary"
                                                             style={{ width: `${sellThrough}%` }}
                                                         />
                                                     </div>

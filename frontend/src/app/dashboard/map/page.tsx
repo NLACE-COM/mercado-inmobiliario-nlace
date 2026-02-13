@@ -46,17 +46,17 @@ export default async function MapPage({
 
     return (
         <div className="flex flex-col gap-6 h-full">
-            <div className="flex items-center justify-between">
+            <div className="surface-panel enter-fade-up p-5 md:p-6">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Mapa de Proyectos</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground">Mapa de Proyectos</h1>
                     <p className="text-muted-foreground">Visualización geográfica de proyectos inmobiliarios</p>
                 </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
-                <Card>
+                <Card className="enter-fade-up [animation-delay:40ms]">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Proyectos Mapeados</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Proyectos Mapeados</CardTitle>
                         <Building2 className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -65,9 +65,9 @@ export default async function MapPage({
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="enter-fade-up [animation-delay:80ms]">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Unidades Totales</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Unidades Totales</CardTitle>
                         <MapPin className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -76,9 +76,9 @@ export default async function MapPage({
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="enter-fade-up [animation-delay:120ms]">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Precio Promedio</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Precio Promedio</CardTitle>
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -88,7 +88,7 @@ export default async function MapPage({
                 </Card>
             </div>
 
-            <Card className="flex-1 min-h-[600px]">
+            <Card className="enter-fade-up flex-1 min-h-[600px] [animation-delay:160ms]">
                 <CardContent className="p-0 h-full">
                     <MapboxMap projects={projects} highlightedProjectId={projectId} />
                 </CardContent>

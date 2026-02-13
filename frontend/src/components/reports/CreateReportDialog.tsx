@@ -128,12 +128,12 @@ export default function CreateReportDialog() {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button>
+                <Button className="h-11">
                     <FileText className="mr-2 h-4 w-4" />
                     Nuevo Reporte
                 </Button>
             </DialogTrigger>
-            <DialogContent className={type === 'AREA_POLYGON' ? "sm:max-w-[800px]" : "sm:max-w-[425px]"}>
+            <DialogContent className={type === 'AREA_POLYGON' ? "sm:max-w-[800px] rounded-card border-border/80 bg-card/95" : "sm:max-w-[425px] rounded-card border-border/80 bg-card/95"}>
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
                         <DialogTitle>Generar Reporte Inmobiliario</DialogTitle>
@@ -142,12 +142,12 @@ export default function CreateReportDialog() {
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="type" className="text-right">
+                        <div className="grid grid-cols-1 items-center gap-2 md:grid-cols-4 md:gap-4">
+                            <Label htmlFor="type" className="text-left text-muted-foreground md:text-right">
                                 Tipo
                             </Label>
                             <Select value={type} onValueChange={setType}>
-                                <SelectTrigger className="col-span-3">
+                                <SelectTrigger className="md:col-span-3">
                                     <SelectValue placeholder="Selecciona tipo" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -161,18 +161,18 @@ export default function CreateReportDialog() {
 
                         {type === 'AREA_POLYGON' ? (
                             <div className="space-y-2">
-                                <Label>Dibuja el polígono en el mapa</Label>
+                                <Label className="text-muted-foreground">Dibuja el polígono en el mapa</Label>
                                 <MapAreaSelector onPolygonChange={setPolygonWkt} />
                                 {polygonWkt && (
-                                    <p className="text-[10px] text-green-600 font-medium">✓ Área definida correctamente</p>
+                                    <p className="text-[10px] font-medium text-success">✓ Área definida correctamente</p>
                                 )}
                             </div>
                         ) : type === 'MULTI_COMMUNE_COMPARISON' ? (
                             <div className="space-y-3">
-                                <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label className="text-right">Comunas</Label>
+                                <div className="grid grid-cols-1 items-center gap-2 md:grid-cols-4 md:gap-4">
+                                    <Label className="text-left text-muted-foreground md:text-right">Comunas</Label>
                                     <Select value={commune} onValueChange={addCommune}>
-                                        <SelectTrigger className="col-span-3">
+                                        <SelectTrigger className="md:col-span-3">
                                             <SelectValue placeholder="Agregar comuna..." />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -184,11 +184,11 @@ export default function CreateReportDialog() {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="flex flex-wrap gap-2 pl-[100px]">
+                                <div className="flex flex-wrap gap-2 md:pl-[100px]">
                                     {selectedCommunes.map(c => (
-                                        <Badge key={c} variant="secondary" className="gap-1 px-2 py-1">
+                                        <Badge key={c} variant="secondary" className="gap-1 px-2 py-1 text-xs">
                                             {c}
-                                            <X className="h-3 w-3 cursor-pointer hover:text-red-500" onClick={() => removeCommune(c)} />
+                                            <X className="h-3 w-3 cursor-pointer hover:text-destructive" onClick={() => removeCommune(c)} />
                                         </Badge>
                                     ))}
                                     {selectedCommunes.length === 0 && (
@@ -197,12 +197,12 @@ export default function CreateReportDialog() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="commune" className="text-right">
+                            <div className="grid grid-cols-1 items-center gap-2 md:grid-cols-4 md:gap-4">
+                                <Label htmlFor="commune" className="text-left text-muted-foreground md:text-right">
                                     Comuna
                                 </Label>
                                 <Select value={commune} onValueChange={setCommune}>
-                                    <SelectTrigger className="col-span-3">
+                                    <SelectTrigger className="md:col-span-3">
                                         <SelectValue placeholder="Selecciona comuna" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -216,8 +216,8 @@ export default function CreateReportDialog() {
                             </div>
                         )}
 
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="title" className="text-right">
+                        <div className="grid grid-cols-1 items-center gap-2 md:grid-cols-4 md:gap-4">
+                            <Label htmlFor="title" className="text-left text-muted-foreground md:text-right">
                                 Título
                             </Label>
                             <Input
@@ -225,13 +225,14 @@ export default function CreateReportDialog() {
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 placeholder="Opcional"
-                                className="col-span-3"
+                                className="md:col-span-3"
                             />
                         </div>
                     </div>
                     <DialogFooter>
                         <Button
                             type="submit"
+                            className="h-11"
                             disabled={
                                 isLoading ||
                                 (type === 'AREA_POLYGON' && !polygonWkt) ||

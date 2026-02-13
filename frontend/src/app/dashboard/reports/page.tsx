@@ -43,18 +43,18 @@ export default async function ReportsPage() {
 
     const getStatusIcon = (status: string) => {
         switch (status) {
-            case 'completed': return <CheckCircle2 className="h-4 w-4 text-green-500" />
-            case 'generating': return <Clock className="h-4 w-4 text-blue-500 animate-pulse" />
-            case 'failed': return <AlertCircle className="h-4 w-4 text-red-500" />
-            default: return <Clock className="h-4 w-4 text-gray-400" />
+            case 'completed': return <CheckCircle2 className="h-4 w-4 text-success" />
+            case 'generating': return <Clock className="h-4 w-4 animate-pulse text-info" />
+            case 'failed': return <AlertCircle className="h-4 w-4 text-destructive" />
+            default: return <Clock className="h-4 w-4 text-muted-foreground" />
         }
     }
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="surface-panel enter-fade-up flex items-center justify-between p-5 md:p-6">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Reportes Generados</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground">Reportes Generados</h1>
                     <p className="text-muted-foreground">
                         Historial de análisis y benchmarks de mercado.
                     </p>
@@ -62,7 +62,7 @@ export default async function ReportsPage() {
                 <CreateReportDialog />
             </div>
 
-            <div className="border rounded-md">
+            <div className="enter-fade-up [animation-delay:80ms]">
                 <Table>
                     <TableHeader>
                         <TableRow>

@@ -68,23 +68,23 @@ export default async function ProjectsPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between">
+            <div className="surface-panel enter-fade-up flex items-center justify-between p-5 md:p-6">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Proyectos Inmobiliarios</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground">Proyectos Inmobiliarios</h1>
                     <p className="text-muted-foreground">
                         Gestión y análisis de proyectos en desarrollo
                     </p>
                 </div>
-                <Button>
+                <Button className="h-11 px-5">
                     <Plus className="mr-2 h-4 w-4" />
                     Nuevo Proyecto
                 </Button>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
+                <Card className="enter-fade-up [animation-delay:40ms]">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Proyectos</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Proyectos</CardTitle>
                         <Building2 className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -95,9 +95,9 @@ export default async function ProjectsPage() {
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="enter-fade-up [animation-delay:80ms]">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Unidades Totales</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Unidades Totales</CardTitle>
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -108,9 +108,9 @@ export default async function ProjectsPage() {
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="enter-fade-up [animation-delay:120ms]">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Precio Promedio</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Precio Promedio</CardTitle>
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -121,9 +121,9 @@ export default async function ProjectsPage() {
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="enter-fade-up [animation-delay:160ms]">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Velocidad Promedio</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Velocidad Promedio</CardTitle>
                         <Clock className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
