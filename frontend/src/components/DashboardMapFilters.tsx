@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Grid, Card, Text, BadgeDelta, Flex, Title } from '@tremor/react'
+import { Grid, Card, Text, BadgeDelta, Title } from '@tremor/react'
 import { Filter, Sparkles, Wand2, BarChart3 } from 'lucide-react'
 import MapboxMap from '@/components/MapboxMap'
 import MarketOverviewChart from '@/components/charts/MarketOverviewChart'
@@ -871,6 +871,47 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                             </div>
                         </div>
                     </div>
+
+                    {hasGenerated && (
+                        <div className="absolute bottom-3 left-3 right-3 z-30 xl:left-[420px] xl:right-[250px]">
+                            <div className="glass-panel p-4 md:p-5">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p className="text-base font-semibold text-foreground">Lectura IA del escenario filtrado</p>
+                                        <p className="mt-1 text-xs text-muted-foreground">
+                                            {generatedAt ? `Generado: ${new Date(generatedAt).toLocaleString('es-CL')}` : ''}
+                                        </p>
+                                    </div>
+                                    <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                                </div>
+
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    <span className="rounded-full border border-border/70 bg-card/75 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                                        {geoScopeLabel}
+                                    </span>
+                                    <span className="rounded-full border border-border/70 bg-card/75 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                                        {timeScopeLabel}
+                                    </span>
+                                </div>
+
+                                <div className="mt-4 rounded-2xl border border-border/70 bg-background/55 p-4">
+                                    {analysisLoading && (
+                                        <Text className="text-sm text-muted-foreground">Generando lectura ejecutiva...</Text>
+                                    )}
+
+                                    {!analysisLoading && analysisError && (
+                                        <Text className="text-sm text-red-600">{analysisError}</Text>
+                                    )}
+
+                                    {!analysisLoading && !analysisError && (
+                                        <div className="text-sm leading-6 text-foreground/90">
+                                            <MarkdownRenderer content={aiAnalysis || 'Sin contenido de análisis.'} />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </Card>
 
@@ -909,34 +950,6 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
 
             {hasGenerated && (
                 <>
-                    <Card className="rounded-card border-border/80 p-6">
-                        <Flex alignItems="start">
-                            <div>
-                                <Title className="text-lg text-foreground">Análisis IA del Escenario Filtrado</Title>
-                                <Text className="mt-1 text-xs text-muted-foreground">
-                                    {generatedAt ? `Generado: ${new Date(generatedAt).toLocaleString('es-CL')}` : ''}
-                                </Text>
-                            </div>
-                            <Sparkles className="h-5 w-5 text-primary" />
-                        </Flex>
-
-                        <div className="mt-4 max-h-[260px] overflow-y-auto rounded-2xl border border-border/70 bg-background/55 p-4">
-                            {analysisLoading && (
-                                <Text className="text-sm text-muted-foreground">Generando lectura ejecutiva...</Text>
-                            )}
-
-                            {!analysisLoading && analysisError && (
-                                <Text className="text-sm text-red-600">{analysisError}</Text>
-                            )}
-
-                            {!analysisLoading && !analysisError && (
-                                <div className="text-sm leading-6 text-foreground/90">
-                                    <MarkdownRenderer content={aiAnalysis || 'Sin contenido de análisis.'} />
-                                </div>
-                            )}
-                        </div>
-                    </Card>
-
                     <Grid numItemsLg={2} className="gap-6">
                         <ParticipationEvolutionChart data={generatedSnapshot?.evolutionData.salesSeries || []} metricLabel="venta" />
                         <ParticipationEvolutionChart data={generatedSnapshot?.evolutionData.offerSeries || []} metricLabel="oferta" />
