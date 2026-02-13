@@ -848,8 +848,30 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                         </div>
                     </div>
 
+                    <div className="absolute right-3 top-3 z-30 hidden w-[180px] gap-1.5 lg:grid">
+                        <div className="glass-panel px-2.5 py-2">
+                            <div className="flex items-center justify-between">
+                                <p className="text-[10px] text-muted-foreground">Proyectos</p>
+                                <BadgeDelta deltaType={kpis.deltaType as any} className="text-[10px]">{`${Math.abs(kpis.scopeDelta)}%`}</BadgeDelta>
+                            </div>
+                            <p className="text-lg font-semibold leading-none mt-1">{kpis.projectCount.toLocaleString()}</p>
+                        </div>
+                        <div className="glass-panel px-2.5 py-2">
+                            <p className="text-[10px] text-muted-foreground">Stock</p>
+                            <p className="mt-1 text-base font-semibold leading-none">{kpis.totalStock.toLocaleString()}</p>
+                        </div>
+                        <div className="glass-panel px-2.5 py-2">
+                            <p className="text-[10px] text-muted-foreground">Velocidad</p>
+                            <p className="mt-1 text-base font-semibold leading-none">{kpis.avgSalesSpeed} <span className="text-[10px] font-medium text-muted-foreground">u/mes</span></p>
+                        </div>
+                        <div className="glass-panel px-2.5 py-2">
+                            <p className="text-[10px] text-muted-foreground">Ventas</p>
+                            <p className="mt-1 text-base font-semibold leading-none">{kpis.totalSold.toLocaleString()}</p>
+                        </div>
+                    </div>
+
                     {hasGenerated && (
-                        <div className="absolute bottom-3 left-3 right-3 z-30 xl:left-[420px] xl:right-3">
+                        <div className="absolute bottom-3 left-3 right-3 z-30 xl:left-[420px] xl:right-[196px]">
                             <div className="glass-panel mx-auto max-w-3xl p-4 md:p-5">
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
@@ -862,15 +884,6 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                 </div>
 
                                 <div className="mt-3 flex flex-wrap gap-2">
-                                    <span className="rounded-full border border-border/70 bg-card/75 px-2.5 py-1 text-[11px] font-semibold text-foreground">
-                                        {kpis.projectCount.toLocaleString()} proyectos
-                                    </span>
-                                    <span className="rounded-full border border-border/70 bg-card/75 px-2.5 py-1 text-[11px] font-semibold text-foreground">
-                                        Stock {kpis.totalStock.toLocaleString()}
-                                    </span>
-                                    <span className="rounded-full border border-border/70 bg-card/75 px-2.5 py-1 text-[11px] font-semibold text-foreground">
-                                        Ventas {kpis.totalSold.toLocaleString()}
-                                    </span>
                                     <span className="rounded-full border border-border/70 bg-card/75 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
                                         {geoScopeLabel}
                                     </span>
