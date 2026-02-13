@@ -45,7 +45,12 @@ export default function MapboxMap({
     showLegend = true,
 }: MapboxMapProps) {
     const [selectedProject, setSelectedProject] = React.useState<Project | null>(null)
+    const [mapLoaded, setMapLoaded] = React.useState(false)
     const mapRef = React.useRef<any>(null)
+    const projectsSignature = React.useMemo(
+        () => projects.map((project) => project.id).join('|'),
+        [projects]
+    )
 
     const emitVisibleProjectIds = React.useCallback(() => {
         if (!onVisibleProjectIdsChange || !mapRef.current) return
@@ -63,7 +68,12 @@ export default function MapboxMap({
 
     // Fit bounds to projects on load and update
     React.useEffect(() => {
-        if (projects.length > 0 && mapRef.current) {
+        if (!mapLoaded || !mapRef.current) return
+
+        const mapInstance = mapRef.current?.getMap?.() || mapRef.current
+        if (!mapInstance) return
+
+        if (projects.length > 0) {
             // Use reduce to avoid stack overflow with large arrays
             const bounds = projects.reduce((acc: { minLng: number, maxLng: number, minLat: number, maxLat: number }, p: Project) => ({
                 minLng: Math.min(acc.minLng, p.longitude),
@@ -79,7 +89,7 @@ export default function MapboxMap({
 
             // Validate consistency coordinates
             if (bounds.minLng !== bounds.maxLng || bounds.minLat !== bounds.maxLat) {
-                mapRef.current.fitBounds(
+                mapInstance.fitBounds(
                     [
                         [bounds.minLng, bounds.minLat], // Southwest
                         [bounds.maxLng, bounds.maxLat]  // Northeast
@@ -88,17 +98,22 @@ export default function MapboxMap({
                 )
             } else {
                 // Single point case
-                mapRef.current.flyTo({
+                mapInstance.flyTo({
                     center: [bounds.minLng, bounds.minLat],
                     zoom: 12,
                     duration: 1000
                 })
             }
+            const timeoutId = window.setTimeout(() => {
+                emitVisibleProjectIds()
+            }, 1050)
+            return () => window.clearTimeout(timeoutId)
         }
+
         if (projects.length === 0 && onVisibleProjectIdsChange) {
             onVisibleProjectIdsChange([])
         }
-    }, [projects, onVisibleProjectIdsChange])
+    }, [mapLoaded, projectsSignature, projects, onVisibleProjectIdsChange, emitVisibleProjectIds])
 
     // Highlight specific project if provided overrides automatic fit
     React.useEffect(() => {
@@ -143,7 +158,10 @@ export default function MapboxMap({
                 style={{ width: '100%', height: '100%' }}
                 mapStyle="mapbox://styles/mapbox/light-v11"
                 attributionControl={false}
-                onLoad={emitVisibleProjectIds}
+                onLoad={() => {
+                    setMapLoaded(true)
+                    emitVisibleProjectIds()
+                }}
                 onMoveEnd={emitVisibleProjectIds}
             >
                 <NavigationControl position={controlsPosition} />
