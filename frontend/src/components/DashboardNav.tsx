@@ -2,21 +2,32 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import type { ComponentType } from "react"
+import {
+  BarChart3,
+  FileText,
+  Home,
+  LayoutDashboard,
+  Map,
+  Settings,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 
-type NavItem = {
-  href: string
-  label: string
-  icon: ComponentType<{ className?: string }>
-}
+const navItems = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/projects", label: "Proyectos", icon: Home },
+  { href: "/dashboard/map", label: "Mapa", icon: Map },
+  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/dashboard/reports", label: "Reportes", icon: FileText },
+  { href: "/dashboard/brain/settings", label: "Cerebro IA", icon: Settings },
+] as const
+
+type NavItem = (typeof navItems)[number]
 
 interface DashboardNavProps {
-  items: NavItem[]
   compact?: boolean
 }
 
-export default function DashboardNav({ items, compact = false }: DashboardNavProps) {
+export default function DashboardNav({ compact = false }: DashboardNavProps) {
   const pathname = usePathname()
 
   const isActive = (href: string) => {
@@ -31,7 +42,7 @@ export default function DashboardNav({ items, compact = false }: DashboardNavPro
         compact ? "gap-1" : "gap-1.5 rounded-2xl border border-border/70 bg-card/60 p-1"
       )}
     >
-      {items.map((item) => {
+      {navItems.map((item: NavItem) => {
         const active = isActive(item.href)
         return (
           <Link

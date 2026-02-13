@@ -1,13 +1,7 @@
 import {
     Bell,
     Building2,
-    BarChart3,
-    FileText,
-    Home,
-    LayoutDashboard,
     LogOut,
-    Map,
-    Settings,
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -25,15 +19,6 @@ import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { signOut } from "@/app/actions/auth"
 import { MarketAlerts } from "@/components/MarketAlerts"
-
-const navItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/dashboard/projects', label: 'Proyectos', icon: Home },
-    { href: '/dashboard/map', label: 'Mapa', icon: Map },
-    { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
-    { href: '/dashboard/reports', label: 'Reportes', icon: FileText },
-    { href: '/dashboard/brain/settings', label: 'Cerebro IA', icon: Settings },
-]
 
 export default async function DashboardLayout({
     children,
@@ -62,7 +47,7 @@ export default async function DashboardLayout({
                     </Link>
 
                     <div className="hidden lg:block">
-                        <DashboardNav items={navItems} />
+                        <DashboardNav />
                     </div>
 
                     <div className="ml-auto flex items-center gap-2.5">
@@ -119,7 +104,7 @@ export default async function DashboardLayout({
                 </div>
 
                 <div className="lg:hidden border-t px-3 py-2">
-                    <DashboardNav items={navItems} compact />
+                    <DashboardNav compact />
                 </div>
             </header>
 
