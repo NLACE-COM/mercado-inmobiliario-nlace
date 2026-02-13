@@ -128,10 +128,10 @@ export default function MapboxMap({
 
     const getMarkerTone = (project: Project) => {
         const sellThrough = getSellThroughRate(project.sold_units, project.total_units)
-        if (sellThrough >= 80) return { color: '#059669' }
-        if (sellThrough >= 50) return { color: '#0284C7' }
-        if (sellThrough >= 20) return { color: '#EA580C' }
-        return { color: '#DC2626' }
+        if (sellThrough >= 80) return { color: '#0F766E' }
+        if (sellThrough >= 50) return { color: '#14867F' }
+        if (sellThrough >= 20) return { color: '#2C9A93' }
+        return { color: '#5AAFA7' }
     }
 
     return (
@@ -141,7 +141,7 @@ export default function MapboxMap({
                 mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
                 initialViewState={initialViewState}
                 style={{ width: '100%', height: '100%' }}
-                mapStyle="mapbox://styles/mapbox/streets-v12"
+                mapStyle="mapbox://styles/mapbox/light-v11"
                 attributionControl={false}
                 onLoad={emitVisibleProjectIds}
                 onMoveEnd={emitVisibleProjectIds}
@@ -162,7 +162,7 @@ export default function MapboxMap({
                     >
                         <div className="cursor-pointer transition-transform duration-200 hover:scale-110">
                             <div
-                                className="h-4 w-4 rounded-full border-2 border-white shadow-[0_2px_8px_rgba(15,23,42,0.35)]"
+                                className="h-3.5 w-3.5 rounded-full border-2 border-white shadow-[0_2px_8px_rgba(15,23,42,0.25)]"
                                 style={{ backgroundColor: getMarkerTone(project).color }}
                                 aria-label={`Proyecto ${project.name}`}
                             />
@@ -300,19 +300,19 @@ export default function MapboxMap({
                     <div className="mb-2 font-semibold">Tasa de Venta</div>
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                            <span className="h-3.5 w-3.5 rounded-full border border-white shadow-sm" style={{ backgroundColor: '#059669' }} />
+                            <span className="h-3.5 w-3.5 rounded-full border border-white shadow-sm" style={{ backgroundColor: '#0F766E' }} />
                             <span>≥ 80%</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="h-3.5 w-3.5 rounded-full border border-white shadow-sm" style={{ backgroundColor: '#0284C7' }} />
+                            <span className="h-3.5 w-3.5 rounded-full border border-white shadow-sm" style={{ backgroundColor: '#14867F' }} />
                             <span>50-79%</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="h-3.5 w-3.5 rounded-full border border-white shadow-sm" style={{ backgroundColor: '#EA580C' }} />
+                            <span className="h-3.5 w-3.5 rounded-full border border-white shadow-sm" style={{ backgroundColor: '#2C9A93' }} />
                             <span>20-49%</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="h-3.5 w-3.5 rounded-full border border-white shadow-sm" style={{ backgroundColor: '#DC2626' }} />
+                            <span className="h-3.5 w-3.5 rounded-full border border-white shadow-sm" style={{ backgroundColor: '#5AAFA7' }} />
                             <span>&lt; 20%</span>
                         </div>
                     </div>
