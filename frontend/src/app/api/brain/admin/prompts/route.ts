@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
 import { requireAdmin } from '@/lib/api-auth'
-import fs from 'fs'
-import path from 'path'
 
 export const dynamic = 'force-dynamic'
+
+function parseVersion(label?: string | null): number | null {
+    if (!label) return null
+    const match = label.trim().match(/^v(\d+)$/i)
+    if (!match) return null
+    const value = Number(match[1])
+    return Number.isFinite(value) ? value : null
+}
 
 /**
  * GET /api/brain/admin/prompts
@@ -34,7 +40,7 @@ export async function GET(request: NextRequest) {
                     id: 'default',
                     content: 'Eres un analista experto en el mercado inmobiliario chileno. Tienes acceso a herramientas para buscar proyectos, obtener estadísticas y detalles específicos. Usa siempre datos concretos cuando respondas preguntas.',
                     is_active: true,
-                    label: 'Default System Prompt',
+                    label: 'v1',
                     created_at: new Date().toISOString()
                 }
             ])
@@ -47,7 +53,7 @@ export async function GET(request: NextRequest) {
                     id: 'default',
                     content: 'Eres un analista experto en el mercado inmobiliario chileno. Tienes acceso a herramientas para buscar proyectos, obtener estadísticas y detalles específicos. Usa siempre datos concretos cuando respondas preguntas.',
                     is_active: true,
-                    label: 'Default System Prompt',
+                    label: 'v1',
                     created_at: new Date().toISOString()
                 }
             ])
@@ -63,7 +69,7 @@ export async function GET(request: NextRequest) {
                 id: 'default',
                 content: 'Eres un analista experto en el mercado inmobiliario chileno. Tienes acceso a herramientas para buscar proyectos, obtener estadísticas y detalles específicos. Usa siempre datos concretos cuando respondas preguntas.',
                 is_active: true,
-                label: 'Default System Prompt',
+                label: 'v1',
                 created_at: new Date().toISOString()
             }
         ])
@@ -81,7 +87,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json()
-        const { content, label } = body
+        const { content } = body
 
         if (!content) {
             return NextResponse.json(
@@ -91,6 +97,25 @@ export async function POST(request: NextRequest) {
         }
 
         const supabase = getSupabaseAdmin()
+
+        // Calculate next version label automatically.
+        const { data: existingPrompts, error: versionReadError } = await supabase
+            .from('system_prompts')
+            .select('label, created_at')
+            .order('created_at', { ascending: true })
+
+        if (versionReadError) {
+            console.error('Error reading prompts for versioning:', versionReadError)
+            return NextResponse.json(
+                { error: 'Failed to calculate prompt version.' },
+                { status: 500 }
+            )
+        }
+
+        const versions = (existingPrompts || [])
+            .map((prompt: any) => parseVersion(prompt.label))
+            .filter((value: number | null): value is number => value !== null)
+        const nextVersion = versions.length > 0 ? Math.max(...versions) + 1 : (existingPrompts?.length || 0) + 1
 
         // Deactivate all existing prompts
         await supabase
@@ -103,7 +128,7 @@ export async function POST(request: NextRequest) {
             .from('system_prompts')
             .insert({
                 content,
-                label: label || 'Custom Prompt',
+                label: `v${nextVersion}`,
                 is_active: true
             })
             .select()
