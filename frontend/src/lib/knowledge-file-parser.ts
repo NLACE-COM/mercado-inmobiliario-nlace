@@ -110,9 +110,10 @@ async function extractPptxText(buffer: Buffer): Promise<string> {
         const xml = await zip.file(path)?.async('string')
         if (!xml) continue
 
-        const fragments = Array.from(xml.matchAll(/<a:t>(.*?)<\/a:t>/g))
-            .map((match) => decodeHtmlEntities(match[1] || '').trim())
-            .filter(Boolean)
+        const matches = Array.from(xml.matchAll(/<a:t>(.*?)<\/a:t>/g)) as RegExpMatchArray[]
+        const fragments = matches
+            .map((match: RegExpMatchArray) => decodeHtmlEntities(match[1] || '').trim())
+            .filter((value: string) => Boolean(value))
 
         if (fragments.length > 0) {
             slides.push(fragments.join('\n'))
