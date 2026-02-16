@@ -80,8 +80,12 @@ async function extractDocxText(buffer: Buffer): Promise<string> {
 async function extractSpreadsheetText(buffer: Buffer): Promise<string> {
     const xlsxModule = await import('xlsx')
     const XLSX = (xlsxModule as any).default ?? xlsxModule
-    const workbook = XLSX.read(buffer, { type: 'buffer' })
-    const parts = workbook.SheetNames.map((sheetName) => {
+    const workbook = XLSX.read(buffer, { type: 'buffer' }) as {
+        SheetNames: string[]
+        Sheets: Record<string, any>
+    }
+
+    const parts = workbook.SheetNames.map((sheetName: string) => {
         const sheet = workbook.Sheets[sheetName]
         const csv = XLSX.utils.sheet_to_csv(sheet)
         return `## Hoja: ${sheetName}\n${csv}`.trim()
