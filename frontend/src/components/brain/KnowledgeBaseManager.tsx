@@ -136,7 +136,7 @@ export default function KnowledgeBaseManager() {
                                         <Input
                                             id="file-upload"
                                             type="file"
-                                            accept=".txt,.md,.json,.csv,.tsv"
+                                            accept=".txt,.md,.json,.csv,.tsv,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
                                             className="hidden"
                                             onChange={(e) => {
                                                 const file = e.target.files?.[0]
@@ -166,7 +166,7 @@ export default function KnowledgeBaseManager() {
                                             onClick={() => document.getElementById('file-upload')?.click()}
                                         >
                                             <Upload className="h-4 w-4 mr-2" />
-                                            Cargar Archivo (TXT, CSV, JSON)
+                                            Cargar Archivo (PDF, Word, Excel, PPT)
                                         </Button>
                                     </div>
                                 </div>

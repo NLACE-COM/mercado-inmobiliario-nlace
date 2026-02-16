@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-server'
 import { ingestText } from '@/lib/vector-store'
 import { requireAdmin } from '@/lib/api-auth'
+import {
+    extractTextFromKnowledgeFile,
+    FileParserError,
+    getFileExtension,
+    isSupportedKnowledgeExtension,
+} from '@/lib/knowledge-file-parser'
 
 export const dynamic = 'force-dynamic'
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024 // 5MB
 const MAX_CHARS_PER_CHUNK = 6000
-const SUPPORTED_TEXT_EXTENSIONS = ['txt', 'md', 'json', 'csv', 'tsv']
-const UNSUPPORTED_BINARY_EXTENSIONS = ['doc', 'docx', 'xls', 'xlsx', 'pdf']
 
 class AppError extends Error {
     status: number
@@ -18,11 +22,6 @@ class AppError extends Error {
         this.name = 'AppError'
         this.status = status
     }
-}
-
-function getExtension(fileName: string): string {
-    const parts = fileName.toLowerCase().split('.')
-    return parts.length > 1 ? parts[parts.length - 1] : ''
 }
 
 function chunkText(content: string, maxChars = MAX_CHARS_PER_CHUNK): string[] {
@@ -63,6 +62,10 @@ function parseMetadata(rawMetadata: FormDataEntryValue | null): Record<string, a
 }
 
 function normalizeUploadError(error: unknown): AppError {
+    if (error instanceof FileParserError) {
+        return new AppError(error.message, error.status)
+    }
+
     if (error instanceof AppError) return error
 
     const message = error instanceof Error ? error.message : 'Error interno al procesar el archivo.'
@@ -155,23 +158,15 @@ export async function POST(request: NextRequest) {
                 )
             }
 
-            const extension = getExtension(file.name)
-            if (UNSUPPORTED_BINARY_EXTENSIONS.includes(extension)) {
+            const extension = getFileExtension(file.name)
+            if (!isSupportedKnowledgeExtension(extension)) {
                 return NextResponse.json(
-                    { error: 'Formato no soportado en este entorno. Convierte el archivo a .txt o .csv para subirlo.' },
+                    { error: 'Formato no soportado. Usa TXT, CSV, PDF, DOC/DOCX, XLS/XLSX o PPT/PPTX.' },
                     { status: 400 }
                 )
             }
 
-            if (!SUPPORTED_TEXT_EXTENSIONS.includes(extension)) {
-                return NextResponse.json(
-                    { error: 'Formato no soportado. Usa .txt, .md, .json, .csv o .tsv.' },
-                    { status: 400 }
-                )
-            }
-
-            // Read file content (text formats only)
-            const content = await file.text()
+            const { content, fileType } = await extractTextFromKnowledgeFile(file)
 
             if (!content.trim()) {
                 return NextResponse.json(
@@ -192,6 +187,7 @@ export async function POST(request: NextRequest) {
             metadata.filename = file.name
             metadata.type = file.type
             metadata.size = file.size
+            metadata.file_type = fileType
             metadata.chunk_total = chunks.length
 
             // Ingest chunks into vector store
