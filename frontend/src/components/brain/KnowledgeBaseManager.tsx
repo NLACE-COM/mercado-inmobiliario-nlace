@@ -56,7 +56,7 @@ export default function KnowledgeBaseManager() {
 
     const deleteMutation = useMutation({
         mutationFn: async (id: string) => {
-            return axios.delete(`${endpoints.brain.admin.knowledge}/${id}`)
+            return axios.delete(`${endpoints.brain.admin.knowledge}?id=${id}`)
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['knowledge'] })
@@ -83,7 +83,7 @@ export default function KnowledgeBaseManager() {
         },
         onError: (error: any) => {
             console.error('Error uploading file:', error)
-            alert(`Error al subir archivo: ${error.response?.data?.detail || error.message}`)
+            alert(`Error al subir archivo: ${error.response?.data?.error || error.response?.data?.detail || error.message}`)
         }
     })
 
@@ -136,7 +136,7 @@ export default function KnowledgeBaseManager() {
                                         <Input
                                             id="file-upload"
                                             type="file"
-                                            accept=".txt,.md,.json,.csv,.xlsx,.xls,.doc,.docx"
+                                            accept=".txt,.md,.json,.csv,.tsv"
                                             className="hidden"
                                             onChange={(e) => {
                                                 const file = e.target.files?.[0]
@@ -145,7 +145,7 @@ export default function KnowledgeBaseManager() {
                                                 setSelectedFile(file)
 
                                                 // Only read as text for text files
-                                                if (file.name.match(/\.(txt|md|json)$/i)) {
+                                                if (file.name.match(/\.(txt|md|json|csv|tsv)$/i)) {
                                                     const reader = new FileReader()
                                                     reader.onload = (e) => {
                                                         const text = e.target?.result
@@ -155,7 +155,7 @@ export default function KnowledgeBaseManager() {
                                                     }
                                                     reader.readAsText(file)
                                                 } else {
-                                                    setNewItem(prev => ({ ...prev, content: `[Archivo binario seleccionado: ${file.name}]` }))
+                                                    setNewItem(prev => ({ ...prev, content: `[Archivo seleccionado: ${file.name}]` }))
                                                 }
                                             }}
                                         />
@@ -166,7 +166,7 @@ export default function KnowledgeBaseManager() {
                                             onClick={() => document.getElementById('file-upload')?.click()}
                                         >
                                             <Upload className="h-4 w-4 mr-2" />
-                                            Cargar Archivo (Excel, Word, CSV)
+                                            Cargar Archivo (TXT, CSV, JSON)
                                         </Button>
                                     </div>
                                 </div>
@@ -175,7 +175,7 @@ export default function KnowledgeBaseManager() {
                                     rows={10}
                                     value={newItem.content}
                                     onChange={e => setNewItem({ ...newItem, content: e.target.value })}
-                                    disabled={!!selectedFile && !selectedFile.name.match(/\.(txt|md|json)$/i)}
+                                    disabled={!!selectedFile && !selectedFile.name.match(/\.(txt|md|json|csv|tsv)$/i)}
                                 />
                             </div>
                             <div className="flex justify-end gap-2">

@@ -5,6 +5,79 @@ import { requireAdmin } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
 
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024 // 5MB
+const MAX_CHARS_PER_CHUNK = 6000
+const SUPPORTED_TEXT_EXTENSIONS = ['txt', 'md', 'json', 'csv', 'tsv']
+const UNSUPPORTED_BINARY_EXTENSIONS = ['doc', 'docx', 'xls', 'xlsx', 'pdf']
+
+class AppError extends Error {
+    status: number
+
+    constructor(message: string, status = 500) {
+        super(message)
+        this.name = 'AppError'
+        this.status = status
+    }
+}
+
+function getExtension(fileName: string): string {
+    const parts = fileName.toLowerCase().split('.')
+    return parts.length > 1 ? parts[parts.length - 1] : ''
+}
+
+function chunkText(content: string, maxChars = MAX_CHARS_PER_CHUNK): string[] {
+    const normalized = content.replace(/\r\n/g, '\n').trim()
+    if (!normalized) return []
+    if (normalized.length <= maxChars) return [normalized]
+
+    const chunks: string[] = []
+    let cursor = 0
+
+    while (cursor < normalized.length) {
+        let end = Math.min(cursor + maxChars, normalized.length)
+
+        // Try to split on a paragraph boundary first.
+        if (end < normalized.length) {
+            const paragraphBreak = normalized.lastIndexOf('\n\n', end)
+            if (paragraphBreak > cursor + 1500) {
+                end = paragraphBreak
+            }
+        }
+
+        const chunk = normalized.slice(cursor, end).trim()
+        if (chunk) chunks.push(chunk)
+        cursor = end
+    }
+
+    return chunks
+}
+
+function parseMetadata(rawMetadata: FormDataEntryValue | null): Record<string, any> {
+    if (!rawMetadata || typeof rawMetadata !== 'string') return {}
+
+    try {
+        return JSON.parse(rawMetadata)
+    } catch {
+        throw new AppError('Metadata inválida: debe ser JSON válido.', 400)
+    }
+}
+
+function normalizeUploadError(error: unknown): AppError {
+    if (error instanceof AppError) return error
+
+    const message = error instanceof Error ? error.message : 'Error interno al procesar el archivo.'
+
+    if (message.toLowerCase().includes('context length')) {
+        return new AppError('El contenido es demasiado largo para procesar. Reduce el tamaño del archivo.', 400)
+    }
+
+    if (message.toLowerCase().includes('invalid api key')) {
+        return new AppError('Configuración de OpenAI inválida en el servidor.', 503)
+    }
+
+    return new AppError(message, 500)
+}
+
 /**
  * GET /api/brain/admin/knowledge
  * Fetch all knowledge base items (admin only)
@@ -59,7 +132,7 @@ export async function POST(request: NextRequest) {
         if (contentType.includes('multipart/form-data')) {
             const formData = await request.formData()
             const file = formData.get('file') as File
-            const metadataStr = formData.get('metadata') as string
+            const metadata = parseMetadata(formData.get('metadata'))
 
             if (!file) {
                 return NextResponse.json(
@@ -68,21 +141,71 @@ export async function POST(request: NextRequest) {
                 )
             }
 
-            // Read file content
+            if (file.size === 0) {
+                return NextResponse.json(
+                    { error: 'El archivo está vacío.' },
+                    { status: 400 }
+                )
+            }
+
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+                return NextResponse.json(
+                    { error: 'El archivo excede el máximo permitido de 5MB.' },
+                    { status: 400 }
+                )
+            }
+
+            const extension = getExtension(file.name)
+            if (UNSUPPORTED_BINARY_EXTENSIONS.includes(extension)) {
+                return NextResponse.json(
+                    { error: 'Formato no soportado en este entorno. Convierte el archivo a .txt o .csv para subirlo.' },
+                    { status: 400 }
+                )
+            }
+
+            if (!SUPPORTED_TEXT_EXTENSIONS.includes(extension)) {
+                return NextResponse.json(
+                    { error: 'Formato no soportado. Usa .txt, .md, .json, .csv o .tsv.' },
+                    { status: 400 }
+                )
+            }
+
+            // Read file content (text formats only)
             const content = await file.text()
-            const metadata = metadataStr ? JSON.parse(metadataStr) : {}
+
+            if (!content.trim()) {
+                return NextResponse.json(
+                    { error: 'No se pudo extraer contenido del archivo.' },
+                    { status: 400 }
+                )
+            }
+
+            const chunks = chunkText(content)
+            if (chunks.length === 0) {
+                return NextResponse.json(
+                    { error: 'No se detectó texto útil en el archivo.' },
+                    { status: 400 }
+                )
+            }
 
             // Add filename to metadata
             metadata.filename = file.name
             metadata.type = file.type
             metadata.size = file.size
+            metadata.chunk_total = chunks.length
 
-            // Ingest into vector store
-            await ingestText(content, metadata)
+            // Ingest chunks into vector store
+            for (let index = 0; index < chunks.length; index++) {
+                await ingestText(chunks[index], {
+                    ...metadata,
+                    chunk_index: index + 1,
+                })
+            }
 
             return NextResponse.json({
                 success: true,
-                message: 'File uploaded successfully'
+                message: 'File uploaded successfully',
+                chunks: chunks.length
             })
         }
 
@@ -97,18 +220,33 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Ingest into vector store
-        await ingestText(content, metadata)
+        const chunks = chunkText(content)
+        if (chunks.length === 0) {
+            return NextResponse.json(
+                { error: 'No se detectó texto útil para indexar.' },
+                { status: 400 }
+            )
+        }
+
+        for (let index = 0; index < chunks.length; index++) {
+            await ingestText(chunks[index], {
+                ...metadata,
+                chunk_index: index + 1,
+                chunk_total: chunks.length,
+            })
+        }
 
         return NextResponse.json({
             success: true,
-            message: 'Knowledge item added successfully'
+            message: 'Knowledge item added successfully',
+            chunks: chunks.length
         })
     } catch (error: any) {
-        console.error('Error in POST /api/brain/admin/knowledge:', error)
+        const normalized = normalizeUploadError(error)
+        console.error('Error in POST /api/brain/admin/knowledge:', normalized)
         return NextResponse.json(
-            { error: error.message || 'Failed to add knowledge item' },
-            { status: 500 }
+            { error: normalized.message || 'Failed to add knowledge item' },
+            { status: normalized.status || 500 }
         )
     }
 }
