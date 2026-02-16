@@ -87,9 +87,55 @@ async function extractSpreadsheetText(buffer: Buffer): Promise<string> {
 
     const parts = workbook.SheetNames.map((sheetName: string) => {
         const sheet = workbook.Sheets[sheetName]
-        const csv = XLSX.utils.sheet_to_csv(sheet)
-        return `## Hoja: ${sheetName}\n${csv}`.trim()
+        const rows = XLSX.utils.sheet_to_json(sheet, {
+            header: 1,
+            raw: false,
+            defval: '',
+            blankrows: false,
+        }) as unknown[][]
+
+        // Normalize and remove trailing empty cells so we don't render ",,,,,,,,," noise.
+        const cleanedRows = rows
+            .map((row) => {
+                const values = row.map((cell) => String(cell ?? '').replace(/\s+/g, ' ').trim())
+                let lastNonEmpty = values.length - 1
+                while (lastNonEmpty >= 0 && !values[lastNonEmpty]) lastNonEmpty -= 1
+                return values.slice(0, lastNonEmpty + 1)
+            })
+            .filter((row) => row.some((value) => Boolean(value)))
+
+        if (cleanedRows.length === 0) {
+            return `## Hoja: ${sheetName}\n(Sin datos detectables)`
+        }
+
+        const header = cleanedRows[0]
+        const dataRows = cleanedRows.slice(1)
+        const maxRows = 200
+
+        const lines = dataRows.slice(0, maxRows).map((row, rowIndex) => {
+            const fields = row
+                .map((value, index) => {
+                    if (!value) return null
+                    const key = header[index] || `Columna ${index + 1}`
+                    return `${key}: ${value}`
+                })
+                .filter(Boolean)
+
+            if (fields.length === 0) return null
+            return `Fila ${rowIndex + 1}: ${fields.join(' | ')}`
+        }).filter(Boolean)
+
+        const truncationNote = dataRows.length > maxRows
+            ? `\n... (${dataRows.length - maxRows} filas adicionales omitidas)`
+            : ''
+
+        if (lines.length === 0) {
+            return `## Hoja: ${sheetName}\n(Sin filas con contenido legible)`
+        }
+
+        return `## Hoja: ${sheetName}\n${lines.join('\n')}${truncationNote}`
     })
+
     return parts.join('\n\n').trim()
 }
 
