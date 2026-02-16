@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Card, CardHeader, CardContent } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
@@ -40,7 +40,7 @@ export default function KnowledgeBaseManager() {
 
     const [openAdd, setOpenAdd] = useState(false)
     const [inputMode, setInputMode] = useState<InputMode>('file')
-    const [newItem, setNewItem] = useState({ content: '', topic: '', year: '2024', event: '' })
+    const [newItem, setNewItem] = useState({ content: '', topic: '', year: '', event: '' })
     const [uploadFeedback, setUploadFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
     const { data: items, isLoading, error: fetchError, isError } = useQuery({
@@ -55,7 +55,7 @@ export default function KnowledgeBaseManager() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
     const resetForm = (options?: { keepFeedback?: boolean }) => {
-        setNewItem({ content: '', topic: '', year: '2024', event: '' })
+        setNewItem({ content: '', topic: '', year: '', event: '' })
         setSelectedFile(null)
         if (!options?.keepFeedback) setUploadFeedback(null)
         setInputMode('file')
@@ -144,6 +144,10 @@ export default function KnowledgeBaseManager() {
     const handleAddItem = (e: React.FormEvent) => {
         e.preventDefault()
         setUploadFeedback(null)
+        const metadata: Record<string, string> = {}
+        if (newItem.topic.trim()) metadata.topic = newItem.topic.trim()
+        if (newItem.year.trim()) metadata.year = newItem.year.trim()
+        if (newItem.event.trim()) metadata.event = newItem.event.trim()
 
         if (inputMode === 'file') {
             if (!selectedFile) {
@@ -153,11 +157,7 @@ export default function KnowledgeBaseManager() {
 
             mutationUpload.mutate({
                 file: selectedFile,
-                metadata: {
-                    topic: newItem.topic,
-                    year: newItem.year,
-                    event: newItem.event
-                }
+                metadata
             })
         } else {
             if (!newItem.content.trim()) {
@@ -167,11 +167,7 @@ export default function KnowledgeBaseManager() {
 
             mutation.mutate({
                 content: newItem.content,
-                metadata: {
-                    topic: newItem.topic,
-                    year: newItem.year,
-                    event: newItem.event
-                }
+                metadata
             })
         }
     }
@@ -203,14 +199,16 @@ export default function KnowledgeBaseManager() {
                             )}
 
                             <div className="grid gap-2">
-                                <p className="text-sm font-semibold">Paso 1: Contexto del documento</p>
-                                <p className="text-xs text-slate-500">Estos campos ayudan al RAG a clasificar mejor las respuestas.</p>
+                                <p className="text-sm font-semibold">Paso 1: Metadatos (opcional)</p>
+                                <p className="text-xs text-slate-500">
+                                    No son obligatorios. Solo sirven para organizar y filtrar mejor los documentos en RAG.
+                                </p>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <Input placeholder="Tópico (Ej: Normativa)" value={newItem.topic} onChange={e => setNewItem({ ...newItem, topic: e.target.value })} />
-                                <Input placeholder="Año (Ej: 2023)" value={newItem.year} onChange={e => setNewItem({ ...newItem, year: e.target.value })} />
-                                <Input placeholder="Evento (Ej: Nueva Ley)" value={newItem.event} onChange={e => setNewItem({ ...newItem, event: e.target.value })} />
+                                <Input placeholder="Tópico / categoría (opcional)" value={newItem.topic} onChange={e => setNewItem({ ...newItem, topic: e.target.value })} />
+                                <Input placeholder="Año (opcional)" value={newItem.year} onChange={e => setNewItem({ ...newItem, year: e.target.value })} />
+                                <Input placeholder="Evento o etiqueta (opcional)" value={newItem.event} onChange={e => setNewItem({ ...newItem, event: e.target.value })} />
                             </div>
 
                             <div className="grid gap-2">
@@ -326,7 +324,7 @@ export default function KnowledgeBaseManager() {
                 </Card>
             )}
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div>
                 {isLoading ? (
                     <p className="text-muted-foreground">Cargando documentos...</p>
                 ) : isError || items === undefined ? (
@@ -346,45 +344,56 @@ export default function KnowledgeBaseManager() {
                         </div>
                     </Card>
                 ) : items.length === 0 ? (
-                    <Card className="col-span-full border-dashed p-8 text-center text-muted-foreground">
+                    <Card className="border-dashed p-8 text-center text-muted-foreground">
                         <p>No hay documentos en la base de conocimientos.</p>
                         <p className="text-sm">Agrega documentos relevantes para mejorar las respuestas de la IA.</p>
                     </Card>
-                ) : items.map((item: KnowledgeItem) => (
-                    <Card key={item.id} className="relative group hover:shadow-md transition-shadow">
-                        <CardHeader className="pb-2">
-                            <div className="flex justify-between items-start">
-                                <Badge variant="secondary">{item.metadata?.topic || 'General'}</Badge>
-                                <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50"
-                                    onClick={() => {
-                                        if (confirm('¿Seguro que deseas eliminar este documento?')) {
-                                            deleteMutation.mutate(item.id)
-                                        }
-                                    }}
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-sm text-slate-600 line-clamp-4">{item.content}</p>
-                            <div className="mt-4 flex gap-2 text-xs text-slate-400">
-                                <span>{item.metadata?.year}</span>
-                                <span>•</span>
-                                <span>{item.metadata?.event}</span>
-                                {item.metadata?.file_type && (
-                                    <>
-                                        <span>•</span>
-                                        <span>{item.metadata.file_type}</span>
-                                    </>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
+                ) : (
+                    <div className="rounded-xl border bg-white overflow-hidden">
+                        <div className="px-4 py-3 border-b bg-slate-50 text-sm text-slate-600">
+                            {items.length} documentos indexados
+                        </div>
+                        <ul className="divide-y">
+                            {items.map((item: KnowledgeItem) => (
+                                <li key={item.id} className="px-4 py-3">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Badge variant="secondary" className="text-[11px]">
+                                                    {item.metadata?.topic || 'General'}
+                                                </Badge>
+                                                {item.metadata?.file_type && (
+                                                    <span className="text-[11px] text-slate-500 uppercase tracking-wide">
+                                                        {item.metadata.file_type}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-slate-700 line-clamp-2">
+                                                {item.content}
+                                            </p>
+                                            <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
+                                                {item.metadata?.year && <span>{item.metadata.year}</span>}
+                                                {item.metadata?.event && <span>• {item.metadata.event}</span>}
+                                            </div>
+                                        </div>
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+                                            onClick={() => {
+                                                if (confirm('¿Seguro que deseas eliminar este documento?')) {
+                                                    deleteMutation.mutate(item.id)
+                                                }
+                                            }}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </div>
         </div>
     )
