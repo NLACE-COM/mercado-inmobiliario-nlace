@@ -106,6 +106,9 @@ export async function POST(request: NextRequest) {
                 const commune = firstRow['COMUNA_INCOIN']?.trim()
                 const developer = firstRow['INMOBILIARIA']?.trim()
                 const region = firstRow['REGION']?.trim()
+                const temporalData = getLatestTemporalData(rows)
+                const year = temporalData.year
+                const period = temporalData.period
 
                 if (!projectName || !commune) {
                     errors.push(`Project ${projectKey}: Missing required fields (PROYECTO or COMUNA_INCOIN)`)
@@ -149,6 +152,8 @@ export async function POST(request: NextRequest) {
                         .update({
                             developer,
                             region,
+                            year,
+                            period,
                             total_units: totalUnits,
                             sold_units: totalSold,
                             available_units: totalUnits - totalSold,
@@ -167,6 +172,8 @@ export async function POST(request: NextRequest) {
                             commune,
                             developer,
                             region,
+                            year,
+                            period,
                             total_units: totalUnits,
                             sold_units: totalSold,
                             available_units: totalUnits - totalSold,
@@ -202,11 +209,12 @@ export async function POST(request: NextRequest) {
                             project_id: projectId,
                             bedrooms,
                             bathrooms,
-                            avg_surface_m2: surface > 0 ? surface : null,
+                            surface_total: surface > 0 ? surface : null,
                             total_units: units,
-                            available_units: units - sold,
+                            stock: units - sold,
+                            current_price_uf: price > 0 ? price : null,
                             avg_price_uf: price > 0 ? price : null,
-                            avg_price_m2_uf: (price > 0 && surface > 0) ? price / surface : null
+                            price_per_m2_uf: (price > 0 && surface > 0) ? price / surface : null
                         }, {
                             onConflict: 'project_id,bedrooms,bathrooms'
                         })
@@ -270,6 +278,66 @@ function parseChileanNumber(value: string): number {
     return isNaN(num) ? 0 : num
 }
 
+function parseYearField(value?: string): number | null {
+    if (!value) return null
+    const normalized = value.replace(/"/g, '').trim()
+    const match = normalized.match(/\d{4}/)
+    if (!match) return null
+    const parsed = Number.parseInt(match[0], 10)
+    if (!Number.isFinite(parsed)) return null
+    if (parsed < 1990 || parsed > 2100) return null
+    return parsed
+}
+
+function parsePeriodField(value?: string): string | null {
+    if (!value) return null
+    const normalized = value.replace(/"/g, '').trim().toUpperCase()
+    if (!normalized) return null
+    if (normalized === '1P' || normalized === '2P') return normalized
+    if (normalized === '1' || normalized === '1S') return '1P'
+    if (normalized === '2' || normalized === '2S') return '2P'
+    return normalized
+}
+
+function getPeriodRank(period: string | null): number {
+    if (period === '2P') return 2
+    if (period === '1P') return 1
+    return 0
+}
+
+function getLatestTemporalData(rows: Record<string, string>[]): { year: number | null; period: string | null } {
+    let latestYear: number | null = null
+    let latestPeriod: string | null = null
+
+    for (const row of rows) {
+        const year = parseYearField(
+            row['AÑO'] ||
+            row['ANO'] ||
+            row['YEAR'] ||
+            row['ANIO']
+        )
+        const period = parsePeriodField(row['PERIODO'] || row['PERIODO_SEMESTRE'])
+        if (year === null) continue
+
+        const isNewerYear = latestYear === null || year > latestYear
+        const isSameYearAndNewerPeriod =
+            latestYear !== null &&
+            year === latestYear &&
+            getPeriodRank(period) > getPeriodRank(latestPeriod)
+
+        if (isNewerYear || isSameYearAndNewerPeriod) {
+            latestYear = year
+            latestPeriod = period
+        }
+    }
+
+    if (latestYear !== null) {
+        return { year: latestYear, period: latestPeriod }
+    }
+
+    return { year: null, period: null }
+}
+
 /**
  * Parse CSV line handling quoted fields
  */
@@ -319,6 +387,8 @@ export async function GET(request: NextRequest) {
             'COMUNA_INCOIN',
             'INMOBILIARIA',
             'REGION',
+            'AÑO (opcional, recomendado)',
+            'PERIODO (opcional, recomendado)',
             'DORMITORIOS',
             'BANOS',
             'SUPERFICIE_M2',

@@ -162,6 +162,15 @@ const normalize = (value?: string | null) =>
         .trim()
         .toLowerCase()
 
+const normalizeYear = (value: number | string | null | undefined) => {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : null
+    if (typeof value === 'string') {
+        const parsed = Number.parseInt(value.trim(), 10)
+        return Number.isFinite(parsed) ? parsed : null
+    }
+    return null
+}
+
 const toTitleCase = (value: string) =>
     value
         .trim()
@@ -240,7 +249,13 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
     }, [filters, visibleProjectIds])
 
     const years = useMemo(() => {
-        return Array.from(new Set(projects.map((p) => p.year).filter((y): y is number => typeof y === 'number')))
+        return Array.from(
+            new Set(
+                projects
+                    .map((p) => normalizeYear(p.year))
+                    .filter((y): y is number => typeof y === 'number')
+            )
+        )
             .sort((a, b) => b - a)
     }, [projects])
 
@@ -288,7 +303,8 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
 
     const filteredProjects = useMemo(() => {
         return projects.filter((project) => {
-            if (filters.year !== 'all' && project.year !== Number(filters.year)) return false
+            const projectYear = normalizeYear(project.year)
+            if (filters.year !== 'all' && projectYear !== Number(filters.year)) return false
 
             if (filters.semester !== 'all' && normalize(project.period) !== normalize(filters.semester)) return false
 
