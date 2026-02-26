@@ -17,6 +17,7 @@ Usage:
     python -m app.etl.tinsa_importer --file data/tinsa_norte_sur.csv  # Dry-run
     python -m app.etl.tinsa_importer --file data/tinsa_norte_sur.csv --migrate  # Real import
 """
+from __future__ import annotations
 
 import os
 import sys
@@ -252,7 +253,7 @@ def transform_projects(df: pd.DataFrame) -> tuple[list[dict], list[dict]]:
     # Determine the latest period per project
     # Sort so latest data wins: higher year + later period (2P > 1P)
     df["_year"] = pd.to_numeric(df["AÑO"], errors="coerce").fillna(0).astype(int)
-    df["_period_sort"] = df["PERIODO"].map(lambda x: 2 if str(x).startswith("2") else 1)
+    df["_period_sort"] = df["PERIODO"].map(lambda x: int(str(x)[0]) if str(x) and str(x).strip() and str(x).strip()[0].isdigit() else 0)
     df = df.sort_values(["_year", "_period_sort"], ascending=[False, False])
 
     # Group by project identity
@@ -281,17 +282,17 @@ def transform_projects(df: pd.DataFrame) -> tuple[list[dict], list[dict]]:
         lat, lon = fix_coordinates(row.get("LATITUD"), row.get("LONGITUD"))
 
         # Aggregate units across typologies in the same period
-        total_stock = sum(parse_chilean_int(r.get("STOCK INICIAL")) or 0 for _, r in latest_rows.iterrows())
-        total_available = sum(parse_chilean_int(r.get("OFERTA DISPONIBLE")) or 0 for _, r in latest_rows.iterrows())
-        total_sold = sum(parse_chilean_int(r.get("UNIDADES VENDIDAS")) or 0 for _, r in latest_rows.iterrows())
-        total_offer = sum(parse_chilean_int(r.get("OFERTA DEL PERIODO")) or 0 for _, r in latest_rows.iterrows())
+        total_stock = sum(parse_chilean_int(r.get("STOCK INICIAL", r.get("STOCK INICIAL (PERIODO)"))) or 0 for _, r in latest_rows.iterrows())
+        total_available = sum(parse_chilean_int(r.get("OFERTA DISPONIBLE (PERIODO)", r.get("OFERTA DISPONIBLE"))) or 0 for _, r in latest_rows.iterrows())
+        total_sold = sum(parse_chilean_int(r.get("UNIDADES VENDIDAS (PERIODO)", r.get("UNIDADES VENDIDAS"))) or 0 for _, r in latest_rows.iterrows())
+        total_offer = sum(parse_chilean_int(r.get("OFERTA DEL PERIODO", r.get("OFERTA DEL PERIODO"))) or 0 for _, r in latest_rows.iterrows())
 
         # Average velocity across typologies
-        velocities_a = [parse_chilean_number(r.get("UNIDADES/MES (A)")) for _, r in latest_rows.iterrows()]
+        velocities_a = [parse_chilean_number(r.get("UNIDADES/MES (AÑO)", r.get("UNIDADES/MES (A)"))) for _, r in latest_rows.iterrows()]
         velocities_a = [v for v in velocities_a if v is not None and v > 0]
         avg_velocity_a = sum(velocities_a) / len(velocities_a) if velocities_a else None
 
-        velocities_p = [parse_chilean_number(r.get("UNIDADES/MES (P)")) for _, r in latest_rows.iterrows()]
+        velocities_p = [parse_chilean_number(r.get("UNIDADES/MES (PERIODO)", r.get("UNIDADES/MES (P)"))) for _, r in latest_rows.iterrows()]
         velocities_p = [v for v in velocities_p if v is not None and v > 0]
         avg_velocity_p = sum(velocities_p) / len(velocities_p) if velocities_p else None
 
@@ -318,8 +319,8 @@ def transform_projects(df: pd.DataFrame) -> tuple[list[dict], list[dict]]:
             "builder": str(row.get("CONSTRUYE", "")).strip() or None,
             "property_type": str(row.get("TIPO DE PROPIEDAD", "")).strip() or None,
             "category": str(row.get("TIPO CATEGORIA", "")).strip() or None,
-            "project_status": str(row.get("ESTADO PROYECTO", "")).strip() or None,
-            "construction_status": str(row.get("ESTADO OBRA", "")).strip() or None,
+            "project_status": str(row.get("ESTADO PROYECTO (PERIODO)", row.get("ESTADO PROYECTO", ""))).strip() or None,
+            "construction_status": str(row.get("ESTADO OBRA (PERIODO)", row.get("ESTADO OBRA", ""))).strip() or None,
             "latitude": lat,
             "longitude": lon,
             # Period tracking
@@ -337,8 +338,8 @@ def transform_projects(df: pd.DataFrame) -> tuple[list[dict], list[dict]]:
             # Velocity
             "sales_speed_monthly": round(avg_velocity_a, 2) if avg_velocity_a else None,
             "velocity_projected": round(avg_velocity_p, 2) if avg_velocity_p else None,
-            "months_to_sell_out": parse_chilean_number(row.get("MESES PARA AGOTAR STOCK (A)")),
-            "months_on_sale": parse_chilean_number(row.get("MESES EN VENTA")),
+            "months_to_sell_out": parse_chilean_number(row.get("MESES PARA AGOTAR STOCK (PERIODO)", row.get("MESES PARA AGOTAR STOCK (A)"))),
+            "months_on_sale": parse_chilean_number(row.get("MESES EN VENTA (PERIODO)", row.get("MESES EN VENTA"))),
             # Prices (range across typologies)
             "min_price_uf": min(min_prices) if min_prices else None,
             "max_price_uf": max(max_prices) if max_prices else None,
@@ -398,8 +399,8 @@ def transform_projects(df: pd.DataFrame) -> tuple[list[dict], list[dict]]:
                 "min_price_uf": parse_chilean_number(trow.get("PRECIO MINIMO UF")),
                 "max_price_uf": parse_chilean_number(trow.get("PRECIO MAXIMO UF")),
                 "current_price_uf": parse_chilean_number(trow.get("PRECIO PROMEDIO")),
-                "stock": parse_chilean_int(trow.get("OFERTA DISPONIBLE")),
-                "total_units": parse_chilean_int(trow.get("STOCK INICIAL")),
+                "stock": parse_chilean_int(trow.get("OFERTA DISPONIBLE (PERIODO)", trow.get("OFERTA DISPONIBLE"))),
+                "total_units": parse_chilean_int(trow.get("STOCK INICIAL (PERIODO)", trow.get("STOCK INICIAL"))),
             }
 
             # Clean
@@ -417,40 +418,49 @@ def transform_projects(df: pd.DataFrame) -> tuple[list[dict], list[dict]]:
 # Database operations
 # ---------------------------------------------------------------------------
 
+from collections import defaultdict
+
 def insert_projects(supabase: Client, projects: list[dict]) -> dict[str, str]:
     """Insert projects and return mapping of (name, commune) → id."""
     project_ids = {}
     inserted = 0
     errors = 0
 
-    for i in range(0, len(projects), BATCH_SIZE):
-        batch = projects[i:i + BATCH_SIZE]
-        try:
-            res = supabase.table("projects").upsert(
-                batch,
-                on_conflict="name,commune"
-            ).execute()
-            if res.data:
-                for p in res.data:
-                    project_ids[(p["name"], p["commune"])] = p["id"]
-                inserted += len(res.data)
-            print(f"    Proyectos: {inserted}/{len(projects)} insertados...")
-        except Exception as e:
-            errors += 1
-            print(f"    Error batch {i // BATCH_SIZE + 1}: {e}")
-            # Try one by one for this batch
-            for proj in batch:
-                try:
-                    res = supabase.table("projects").upsert(
-                        proj,
-                        on_conflict="name,commune"
-                    ).execute()
-                    if res.data:
-                        p = res.data[0]
+    # Group by shape (keys) to allow batch insert of dicts without None values
+    groups = defaultdict(list)
+    for p in projects:
+        clean_p = {k: v for k, v in p.items() if v is not None and not (isinstance(v, str) and v.lower() in ("nan", "none", ""))}
+        shape = tuple(sorted(clean_p.keys()))
+        groups[shape].append(clean_p)
+
+    for shape, items in groups.items():
+        for i in range(0, len(items), BATCH_SIZE):
+            batch = items[i:i + BATCH_SIZE]
+            try:
+                res = supabase.table("projects").upsert(
+                    batch,
+                    on_conflict="name,commune"
+                ).execute()
+                if res.data:
+                    for p in res.data:
                         project_ids[(p["name"], p["commune"])] = p["id"]
-                        inserted += 1
-                except Exception as e2:
-                    print(f"      Skip: {proj.get('name', '?')} - {e2}")
+                    inserted += len(res.data)
+            except Exception as e:
+                errors += 1
+                # Try one by one for this batch
+                for proj in batch:
+                    try:
+                        res = supabase.table("projects").upsert(
+                            proj,
+                            on_conflict="name,commune"
+                        ).execute()
+                        if res.data:
+                            p = res.data[0]
+                            project_ids[(p["name"], p["commune"])] = p["id"]
+                            inserted += 1
+                    except Exception as e2:
+                        pass
+        print(f"    Proyectos insertados: {inserted}/{len(projects)}...")
 
     print(f"  Total proyectos insertados: {inserted}, errores: {errors}")
     return project_ids
@@ -474,12 +484,13 @@ def insert_typologies(supabase: Client, typologies: list[dict], project_ids: dic
         print(f"  Tipologías sin proyecto padre: {unresolved}")
 
     # Delete existing typologies for these projects (to avoid duplicates on re-import)
-    unique_pids = set(t["project_id"] for t in resolved)
-    for pid in unique_pids:
+    unique_pids = list(set(t["project_id"] for t in resolved))
+    for i in range(0, len(unique_pids), BATCH_SIZE):
+        batch_pids = unique_pids[i:i + BATCH_SIZE]
         try:
-            supabase.table("project_typologies").delete().eq("project_id", pid).execute()
-        except Exception:
-            pass
+            supabase.table("project_typologies").delete().in_("project_id", batch_pids).execute()
+        except Exception as e:
+            print(f"    Warning: No se pudieron borrar algunas tipologías previas (batch {i//BATCH_SIZE}): {e}")
 
     inserted = 0
     for i in range(0, len(resolved), BATCH_SIZE):

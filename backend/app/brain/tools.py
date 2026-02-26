@@ -20,6 +20,8 @@ class ProjectSearchInput(BaseModel):
     max_price: Optional[float] = Field(None, description="Precio máximo en UF")
     property_type: Optional[str] = Field(None, description="Tipo de propiedad (ej: 'DEPARTAMENTO', 'CASA')")
     min_units: Optional[int] = Field(None, description="Mínimo de unidades totales")
+    zona: Optional[str] = Field(None, description="Zona geográfica (ej: 'NORTE', 'SUR', 'CENTRO')")
+    subsidy: Optional[str] = Field(None, description="Tipo de subsidio (ej: 'DS01', 'DS19', 'SIN SUBSIDIO')")
     limit: int = Field(10, description="Número máximo de resultados")
 
 
@@ -43,6 +45,8 @@ def search_projects(
     max_price: Optional[float] = None,
     property_type: Optional[str] = None,
     min_units: Optional[int] = None,
+    zona: Optional[str] = None,
+    subsidy: Optional[str] = None,
     limit: int = 10
 ) -> str:
     """
@@ -62,7 +66,8 @@ def search_projects(
             "name, developer, commune, region, address, "
             "total_units, sold_units, available_units, "
             "avg_price_uf, avg_price_m2_uf, min_price_uf, max_price_uf, "
-            "property_type, project_status, sales_speed_monthly"
+            "property_type, project_status, sales_speed_monthly, "
+            "zona, subsidy_type, construction_status, year, period"
         )
         
         # Apply filters
@@ -78,6 +83,10 @@ def search_projects(
             query = query.ilike("property_type", f"%{property_type}%")
         if min_units:
             query = query.gte("total_units", min_units)
+        if zona:
+            query = query.ilike("zona", f"%{zona}%")
+        if subsidy:
+            query = query.ilike("subsidy_type", f"%{subsidy}%")
         
         # Execute with limit
         query = query.limit(limit)
@@ -104,6 +113,12 @@ def search_projects(
                 output += f"   - Precio por m²: {p['avg_price_m2_uf']:,.1f} UF/m²\n"
             if p.get('sales_speed_monthly'):
                 output += f"   - Velocidad de venta: {p['sales_speed_monthly']:.1f} unidades/mes\n"
+            if p.get('zona'):
+                output += f"   - Zona: {p['zona']}\n"
+            if p.get('subsidy_type'):
+                output += f"   - Subsidio: {p['subsidy_type']}\n"
+            if p.get('construction_status'):
+                output += f"   - Estado de obra: {p['construction_status']} ({p.get('year', '')} {p.get('period', '')})\n"
             output += "\n"
         
         return output

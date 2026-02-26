@@ -28,6 +28,9 @@ interface Project {
     sales_speed_monthly: number | null
     project_status: string | null
     property_type: string | null
+    zona: string | null
+    subsidy_type: string | null
+    construction_status: string | null
 }
 
 interface ProjectsTableProps {
@@ -37,9 +40,15 @@ interface ProjectsTableProps {
 export default function ProjectsTable({ projects }: ProjectsTableProps) {
     const [search, setSearch] = useState('')
     const [regionFilter, setRegionFilter] = useState<string>('all')
+    const [zonaFilter, setZonaFilter] = useState<string>('all')
+    const [statusFilter, setStatusFilter] = useState<string>('all')
+    const [typeFilter, setTypeFilter] = useState<string>('all')
 
-    // Get unique regions
+    // Get unique options
     const regions = Array.from(new Set(projects.map(p => p.region).filter((r): r is string => !!r)))
+    const zonas = Array.from(new Set(projects.map(p => p.zona).filter((z): z is string => !!z)))
+    const statuses = Array.from(new Set(projects.map(p => p.project_status).filter((s): s is string => !!s)))
+    const types = Array.from(new Set(projects.map(p => p.property_type).filter((t): t is string => !!t)))
 
     // Filter projects
     const filteredProjects = projects.filter(project => {
@@ -48,8 +57,11 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
             project.commune?.toLowerCase().includes(search.toLowerCase())
 
         const matchesRegion = regionFilter === 'all' || project.region === regionFilter
+        const matchesZona = zonaFilter === 'all' || project.zona === zonaFilter
+        const matchesStatus = statusFilter === 'all' || project.project_status === statusFilter
+        const matchesType = typeFilter === 'all' || project.property_type === typeFilter
 
-        return matchesSearch && matchesRegion
+        return matchesSearch && matchesRegion && matchesZona && matchesStatus && matchesType
     })
 
     const [currentPage, setCurrentPage] = useState(1)
@@ -95,33 +107,83 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
             {/* Filters */}
             <div className="surface-panel p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Buscar por nombre, desarrollador o comuna..."
-                        value={search}
-                        onChange={(e) => {
-                            setSearch(e.target.value)
-                            setCurrentPage(1) // Reset to first page on search
-                        }}
-                        className="pl-10"
-                    />
-                </div>
-                <select
-                    value={regionFilter}
-                    onChange={(e) => {
-                        setRegionFilter(e.target.value)
-                        setCurrentPage(1) // Reset to first page on filter
-                    }}
-                    className="h-11 rounded-[12px] border border-input/85 bg-card/90 px-4 py-2 text-sm text-foreground transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary"
-                >
-                    <option value="all">Todas las regiones</option>
-                    {regions.sort().map(region => (
-                        <option key={region} value={region}>
-                            Región {region}
-                        </option>
-                    ))}
-                </select>
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Buscar por nombre, desarrollador o comuna..."
+                            value={search}
+                            onChange={(e) => {
+                                setSearch(e.target.value)
+                                setCurrentPage(1) // Reset to first page on search
+                            }}
+                            className="pl-10"
+                        />
+                    </div>
+                    <div className="flex flex-wrap gap-3 mt-3">
+                        <select
+                            value={regionFilter}
+                            onChange={(e) => {
+                                setRegionFilter(e.target.value)
+                                setCurrentPage(1) // Reset to first page on filter
+                            }}
+                            className="h-10 flex-1 min-w-[140px] rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        >
+                            <option value="all">Todas las regiones</option>
+                            {regions.sort().map(region => (
+                                <option key={region} value={region}>
+                                    Región {region}
+                                </option>
+                            ))}
+                        </select>
+
+                        <select
+                            value={zonaFilter}
+                            onChange={(e) => {
+                                setZonaFilter(e.target.value)
+                                setCurrentPage(1)
+                            }}
+                            className="h-10 flex-1 min-w-[140px] rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        >
+                            <option value="all">Todas las zonas</option>
+                            {zonas.sort().map(zona => (
+                                <option key={zona} value={zona}>
+                                    {zona}
+                                </option>
+                            ))}
+                        </select>
+
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => {
+                                setStatusFilter(e.target.value)
+                                setCurrentPage(1)
+                            }}
+                            className="h-10 flex-1 min-w-[140px] rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        >
+                            <option value="all">Todos los estados</option>
+                            {statuses.sort().map(status => (
+                                <option key={status} value={status}>
+                                    {status}
+                                </option>
+                            ))}
+                        </select>
+
+                        <select
+                            value={typeFilter}
+                            onChange={(e) => {
+                                setTypeFilter(e.target.value)
+                                setCurrentPage(1)
+                            }}
+                            className="h-10 flex-1 min-w-[140px] rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        >
+                            <option value="all">Todos los tipos</option>
+                            {types.sort().map(type => (
+                                <option key={type} value={type}>
+                                    {type}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -155,105 +217,105 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
             </div>
 
             {/* Table */}
-                <Table>
-                    <TableHeader>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Proyecto</TableHead>
+                        <TableHead>Desarrollador</TableHead>
+                        <TableHead>Ubicación</TableHead>
+                        <TableHead className="text-right">Unidades</TableHead>
+                        <TableHead className="text-right">Precio Prom.</TableHead>
+                        <TableHead className="text-right">Velocidad</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead className="text-right">Acciones</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {paginatedProjects.length === 0 ? (
                         <TableRow>
-                            <TableHead>Proyecto</TableHead>
-                            <TableHead>Desarrollador</TableHead>
-                            <TableHead>Ubicación</TableHead>
-                            <TableHead className="text-right">Unidades</TableHead>
-                            <TableHead className="text-right">Precio Prom.</TableHead>
-                            <TableHead className="text-right">Velocidad</TableHead>
-                            <TableHead>Estado</TableHead>
-                            <TableHead className="text-right">Acciones</TableHead>
+                            <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                                No se encontraron proyectos
+                            </TableCell>
                         </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {paginatedProjects.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                                    No se encontraron proyectos
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            paginatedProjects.map((project) => {
-                                const sellThrough = getSellThroughRate(project.sold_units, project.total_units)
+                    ) : (
+                        paginatedProjects.map((project) => {
+                            const sellThrough = getSellThroughRate(project.sold_units, project.total_units)
 
-                                return (
-                                    <TableRow key={project.id}>
-                                        <TableCell className="font-medium">
-                                            <div>
-                                                <div className="font-semibold text-foreground">{project.name}</div>
-                                                {project.property_type && (
-                                                    <div className="text-xs text-muted-foreground mt-1">
-                                                        {project.property_type}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="text-sm text-muted-foreground">
-                                                {project.developer || '-'}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-1 text-sm">
-                                                <MapPin className="h-3 w-3 text-muted-foreground" />
-                                                <span>{project.commune || '-'}</span>
-                                                {project.region && (
-                                                    <span className="text-muted-foreground">({project.region})</span>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="space-y-1">
-                                                <div className="text-sm font-medium">
-                                                    {project.total_units?.toLocaleString() || '-'}
+                            return (
+                                <TableRow key={project.id}>
+                                    <TableCell className="font-medium">
+                                        <div>
+                                            <div className="font-semibold text-foreground">{project.name}</div>
+                                            {project.property_type && (
+                                                <div className="text-xs text-muted-foreground mt-1">
+                                                    {project.property_type}
                                                 </div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    {project.sold_units || 0} vendidas
-                                                </div>
-                                                <div className="w-full bg-muted rounded-full h-1.5">
-                                                    <div
-                                                        className="h-1.5 rounded-full bg-primary transition-all duration-300"
-                                                        style={{ width: `${sellThrough}%` }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-right">
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="text-sm text-muted-foreground">
+                                            {project.developer || '-'}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-1 text-sm">
+                                            <MapPin className="h-3 w-3 text-muted-foreground" />
+                                            <span>{project.commune || '-'}</span>
+                                            {project.region && (
+                                                <span className="text-muted-foreground">({project.region})</span>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="space-y-1">
                                             <div className="text-sm font-medium">
-                                                {project.avg_price_uf
-                                                    ? `${project.avg_price_uf.toLocaleString()} UF`
-                                                    : '-'
-                                                }
+                                                {project.total_units?.toLocaleString() || '-'}
                                             </div>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="text-sm">
-                                                {project.sales_speed_monthly
-                                                    ? `${project.sales_speed_monthly.toFixed(1)} u/mes`
-                                                    : '-'
-                                                }
+                                            <div className="text-xs text-muted-foreground">
+                                                {project.sold_units || 0} vendidas
                                             </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            {getStatusBadge(project.project_status)}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Link href={`/dashboard/projects/${project.id}`}>
-                                                <Button variant="ghost" size="sm">
-                                                    <Eye className="h-4 w-4 mr-1" />
-                                                    Ver
-                                                </Button>
-                                            </Link>
-                                        </TableCell>
-                                    </TableRow>
-                                )
-                            })
-                        )}
-                    </TableBody>
-                </Table>
+                                            <div className="w-full bg-muted rounded-full h-1.5">
+                                                <div
+                                                    className="h-1.5 rounded-full bg-primary transition-all duration-300"
+                                                    style={{ width: `${sellThrough}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="text-sm font-medium">
+                                            {project.avg_price_uf
+                                                ? `${project.avg_price_uf.toLocaleString()} UF`
+                                                : '-'
+                                            }
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="text-sm">
+                                            {project.sales_speed_monthly
+                                                ? `${project.sales_speed_monthly.toFixed(1)} u/mes`
+                                                : '-'
+                                            }
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        {getStatusBadge(project.project_status)}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Link href={`/dashboard/projects/${project.id}`}>
+                                            <Button variant="ghost" size="sm">
+                                                <Eye className="h-4 w-4 mr-1" />
+                                                Ver
+                                            </Button>
+                                        </Link>
+                                    </TableCell>
+                                </TableRow>
+                            )
+                        })
+                    )}
+                </TableBody>
+            </Table>
 
             {/* Pagination controls at bottom too */}
             <div className="flex justify-end gap-2">

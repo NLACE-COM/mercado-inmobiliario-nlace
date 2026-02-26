@@ -153,7 +153,7 @@ async function getMarketStats(comuna?: string) {
     try {
         const supabase = getSupabaseAdmin();
 
-        let query = supabase.from('projects').select('avg_price_uf, available_units, sales_speed_monthly, project_status, commune');
+        let query = supabase.from('projects').select('avg_price_uf, available_units, sales_speed_monthly, project_status, commune, region, zona, subsidy_type, property_type, construction_status');
 
         if (comuna) {
             // Trim and use ilike for better matching
@@ -206,7 +206,7 @@ async function getMarketStats(comuna?: string) {
 async function searchProjects({ comuna, min_price_uf, max_price_uf, limit = 5 }: any) {
     try {
         const supabase = getSupabaseAdmin();
-        let query = supabase.from('projects').select('id, name, developer, commune, avg_price_uf, project_status, available_units').limit(limit);
+        let query = supabase.from('projects').select('id, name, developer, commune, region, zona, avg_price_uf, avg_price_m2_uf, project_status, property_type, subsidy_type, construction_status, total_units, sold_units, available_units, sales_speed_monthly, year, period').limit(limit);
 
         if (comuna) query = query.ilike('commune', `%${comuna.trim()}%`);
         if (min_price_uf) query = query.gte('avg_price_uf', min_price_uf);
@@ -281,7 +281,7 @@ async function getTopSales() {
 
         const { data, error } = await supabase
             .from('projects')
-            .select('id, name, developer, commune, available_units, total_units, sold_units, sales_speed_monthly, avg_price_uf')
+            .select('id, name, developer, commune, region, zona, subsidy_type, available_units, total_units, sold_units, sales_speed_monthly, avg_price_uf')
             .not('sales_speed_monthly', 'is', null)
             .order('sales_speed_monthly', { ascending: false })
             .limit(10);
@@ -297,11 +297,14 @@ async function getTopSales() {
             return {
                 name: p.name,
                 developer: p.developer,
-                commune: p.commune,
                 sales_speed_monthly: p.sales_speed_monthly,
                 available_units: p.available_units,
                 sell_through_pct: sellThrough,
-                avg_price_uf: p.avg_price_uf
+                avg_price_uf: p.avg_price_uf,
+                subsidy_type: p.subsidy_type,
+                commune: p.commune,
+                region: p.region,
+                zona: p.zona
             };
         });
 

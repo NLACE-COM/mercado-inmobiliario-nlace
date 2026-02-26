@@ -155,6 +155,18 @@ export default async function ProjectPage({ params }: Props) {
                                 <p className="text-sm font-medium text-muted-foreground">Categoría</p>
                                 <p className="text-sm font-semibold">{project.category || '-'}</p>
                             </div>
+                            <div>
+                                <p className="text-sm font-medium text-muted-foreground">Subsidio</p>
+                                <p className="text-sm font-semibold">{project.subsidy_type || '-'}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-muted-foreground">Zona</p>
+                                <p className="text-sm font-semibold">{project.zona || '-'}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-muted-foreground">Período Datos</p>
+                                <p className="text-sm font-semibold">{project.year && project.period ? `${project.year} ${project.period}` : '-'}</p>
+                            </div>
                         </div>
 
                         {project.address && (
@@ -202,6 +214,18 @@ export default async function ProjectPage({ params }: Props) {
                                 <p className="text-sm font-medium text-muted-foreground">Precio por m²</p>
                                 <p className="text-sm font-semibold">
                                     {project.avg_price_m2_uf ? `${project.avg_price_m2_uf.toLocaleString()} UF/m²` : '-'}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-muted-foreground">Estacionamiento</p>
+                                <p className="text-sm font-semibold">
+                                    {project.parking_price ? `${project.parking_price.toLocaleString()} UF` : '-'}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-muted-foreground">Bodega</p>
+                                <p className="text-sm font-semibold">
+                                    {project.storage_price ? `${project.storage_price.toLocaleString()} UF` : '-'}
                                 </p>
                             </div>
                         </div>
