@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { ReactNode, useState } from 'react'
 import Link from 'next/link'
 import {
     Table,
@@ -31,13 +31,15 @@ interface Project {
     zona: string | null
     subsidy_type: string | null
     construction_status: string | null
+    year?: number | null
 }
 
 interface ProjectsTableProps {
     projects: Project[]
+    summarySlot?: ReactNode
 }
 
-export default function ProjectsTable({ projects }: ProjectsTableProps) {
+export default function ProjectsTable({ projects, summarySlot }: ProjectsTableProps) {
     const [search, setSearch] = useState('')
     const [regionFilter, setRegionFilter] = useState<string>('all')
     const [zonaFilter, setZonaFilter] = useState<string>('all')
@@ -187,6 +189,8 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
                 </div>
             </div>
 
+            {summarySlot}
+
             {/* Results count */}
             <div className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-card/70 p-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                 <div className="font-medium">
@@ -222,6 +226,7 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
                     <TableRow>
                         <TableHead>Proyecto</TableHead>
                         <TableHead>Desarrollador</TableHead>
+                        <TableHead className="text-center">Año</TableHead>
                         <TableHead>Ubicación</TableHead>
                         <TableHead className="text-right">Unidades</TableHead>
                         <TableHead className="text-right">Precio Prom.</TableHead>
@@ -233,7 +238,7 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
                 <TableBody>
                     {paginatedProjects.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                            <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                                 No se encontraron proyectos
                             </TableCell>
                         </TableRow>
@@ -256,6 +261,11 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
                                     <TableCell>
                                         <div className="text-sm text-muted-foreground">
                                             {project.developer || '-'}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        <div className="text-sm font-medium text-foreground">
+                                            {project.year || '-'}
                                         </div>
                                     </TableCell>
                                     <TableCell>

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Grid, Card, Text, BadgeDelta, Title } from '@tremor/react'
-import { Filter, Sparkles, Wand2, BarChart3, ChevronDown, ChevronUp } from 'lucide-react'
+import { Filter, Sparkles, Wand2, BarChart3, ChevronDown, ChevronUp, Map as MapIcon, X } from 'lucide-react'
 import MapboxMap from '@/components/MapboxMap'
 import MarketOverviewChart from '@/components/charts/MarketOverviewChart'
 import { ProductMixChart } from '@/components/charts/ProductMixChart'
@@ -10,8 +10,16 @@ import { PriceRangeChart } from '@/components/charts/PriceRangeChart'
 import ParticipationEvolutionChart from '@/components/charts/ParticipationEvolutionChart'
 import TypologyCompetitionChart from '@/components/charts/TypologyCompetitionChart'
 import { Button } from '@/components/ui/button'
+import MapAreaSelector from '@/components/reports/MapAreaSelector'
 import { Label } from '@/components/ui/label'
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
 import {
     Select,
     SelectContent,
@@ -225,6 +233,37 @@ const isSubsidized = (project: DashboardProject) => {
     return true
 }
 
+const parsePolygonWkt = (wkt: string): [number, number][] => {
+    const matches = wkt.match(/POLYGON\s*\(\(\s*(.+?)\s*\)\)/i)
+    if (!matches?.[1]) return []
+
+    return matches[1]
+        .split(',')
+        .map((pair) => pair.trim().split(/\s+/).map(Number))
+        .filter((coords): coords is [number, number] => coords.length >= 2 && coords.every((value) => Number.isFinite(value)))
+        .map(([lng, lat]) => [lng, lat])
+}
+
+const pointInPolygon = (point: [number, number], polygon: [number, number][]) => {
+    if (polygon.length < 3) return false
+
+    let inside = false
+    const [x, y] = point
+
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const [xi, yi] = polygon[i]
+        const [xj, yj] = polygon[j]
+
+        const intersects =
+            yi > y !== yj > y &&
+            x < ((xj - xi) * (y - yi)) / ((yj - yi) || Number.EPSILON) + xi
+
+        if (intersects) inside = !inside
+    }
+
+    return inside
+}
+
 interface DashboardMapFiltersProps {
     projects: DashboardProject[]
 }
@@ -232,6 +271,8 @@ interface DashboardMapFiltersProps {
 export default function DashboardMapFilters({ projects }: DashboardMapFiltersProps) {
     const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS)
     const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(false)
+    const [isAreaDialogOpen, setIsAreaDialogOpen] = useState(false)
+    const [polygonWkt, setPolygonWkt] = useState<string | null>(null)
     const [visibleProjectIds, setVisibleProjectIds] = useState<string[] | null>(null)
     const [hasGenerated, setHasGenerated] = useState(false)
     const [generatedAt, setGeneratedAt] = useState<string | null>(null)
@@ -242,11 +283,11 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
 
     useEffect(() => {
         setVisibleProjectIds(null)
-    }, [filters])
+    }, [filters, polygonWkt])
 
     useEffect(() => {
         setHasGenerated(false)
-    }, [filters, visibleProjectIds])
+    }, [filters, visibleProjectIds, polygonWkt])
 
     const years = useMemo(() => {
         return Array.from(
@@ -290,16 +331,14 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
         return Array.from(allTypologies).sort((a, b) => a.localeCompare(b))
     }, [projects])
 
-    const statusOptions = useMemo(() => {
-        return buildUniqueOptions([
-            ...projects.map((p) => p.project_status),
-            ...projects.map((p) => p.construction_status),
-        ])
-    }, [projects])
-
     const subsidyTypeOptions = useMemo(() => {
         return buildUniqueOptions(projects.map((p) => p.subsidy_type))
     }, [projects])
+
+    const polygonCoordinates = useMemo(
+        () => (polygonWkt ? parsePolygonWkt(polygonWkt) : []),
+        [polygonWkt]
+    )
 
     const filteredProjects = useMemo(() => {
         return projects.filter((project) => {
@@ -332,9 +371,14 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
 
             if (filters.subsidyType !== 'all' && normalize(project.subsidy_type) !== filters.subsidyType) return false
 
+            if (polygonCoordinates.length >= 3) {
+                if (typeof project.longitude !== 'number' || typeof project.latitude !== 'number') return false
+                if (!pointInPolygon([project.longitude, project.latitude], polygonCoordinates)) return false
+            }
+
             return true
         })
-    }, [projects, filters])
+    }, [projects, filters, polygonCoordinates])
 
     const mapProjects = useMemo(() => filteredProjects.filter((p) => p.latitude && p.longitude), [filteredProjects])
     const mapScopedProjects = useMemo(() => {
@@ -623,6 +667,9 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
     }
 
     const geoScopeLabel = useMemo(() => {
+        if (polygonCoordinates.length >= 3) {
+            return 'Área dibujada en mapa'
+        }
         if (filters.commune !== 'all') {
             const selected = communeOptions.find((c) => c.value === filters.commune)
             return `Comuna: ${selected?.label || 'Seleccionada'}`
@@ -632,7 +679,7 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
             return `Región: ${selected?.label || 'Seleccionada'}`
         }
         return 'Cobertura nacional'
-    }, [filters.region, filters.commune, regionOptions, communeOptions])
+    }, [polygonCoordinates.length, filters.region, filters.commune, regionOptions, communeOptions])
 
     const timeScopeLabel = useMemo(() => {
         const year = filters.year !== 'all' ? `Año ${filters.year}` : 'Todos los años'
@@ -685,7 +732,7 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                 body: JSON.stringify({
                     filters,
                     scope: {
-                        mode: 'viewport+filters',
+                        mode: polygonWkt ? 'polygon+filters' : 'viewport+filters',
                         geo: geoScopeLabel,
                         time: timeScopeLabel,
                     },
@@ -723,8 +770,8 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                         showLegend={false}
                     />
 
-                    <div className="absolute left-3 top-3 z-30 w-[400px] max-w-[calc(100%-24px)]">
-                        <div className="glass-panel max-h-[66vh] overflow-y-auto p-4">
+                    <div className="absolute left-3 right-3 top-3 z-30 lg:right-[196px]">
+                        <div className="glass-panel p-4">
                             <div className="rounded-2xl border border-border/75 bg-card/85 p-3.5">
                                 <div className="mb-3 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
@@ -753,7 +800,8 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                     </Button>
                                 </div>
                                 {!isFiltersCollapsed && (
-                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
                                         <div className="space-y-1.5">
                                             <Label className="text-xs font-medium text-muted-foreground">Año</Label>
                                             <Select value={filters.year} onValueChange={(v) => updateFilter('year', v)}>
@@ -761,17 +809,6 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                                 <SelectContent>
                                                     <SelectItem value="all">Todos</SelectItem>
                                                     {years.map((year) => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <Label className="text-xs font-medium text-muted-foreground">Semestre</Label>
-                                            <Select value={filters.semester} onValueChange={(v) => updateFilter('semester', v)}>
-                                                <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">Todos</SelectItem>
-                                                    <SelectItem value="1P">1P</SelectItem>
-                                                    <SelectItem value="2P">2P</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -835,35 +872,12 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                             </Select>
                                         </div>
                                         <div className="space-y-1.5">
-                                            <Label className="text-xs font-medium text-muted-foreground">Ticket UF</Label>
+                                            <Label className="text-xs font-medium text-muted-foreground">Rango UF</Label>
                                             <Select value={filters.ticketRange} onValueChange={(v) => updateFilter('ticketRange', v)}>
                                                 <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="all">Todos</SelectItem>
                                                     {PRICE_RANGES.map((range) => <SelectItem key={range.key} value={range.key}>{range.label}</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <Label className="text-xs font-medium text-muted-foreground">Estado propiedad</Label>
-                                            <Select value={filters.propertyStatus} onValueChange={(v) => updateFilter('propertyStatus', v)}>
-                                                <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">Todos</SelectItem>
-                                                    {statusOptions.map((status) => (
-                                                        <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <Label className="text-xs font-medium text-muted-foreground">Tipo de Proyecto</Label>
-                                            <Select value={filters.projectType} onValueChange={(v) => updateFilter('projectType', v)}>
-                                                <SelectTrigger className="h-10"><SelectValue placeholder="Todos" /></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">Todos</SelectItem>
-                                                    <SelectItem value="sin_subsidio">Sin Subsidio</SelectItem>
-                                                    <SelectItem value="con_subsidio">Con Subsidio</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -878,6 +892,40 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                                     ))}
                                                 </SelectContent>
                                             </Select>
+                                        </div>
+                                        </div>
+                                        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="h-10 gap-2"
+                                                    onClick={() => setIsAreaDialogOpen(true)}
+                                                >
+                                                    <MapIcon className="h-4 w-4" />
+                                                    {polygonWkt ? 'Editar Área en Mapa' : 'Seleccionar Área en Mapa'}
+                                                </Button>
+                                                {polygonWkt && (
+                                                    <>
+                                                        <span className="rounded-full border border-success/30 bg-success/10 px-3 py-1 text-[11px] font-medium text-success">
+                                                            Área de interés activa
+                                                        </span>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-9 gap-1.5 text-xs text-muted-foreground"
+                                                            onClick={() => setPolygonWkt(null)}
+                                                        >
+                                                            <X className="h-3.5 w-3.5" />
+                                                            Limpiar área
+                                                        </Button>
+                                                    </>
+                                                )}
+                                            </div>
+                                            <p className="text-[11px] text-muted-foreground">
+                                                Dibuja un polígono para definir el alcance espacial desde el inicio.
+                                            </p>
                                         </div>
                                     </div>
                                 )}
@@ -953,6 +1001,37 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                     )}
                 </div>
             </Card>
+
+            <Dialog open={isAreaDialogOpen} onOpenChange={setIsAreaDialogOpen}>
+                <DialogContent className="sm:max-w-[840px] rounded-card border-border/80 bg-card/95">
+                    <DialogHeader>
+                        <DialogTitle>Seleccionar Área en Mapa</DialogTitle>
+                        <DialogDescription>
+                            Dibuja un polígono para definir el área de interés antes de generar indicadores y gráficos.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3">
+                        <MapAreaSelector onPolygonChange={setPolygonWkt} />
+                        <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs text-muted-foreground">
+                                {polygonWkt
+                                    ? 'El dashboard ya está filtrando proyectos dentro del polígono dibujado.'
+                                    : 'Aún no hay un polígono definido.'}
+                            </p>
+                            <div className="flex items-center gap-2">
+                                {polygonWkt && (
+                                    <Button type="button" variant="ghost" size="sm" onClick={() => setPolygonWkt(null)}>
+                                        Limpiar
+                                    </Button>
+                                )}
+                                <Button type="button" size="sm" onClick={() => setIsAreaDialogOpen(false)}>
+                                    Aplicar Área
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             <div className="grid grid-cols-2 gap-3 xl:hidden">
                 <div className="surface-panel p-3">

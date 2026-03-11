@@ -21,7 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { FileText, Loader2, Map as MapIcon, X } from 'lucide-react'
+import { FileText, Loader2, X } from 'lucide-react'
 import { useToast } from "@/components/ui/use-toast"
 import MapAreaSelector from './MapAreaSelector'
 import { Badge } from '@/components/ui/badge'
@@ -40,6 +40,7 @@ export default function CreateReportDialog() {
     const [type, setType] = useState('COMMUNE_MARKET')
     const [polygonWkt, setPolygonWkt] = useState<string | null>(null)
     const [communeList, setCommuneList] = useState<string[]>(FALLBACK_COMMUNES)
+    const requiresCommune = type === 'COMMUNE_MARKET' || type === 'PROJECT_BENCHMARK' || type === 'SCATTER_DISPERSION'
 
     useEffect(() => {
         if (open) {
@@ -74,7 +75,7 @@ export default function CreateReportDialog() {
         setIsLoading(true)
 
         try {
-            const reportParameters: any = {};
+            const reportParameters: Record<string, string | string[] | null> = {};
 
             if (type === 'AREA_POLYGON') {
                 reportParameters.polygon_wkt = polygonWkt;
@@ -93,7 +94,7 @@ export default function CreateReportDialog() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    title: title || `Reporte ${type === 'AREA_POLYGON' ? 'Área Dibujada' : (type === 'MULTI_COMMUNE_COMPARISON' ? 'Comparativa' : commune)} - ${new Date().toLocaleDateString()}`,
+                    title: title || `Reporte ${type === 'AREA_POLYGON' ? 'Área Dibujada' : (type === 'MULTI_COMMUNE_COMPARISON' ? 'Comparativa' : type === 'SCATTER_DISPERSION' ? 'Gráficos de Dispersión' : commune)} - ${new Date().toLocaleDateString()}`,
                     report_type: type,
                     parameters: reportParameters
                 })
@@ -153,6 +154,7 @@ export default function CreateReportDialog() {
                                 <SelectContent>
                                     <SelectItem value="COMMUNE_MARKET">Análisis de Mercado Comunal</SelectItem>
                                     <SelectItem value="MULTI_COMMUNE_COMPARISON">Comparativa Multi-Comuna</SelectItem>
+                                    <SelectItem value="SCATTER_DISPERSION">Gráficos de Dispersión</SelectItem>
                                     <SelectItem value="PROJECT_BENCHMARK">Benchmark de Proyectos</SelectItem>
                                     <SelectItem value="AREA_POLYGON">Seleccionar Área en Mapa</SelectItem>
                                 </SelectContent>
@@ -237,7 +239,7 @@ export default function CreateReportDialog() {
                                 isLoading ||
                                 (type === 'AREA_POLYGON' && !polygonWkt) ||
                                 (type === 'MULTI_COMMUNE_COMPARISON' && selectedCommunes.length < 2) ||
-                                ((type === 'COMMUNE_MARKET' || type === 'PROJECT_BENCHMARK') && !commune)
+                                (requiresCommune && !commune)
                             }
                         >
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

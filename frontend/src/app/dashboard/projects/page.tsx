@@ -3,9 +3,17 @@ import ProjectsTable from '@/components/ProjectsTable'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Building2, TrendingUp, DollarSign, Clock, Plus } from 'lucide-react'
-import Link from 'next/link'
 
 export const dynamic = 'force-dynamic' // Desactiva caché estática para ver cambios al instante
+
+type ProjectRow = {
+    total_units: number | null
+    sold_units: number | null
+    available_units: number | null
+    avg_price_uf: number | null
+    sales_speed_monthly: number | null
+    year?: number | null
+}
 
 async function getProjects() {
     const supabase = await createClient()
@@ -34,7 +42,7 @@ async function getProjectStats() {
     // 2. Obtener datos para promedios (con límite ampliado)
     const { data, error } = await supabase
         .from('projects')
-        .select('total_units, sold_units, available_units, avg_price_uf, sales_speed_monthly')
+        .select('total_units, sold_units, available_units, avg_price_uf, sales_speed_monthly, year')
         .limit(10000)
 
     if (error || !data) {
@@ -47,16 +55,30 @@ async function getProjectStats() {
     }
 
     const totalRealProjects = countQuery.count || data.length
+    const typedData = data as ProjectRow[]
+    const years = typedData
+        .map((p) => p.year)
+        .filter((year): year is number => typeof year === 'number' && Number.isFinite(year))
+    const prices = typedData
+        .map((p) => p.avg_price_uf)
+        .filter((price): price is number => typeof price === 'number' && Number.isFinite(price))
+    const minYear = years.length > 0 ? Math.min(...years) : null
+    const maxYear = years.length > 0 ? Math.max(...years) : null
+    const minPrice = prices.length > 0 ? Math.min(...prices) : 0
+    const maxPrice = prices.length > 0 ? Math.max(...prices) : 0
 
     return {
         totalProjects: totalRealProjects,
-        totalUnits: data.reduce((sum: number, p: any) => sum + (p.total_units || 0), 0),
-        avgPrice: data.length > 0
-            ? Math.round(data.reduce((sum: number, p: any) => sum + (p.avg_price_uf || 0), 0) / data.length)
+        totalUnits: typedData.reduce((sum, p) => sum + (p.total_units || 0), 0),
+        avgPrice: typedData.length > 0
+            ? Math.round(typedData.reduce((sum, p) => sum + (p.avg_price_uf || 0), 0) / typedData.length)
             : 0,
-        avgVelocity: data.length > 0
-            ? (data.reduce((sum: number, p: any) => sum + (p.sales_speed_monthly || 0), 0) / data.length).toFixed(1)
-            : '0.0'
+        avgVelocity: typedData.length > 0
+            ? (typedData.reduce((sum, p) => sum + (p.sales_speed_monthly || 0), 0) / typedData.length).toFixed(1)
+            : '0.0',
+        yearRangeLabel: minYear && maxYear ? `${minYear} - ${maxYear}` : 'Sin rango temporal',
+        priceRangeLabel: `UF: ${Math.round(minPrice).toLocaleString('es-CL')} - ${Math.round(maxPrice).toLocaleString('es-CL')}`,
+        projectCountLabel: `${totalRealProjects.toLocaleString('es-CL')} proyectos`,
     }
 }
 
@@ -81,61 +103,84 @@ export default async function ProjectsPage() {
                 </Button>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="enter-fade-up [animation-delay:40ms]">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Proyectos</CardTitle>
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalProjects}</div>
-                        <p className="text-xs text-muted-foreground">
-                            En seguimiento activo
-                        </p>
-                    </CardContent>
-                </Card>
+            <ProjectsTable
+                projects={projects}
+                summarySlot={
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <Card className="enter-fade-up [animation-delay:40ms]">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <div className="space-y-1">
+                                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Proyectos</CardTitle>
+                                    <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
+                                        {stats.yearRangeLabel}
+                                    </p>
+                                </div>
+                                <Building2 className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stats.totalProjects}</div>
+                                <p className="text-xs text-muted-foreground">
+                                    En seguimiento activo
+                                </p>
+                            </CardContent>
+                        </Card>
 
-                <Card className="enter-fade-up [animation-delay:80ms]">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Unidades Totales</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalUnits.toLocaleString()}</div>
-                        <p className="text-xs text-muted-foreground">
-                            En el mercado
-                        </p>
-                    </CardContent>
-                </Card>
+                        <Card className="enter-fade-up [animation-delay:80ms]">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <div className="space-y-1">
+                                    <CardTitle className="text-sm font-medium text-muted-foreground">Unidades Totales</CardTitle>
+                                    <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
+                                        {stats.projectCountLabel}
+                                    </p>
+                                </div>
+                                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stats.totalUnits.toLocaleString()}</div>
+                                <p className="text-xs text-muted-foreground">
+                                    En el mercado
+                                </p>
+                            </CardContent>
+                        </Card>
 
-                <Card className="enter-fade-up [animation-delay:120ms]">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Precio Promedio</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.avgPrice} UF</div>
-                        <p className="text-xs text-muted-foreground">
-                            Por unidad
-                        </p>
-                    </CardContent>
-                </Card>
+                        <Card className="enter-fade-up [animation-delay:120ms]">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <div className="space-y-1">
+                                    <CardTitle className="text-sm font-medium text-muted-foreground">Precio Promedio</CardTitle>
+                                    <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
+                                        {stats.priceRangeLabel}
+                                    </p>
+                                </div>
+                                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stats.avgPrice} UF</div>
+                                <p className="text-xs text-muted-foreground">
+                                    Por unidad
+                                </p>
+                            </CardContent>
+                        </Card>
 
-                <Card className="enter-fade-up [animation-delay:160ms]">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Velocidad Promedio</CardTitle>
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.avgVelocity}</div>
-                        <p className="text-xs text-muted-foreground">
-                            Unidades/mes
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <ProjectsTable projects={projects} />
+                        <Card className="enter-fade-up [animation-delay:160ms]">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <div className="space-y-1">
+                                    <CardTitle className="text-sm font-medium text-muted-foreground">Velocidad Promedio</CardTitle>
+                                    <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground/80">
+                                        {stats.yearRangeLabel}
+                                    </p>
+                                </div>
+                                <Clock className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stats.avgVelocity}</div>
+                                <p className="text-xs text-muted-foreground">
+                                    Unidades/mes
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                }
+            />
         </div>
     )
 }

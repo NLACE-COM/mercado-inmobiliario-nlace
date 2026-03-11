@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
         const polygonWkt = parameters.polygon_wkt
         const commune = parameters.commune?.trim() || ''
         const communes = parameters.communes || []
+        const isScatterReport = report_type === 'SCATTER_DISPERSION'
 
         let projects: any[] = []
         let searchLocationName = commune
@@ -191,6 +192,23 @@ export async function POST(request: NextRequest) {
             })
         }
 
+        if (isScatterReport && projects.length > 0) {
+            finalSections.push({
+                type: 'chart_scatter',
+                title: `Gráfico de Dispersión: Precio vs Velocidad en ${searchLocationName}`,
+                data: projects
+                    .filter((p: any) => Number(p.avg_price_uf) > 0 && Number(p.sales_speed_monthly) > 0)
+                    .map((p: any) => ({
+                        id: p.id,
+                        name: p.name,
+                        avg_price_uf: Number(p.avg_price_uf || 0),
+                        sales_speed: Number(p.sales_speed_monthly || 0),
+                        stock: Number(p.available_units || 0),
+                        developer: p.developer || 'S/I',
+                    }))
+            })
+        }
+
         // Add pre-fetched Level 1 sections
         finalSections.push(...reportSections)
 
@@ -200,7 +218,7 @@ export async function POST(request: NextRequest) {
             content: analysisText
         })
 
-        if (stats) {
+        if (stats && !isScatterReport) {
             finalSections.push({
                 type: 'chart_bar',
                 title: 'Estado de Obra',

@@ -193,7 +193,7 @@ export default function DashboardPage() {
                 {/* Header */}
                 <div className="surface-panel enter-fade-up mb-8 p-5 md:p-6">
                     <h1 className="mb-2 text-3xl font-bold text-foreground">Dashboard del Mercado Inmobiliario</h1>
-                    <p className="text-muted-foreground">Análisis en tiempo real del mercado inmobiliario chileno</p>
+                    <p className="text-muted-foreground">Análisis trimestral cerrado del mercado inmobiliario chileno</p>
                 </div>
 
                 {/* KPIs */}

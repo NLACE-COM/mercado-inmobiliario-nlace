@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import Map, { Marker, Popup, NavigationControl, FullscreenControl } from 'react-map-gl/mapbox'
+import Map, { Marker, Popup, NavigationControl, FullscreenControl, Source, Layer, MapRef } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { Building2, MapPin, DollarSign, TrendingUp, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -37,6 +37,40 @@ interface MapboxMapProps {
     showLegend?: boolean
 }
 
+const neighboringCountriesMaskLayer = {
+    id: 'neighboring-countries-mask',
+    type: 'fill',
+    'source-layer': 'country_boundaries',
+    filter: ['!=', ['get', 'iso_3166_1_alpha_3'], 'CHL'],
+    paint: {
+        'fill-color': '#F5F7F8',
+        'fill-opacity': 0.52,
+    },
+} as const
+
+const chileHighlightLayer = {
+    id: 'chile-highlight',
+    type: 'fill',
+    'source-layer': 'country_boundaries',
+    filter: ['==', ['get', 'iso_3166_1_alpha_3'], 'CHL'],
+    paint: {
+        'fill-color': '#D8F1EC',
+        'fill-opacity': 0.18,
+    },
+} as const
+
+const chileOutlineLayer = {
+    id: 'chile-outline',
+    type: 'line',
+    'source-layer': 'country_boundaries',
+    filter: ['==', ['get', 'iso_3166_1_alpha_3'], 'CHL'],
+    paint: {
+        'line-color': '#0F766E',
+        'line-width': 1.4,
+        'line-opacity': 0.7,
+    },
+} as const
+
 export default function MapboxMap({
     projects,
     highlightedProjectId,
@@ -46,7 +80,7 @@ export default function MapboxMap({
 }: MapboxMapProps) {
     const [selectedProject, setSelectedProject] = React.useState<Project | null>(null)
     const [mapLoaded, setMapLoaded] = React.useState(false)
-    const mapRef = React.useRef<any>(null)
+    const mapRef = React.useRef<MapRef | null>(null)
     const projectsSignature = React.useMemo(
         () => projects.map((project) => project.id).join('|'),
         [projects]
@@ -164,6 +198,12 @@ export default function MapboxMap({
                 }}
                 onMoveEnd={emitVisibleProjectIds}
             >
+                <Source id="country-boundaries" type="vector" url="mapbox://mapbox.country-boundaries-v1">
+                    <Layer {...neighboringCountriesMaskLayer} />
+                    <Layer {...chileHighlightLayer} />
+                    <Layer {...chileOutlineLayer} />
+                </Source>
+
                 <NavigationControl position={controlsPosition} />
                 <FullscreenControl position={controlsPosition} />
 
