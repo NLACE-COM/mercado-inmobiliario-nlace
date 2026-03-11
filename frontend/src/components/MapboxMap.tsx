@@ -7,6 +7,8 @@ import { Building2, MapPin, DollarSign, TrendingUp, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
+import type { LayerProps } from 'react-map-gl/mapbox'
+import type { FilterSpecification } from 'mapbox-gl'
 
 type Project = {
     id: string
@@ -37,39 +39,42 @@ interface MapboxMapProps {
     showLegend?: boolean
 }
 
-const neighboringCountriesMaskLayer = {
+const nonChileFilter: FilterSpecification = ['!=', ['get', 'iso_3166_1_alpha_3'], 'CHL']
+const chileFilter: FilterSpecification = ['==', ['get', 'iso_3166_1_alpha_3'], 'CHL']
+
+const neighboringCountriesMaskLayer: LayerProps = {
     id: 'neighboring-countries-mask',
     type: 'fill',
     'source-layer': 'country_boundaries',
-    filter: ['!=', ['get', 'iso_3166_1_alpha_3'], 'CHL'],
+    filter: nonChileFilter,
     paint: {
         'fill-color': '#F5F7F8',
         'fill-opacity': 0.52,
     },
-} as const
+}
 
-const chileHighlightLayer = {
+const chileHighlightLayer: LayerProps = {
     id: 'chile-highlight',
     type: 'fill',
     'source-layer': 'country_boundaries',
-    filter: ['==', ['get', 'iso_3166_1_alpha_3'], 'CHL'],
+    filter: chileFilter,
     paint: {
         'fill-color': '#D8F1EC',
         'fill-opacity': 0.18,
     },
-} as const
+}
 
-const chileOutlineLayer = {
+const chileOutlineLayer: LayerProps = {
     id: 'chile-outline',
     type: 'line',
     'source-layer': 'country_boundaries',
-    filter: ['==', ['get', 'iso_3166_1_alpha_3'], 'CHL'],
+    filter: chileFilter,
     paint: {
         'line-color': '#0F766E',
         'line-width': 1.4,
         'line-opacity': 0.7,
     },
-} as const
+}
 
 export default function MapboxMap({
     projects,
