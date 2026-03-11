@@ -770,8 +770,8 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                         showLegend={false}
                     />
 
-                    <div className="absolute left-3 right-3 top-3 z-30 lg:right-[196px]">
-                        <div className="glass-panel p-4">
+                    <div className="absolute left-3 top-3 z-30 w-[400px] max-w-[calc(100%-24px)]">
+                        <div className="glass-panel max-h-[66vh] overflow-y-auto p-4">
                             <div className="rounded-2xl border border-border/75 bg-card/85 p-3.5">
                                 <div className="mb-3 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
@@ -801,7 +801,7 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                 </div>
                                 {!isFiltersCollapsed && (
                                     <div className="space-y-3">
-                                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
+                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                         <div className="space-y-1.5">
                                             <Label className="text-xs font-medium text-muted-foreground">Año</Label>
                                             <Select value={filters.year} onValueChange={(v) => updateFilter('year', v)}>
@@ -894,7 +894,7 @@ export default function DashboardMapFilters({ projects }: DashboardMapFiltersPro
                                             </Select>
                                         </div>
                                         </div>
-                                        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+                                        <div className="flex flex-col gap-2">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <Button
                                                     type="button"
